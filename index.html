@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ETCC Silent Auction Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #ffffff;
+      --bg-dark:      #000000;
+      --bg-section:   #f5f5f7;
+      --text:         #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary:  #86868b;
+      --accent:       #0071e3;
+      --accent-hover: #0077ed;
+      --border:       #d2d2d7;
+      --nav-bar:      #1d1d1f;
+      --nav-width:    220px;
+      --hero-height:  80px;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Hero Banner ── */
+    #hero {
+      background: var(--nav-bar);
+      color: #fff;
+      height: var(--hero-height);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    #hero img {
+      height: 56px;
+      width: 56px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+    #hero .hero-title {
+      display: flex;
+      flex-direction: column;
+    }
+    #hero .hero-title h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    #hero .hero-title span {
+      font-size: 0.8rem;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Body layout ── */
+    #layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left Nav ── */
+    #nav {
+      width: var(--nav-width);
+      background: var(--nav-bar);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+      padding: 16px 0;
+    }
+    #nav .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 0.88rem;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      user-select: none;
+    }
+    #nav .nav-item:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    #nav .nav-item.active {
+      background: rgba(255,255,255,0.12);
+      border-left-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    #nav .nav-item .step-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    #nav .nav-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      margin: 8px 16px;
+    }
+
+    /* ── Main Content ── */
+    #main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 36px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .screen h2 {
+      font-size: 1.4rem;
+      color: var(--text);
+      margin-bottom: 6px;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 8px;
+    }
+    .screen .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .placeholder-box {
+      background: var(--bg-section);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 48px 32px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    .placeholder-box .icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    /* ── Manual overlay ── */
+    #manual-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    #manual-overlay.open { display: flex; }
+    #manual-dialog {
+      background: #fff;
+      border-radius: 10px;
+      width: min(720px, 92vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    #manual-dialog header {
+      background: var(--nav-bar);
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 10px 10px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #manual-dialog header h2 { font-size: 1.1rem; }
+    #manual-dialog header button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #manual-body {
+      padding: 24px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+    #manual-body h3 {
+      color: var(--accent);
+      margin: 16px 0 6px;
+      font-size: 1rem;
+    }
+    #manual-body p { margin-bottom: 8px; }
+    #manual-body ol, #manual-body ul {
+      margin-left: 20px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero Banner -->
+<div id="hero">
+  <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" />
+  <div class="hero-title">
+    <h1>Silent Auction Manager</h1>
+    <span>East Tennessee Corvette Club</span>
+  </div>
+</div>
+
+<!-- Layout -->
+<div id="layout">
+
+  <!-- Left Nav -->
+  <nav id="nav">
+    <div class="nav-item active" data-screen="item-load">
+      <span class="step-badge">1</span> Item Load
+    </div>
+    <div class="nav-item" data-screen="bidding-sheets">
+      <span class="step-badge">2</span> Bidding Sheets
+    </div>
+    <div class="nav-item" data-screen="bidder-reg">
+      <span class="step-badge">3</span> Bidder Registration
+    </div>
+    <div class="nav-item" data-screen="auction-close">
+      <span class="step-badge">4</span> Auction Close
+    </div>
+    <div class="nav-item" data-screen="winner-announce">
+      <span class="step-badge">5</span> Winner Announcement
+    </div>
+    <div class="nav-item" data-screen="payment-pickup">
+      <span class="step-badge">6</span> Payment &amp; Pickup
+    </div>
+    <hr class="nav-divider" />
+    <div class="nav-item" id="nav-manual">
+      📖 User Manual
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main">
+
+    <!-- Step 1: Item Load -->
+    <section class="screen active" id="screen-item-load">
+      <h2>Step 1 — Item Load</h2>
+      <p class="subtitle">Scan the auction inbox, extract item data, and load into the item table.</p>
+      <div class="placeholder-box">
+        <div class="icon">📧</div>
+        Item Load screen — coming soon
+      </div>
+    </section>
+
+    <!-- Step 2: Bidding Sheets -->
+    <section class="screen" id="screen-bidding-sheets">
+      <h2>Step 2 — Create Bidding Sheets</h2>
+      <p class="subtitle">Print a bidding sheet for each auction item.</p>
+      <div class="placeholder-box">
+        <div class="icon">🖨️</div>
+        Bidding Sheets screen — coming soon
+      </div>
+    </section>
+
+    <!-- Step 3: Bidder Registration -->
+    <section class="screen" id="screen-bidder-reg">
+      <h2>Step 3 — Bidder Registration</h2>
+      <p class="subtitle">Register bidders, import member numbers, and send confirmation emails.</p>
+      <div class="placeholder-box">
+        <div class="icon">📋</div>
+        Bidder Registration screen — coming soon
+      </div>
+    </section>
+
+    <!-- Step 4: Auction Close -->
+    <section class="screen" id="screen-auction-close">
+      <h2>Step 4 — Auction Close</h2>
+      <p class="subtitle">Enter the winning bidder number for each item in bulk mode.</p>
+      <div class="placeholder-box">
+        <div class="icon">🔒</div>
+        Auction Close screen — coming soon
+      </div>
+    </section>
+
+    <!-- Step 5: Winner Announcement -->
+    <section class="screen" id="screen-winner-announce">
+      <h2>Step 5 — Winner Announcement</h2>
+      <p class="subtitle">Generate and display the list of winning bidders.</p>
+      <div class="placeholder-box">
+        <div class="icon">🏆</div>
+        Winner Announcement screen — coming soon
+      </div>
+    </section>
+
+    <!-- Step 6: Payment & Pickup -->
+    <section class="screen" id="screen-payment-pickup">
+      <h2>Step 6 — Payment &amp; Pickup</h2>
+      <p class="subtitle">Tabular payment report sortable by bidder number or last name.</p>
+      <div class="placeholder-box">
+        <div class="icon">💳</div>
+        Payment &amp; Pickup screen — coming soon
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- User Manual Overlay -->
+<div id="manual-overlay">
+  <div id="manual-dialog">
+    <header>
+      <h2>📖 ETCC Silent Auction Manager — User Manual</h2>
+      <button id="close-manual">&times;</button>
+    </header>
+    <div id="manual-body">
+      <p>This application manages the silent auction for the East Tennessee Corvette Club (ETCC). Follow the six steps in order for each auction event.</p>
+
+      <h3>Step 1 — Item Load</h3>
+      <p>Scans the auction inbox at <strong>etccwebsite.auction@gmail.com</strong> for donation emails. Each email contains item details which are automatically extracted and loaded into the item table. Duplicate emails are skipped and each item receives a unique item number.</p>
+
+      <h3>Step 2 — Create Bidding Sheets</h3>
+      <p>Generates a printable bidding sheet for each item. Each sheet displays the item number, description, starting bid, bid increment, and a table of bid rows for bidders to fill in their bidder number and initials.</p>
+
+      <h3>Step 3 — Bidder Registration</h3>
+      <p>Register attendees as bidders. Import member numbers from a Club Express file. Send confirmation or information emails to individual bidders or to all bidders at once.</p>
+
+      <h3>Step 4 — Auction Close</h3>
+      <p>After the auction closes, enter the winning bidder number for each item. Use bulk entry mode to move through items quickly.</p>
+
+      <h3>Step 5 — Winner Announcement</h3>
+      <p>Generates a list of all winning bidders and items that can be announced to attendees or distributed digitally.</p>
+
+      <h3>Step 6 — Payment &amp; Pickup</h3>
+      <p>Produces a payment report listing each winning bidder, the items they won, winning bid amounts, and payment details (Cash, Check, or Credit Card). Sortable by bidder number or last name.</p>
+
+      <h3>Item Categories</h3>
+      <ul>
+        <li>100 — General Auto Repair / Car Items</li>
+        <li>200 — Corvette Items</li>
+        <li>300 — Men's Items</li>
+        <li>400 — Women's Items</li>
+        <li>500 — General Household</li>
+        <li>600 — Framed Artwork or other Artwork to be Hung</li>
+        <li>700 — Baskets / Gift Sets</li>
+        <li>800 — Gift Certificates</li>
+        <li>900 — Miscellaneous / Other</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Nav routing
+  const navItems = document.querySelectorAll('#nav .nav-item[data-screen]');
+  const screens  = document.querySelectorAll('.screen');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      navItems.forEach(n => n.classList.remove('active'));
+      screens.forEach(s => s.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('screen-' + item.dataset.screen).classList.add('active');
+    });
+  });
+
+  // User manual
+  const overlay     = document.getElementById('manual-overlay');
+  const navManual   = document.getElementById('nav-manual');
+  const closeManual = document.getElementById('close-manual');
+
+  navManual.addEventListener('click', () => overlay.classList.add('open'));
+  closeManual.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+</script>
+
+</body>
+</html>
