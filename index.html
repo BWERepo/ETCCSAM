@@ -556,7 +556,53 @@
     <!-- ══ Step 2: Bidding Sheets ══ -->
     <section class="screen" id="screen-bidding-sheets">
       <div class="page-header"><h2>Step 2 — Create Bidding Sheets</h2><p>Print a bidding sheet for each auction item.</p></div>
-      <div class="placeholder-box"><div class="icon">🖨️</div>Coming soon</div>
+
+      <div class="card" id="bs-items-card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Auction Items</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="bsCheckAll()">Check All</button>
+            <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="bsClearAll()">Clear All</button>
+            <button class="btn primary" style="font-size:11px;padding:3px 10px;" onclick="printBiddingSheets()">🖨️ Print Bidding Sheets</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tablekit" id="bs-items-table" style="table-layout:fixed;width:100%;">
+            <colgroup>
+              <col style="width:32px;"><col style="width:80px;"><col style="width:130px;"><col style="width:160px;">
+              <col style="width:200px;"><col style="width:80px;"><col style="width:80px;">
+              <col style="width:130px;"><col style="width:160px;"><col style="width:120px;">
+              <col style="width:130px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th style="width:32px;text-align:center;"></th>
+                <th>Item #</th>
+                <th>Submission Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Value</th>
+                <th>Reserve</th>
+                <th>Donor Name</th>
+                <th>Donor Email</th>
+                <th>Donor Phone</th>
+                <th>Date Loaded</th>
+              </tr>
+            </thead>
+          </table>
+          <div style="overflow-y:auto;max-height:370px;">
+            <table style="table-layout:fixed;width:100%;border-collapse:collapse;font-size:13px;">
+              <colgroup>
+                <col style="width:32px;"><col style="width:80px;"><col style="width:130px;"><col style="width:160px;">
+                <col style="width:200px;"><col style="width:80px;"><col style="width:80px;">
+                <col style="width:130px;"><col style="width:160px;"><col style="width:120px;">
+                <col style="width:130px;">
+              </colgroup>
+              <tbody id="bs-items-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ══ Step 3: Bidder Registration ══ -->
@@ -788,10 +834,18 @@ const Items = {
   existsByMsgId(id){ return DB.getItems().some(i => i.email_message_id === id); },
 
   nextItemNumber(categoryCode) {
-    const items  = DB.getItems();
-    const code   = String(categoryCode || '0');
-    const inCat  = items.filter(i => String(i.category_code) === code);
-    return `${code}-${inCat.length + 1}`;
+    const items = DB.getItems();
+    const code  = String(categoryCode || '0');
+    const prefix = code + '-';
+    let max = 0;
+    items.forEach(i => {
+      const num = String(i.item_number || '');
+      if (num.startsWith(prefix)) {
+        const seq = parseInt(num.substring(prefix.length), 10);
+        if (!isNaN(seq) && seq > max) max = seq;
+      }
+    });
+    return `${code}-${max + 1}`;
   },
 
   add(item) {
@@ -1158,6 +1212,108 @@ function refreshItemsTable() {
   });
 
   TableKit.init(document.getElementById('items-table'));
+  refreshBsItemsTable();
+}
+
+function printBiddingSheets() {
+  const rows = [...document.querySelectorAll('#bs-items-tbody tr')];
+  const checked = rows.filter(tr => tr.querySelector('.bs-chk')?.checked);
+  if (!checked.length) { alert('No items selected. Use Check All or select individual items first.'); return; }
+
+  const items = Items.getAll();
+  const selectedNums = new Set(checked.map(tr => tr.cells[1]?.textContent.trim()));
+  const selected = items.filter(i => selectedNums.has(String(i.item_number)));
+
+  const sheets = selected.map(item => `
+    <div class="sheet">
+      <div class="sheet-header">
+        <div class="sheet-title">East Tennessee Corvette Club — Silent Auction</div>
+        <div class="sheet-item-num">Item # ${escHtml(String(item.item_number))}</div>
+      </div>
+      <table class="sheet-info">
+        <tr><td class="label">Description</td><td>${escHtml(item.description || '')}</td></tr>
+        <tr><td class="label">Category</td><td>${escHtml(item.category_name || '')}</td></tr>
+        <tr><td class="label">Donor</td><td>${escHtml(item.donor_name || '')}</td></tr>
+        <tr><td class="label">Value</td><td>${fmtDollar(item.value)}</td></tr>
+        ${parseFloat(item.reserve_amount || 0) > 0 ? `<tr><td class="label">Reserve</td><td>${fmtDollar(item.reserve_amount)}</td></tr>` : ''}
+      </table>
+      <table class="bid-table">
+        <thead><tr><th>#</th><th>Bid Amount</th><th>Bidder #</th><th>Bidder Initials</th><th>Bid Amount</th></tr></thead>
+        <tbody>
+          ${Array.from({length: 35}, (_, i) => { const amt = '$' + ((i + 1) * 5); const bold = (i + 1) % 2 === 0 ? ' style="font-weight:700;"' : ''; return `<tr><td>${i + 1}</td><td${bold}>${amt}</td><td></td><td></td><td${bold}>${amt}</td></tr>`; }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Bidding Sheets</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; color: #111; }
+  .sheet { width: 7.5in; margin: 0 auto; padding: 0.18in 0.35in; page-break-after: always; page-break-inside: avoid; }
+  .sheet:last-child { page-break-after: auto; }
+  .sheet-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1d1d1f; padding-bottom: 3px; margin-bottom: 4px; }
+  .sheet-title { font-size: 10px; font-weight: 700; color: #1d1d1f; }
+  .sheet-item-num { font-size: 18px; font-weight: 800; color: #0071e3; }
+  .sheet-info { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 10px; }
+  .sheet-info td { padding: 1px 5px; border: 1px solid #d2d2d7; }
+  .sheet-info td.label { font-weight: 600; width: 75px; background: #f5f5f7; }
+  .bid-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .bid-table th { background: #dbeafe; font-weight: 600; padding: 2px 5px; border: 1px solid #d2d2d7; text-align: left; }
+  .bid-table td { padding: 0 5px; border: 1px solid #d2d2d7; height: 15px; line-height: 15px; }
+  .bid-table td:first-child { text-align: center; width: 22px; color: #6e6e73; font-size: 9px; }
+  .bid-table th:nth-child(2), .bid-table td:nth-child(2),
+  .bid-table th:nth-child(5), .bid-table td:nth-child(5) { width: 60px; }
+  @page { size: letter portrait; margin: 0.3in; }
+  @media print { body { margin: 0; } .sheet { width: 100%; padding: 0; } }
+</style>
+</head><body>${sheets}
+<script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
+</body></html>`);
+  win.document.close();
+}
+
+function bsCheckAll() {
+  document.querySelectorAll('#bs-items-tbody .bs-chk').forEach(c => c.checked = true);
+}
+
+function bsClearAll() {
+  document.querySelectorAll('#bs-items-tbody .bs-chk').forEach(c => c.checked = false);
+}
+
+function refreshBsItemsTable() {
+  const items = Items.getAll();
+  const tbody = document.getElementById('bs-items-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-secondary);">No items loaded yet. Complete Step 1 first.</td></tr>';
+    return;
+  }
+
+  items.forEach(item => {
+    const catCode = item.category_code ? 'cat-' + item.category_code : 'cat-900';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align:center;"><input type="checkbox" class="bs-chk" /></td>
+      <td><strong>${escHtml(String(item.item_number))}</strong></td>
+      <td style="font-size:11px;white-space:nowrap;">${escHtml(item.submission_date || '')}</td>
+      <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
+      <td>${escHtml(item.description)}</td>
+      <td>${fmtDollar(item.value)}</td>
+      <td>${parseFloat(item.reserve_amount || 0) === 0 ? '' : fmtDollar(item.reserve_amount)}</td>
+      <td>${escHtml(item.donor_name)}</td>
+      <td style="font-size:11px;">${escHtml(item.donor_email)}</td>
+      <td style="font-size:11px;">${escHtml(item.donor_phone)}</td>
+      <td style="font-size:11px;white-space:nowrap;">${escHtml(item.loaded_date)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  TableKit.init(document.getElementById('bs-items-table'));
 }
 
 // ══════════════════════════════════════
@@ -1357,7 +1513,8 @@ function navigate(screenId) {
   const navItem = document.querySelector(`.nav-item[data-screen="${screenId}"]`);
   if (navItem) navItem.classList.add('active');
 
-  if (screenId === 'settings') loadSettingsForm();
+  if (screenId === 'settings')       loadSettingsForm();
+  if (screenId === 'bidding-sheets') refreshBsItemsTable();
 }
 
 navItems.forEach(item => item.addEventListener('click', () => navigate(item.dataset.screen)));
@@ -1456,7 +1613,8 @@ document.getElementById('btn-reset-fieldmap').addEventListener('click', () => {
 // ══════════════════════════════════════
 function showViewAll(type) {
   const modal = document.getElementById('view-all-modal');
-  const srcTable = document.getElementById(type === 'emails' ? 'email-table' : 'items-table');
+  const tableId = type === 'emails' ? 'email-table' : type === 'bs-items' ? 'bs-items-table' : 'items-table';
+  const srcTable = document.getElementById(tableId);
   const destTable = document.getElementById('view-all-table');
 
   // Clone thead — strip all TableKit UI to get plain headers
@@ -1475,7 +1633,7 @@ function showViewAll(type) {
     destTable.appendChild(theadClone);
   }
   // For items table, tbody lives in a separate element due to split-scroll layout
-  const tbodyId = type === 'items' ? 'items-tbody' : 'email-tbody';
+  const tbodyId = type === 'emails' ? 'email-tbody' : type === 'bs-items' ? 'bs-items-tbody' : 'items-tbody';
   const tbody = document.getElementById(tbodyId);
   if (tbody) destTable.appendChild(tbody.cloneNode(true));
 
@@ -1484,7 +1642,7 @@ function showViewAll(type) {
   // Init toolbar inside modal
   const wrap = document.getElementById('view-all-toolbar-wrap');
   wrap.innerHTML = '';
-  const title = type === 'emails' ? 'Inbox Emails' : 'Loaded Items';
+  const title = type === 'emails' ? 'Inbox Emails' : type === 'bs-items' ? 'Auction Items' : 'Loaded Items';
   PageToolbar.init({
     title:         title,
     logoText:      'ETCC',

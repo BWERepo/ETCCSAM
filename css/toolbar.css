@@ -1,0 +1,97 @@
+/* PageToolbar — top action bar for tabular pages */
+
+.tk-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 8px 16px;
+  background: #2d2220;
+  border-bottom: 1px solid #a07810;
+  gap: 12px;
+}
+
+/* Left — logo */
+.tk-toolbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+}
+
+.tk-toolbar-logo img {
+  height: 36px;
+  width: auto;
+  display: block;
+}
+
+.tk-toolbar-logo-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #d4a017;
+  white-space: nowrap;
+}
+
+/* Center — title */
+.tk-toolbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  justify-self: center;
+}
+
+/* Right — action buttons */
+.tk-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+  flex-shrink: 0;
+}
+
+.tk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid #a07810;
+  border-radius: 5px;
+  background: #fdf3d0;
+  color: #2d2220;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.tk-btn:hover {
+  background: #d4a017;
+  border-color: #a07810;
+  color: #fff;
+}
+
+.tk-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Close button — slightly distinct */
+.tk-btn-close {
+  border-color: #c62828;
+  color: #c62828;
+}
+
+.tk-btn-close:hover {
+  background: #c62828;
+  border-color: #c62828;
+  color: #fff;
+}
+
+@media print {
+  .tk-toolbar { display: none; }
+}
