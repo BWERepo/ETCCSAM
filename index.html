@@ -269,6 +269,10 @@
     #items-tbody td {
       border-bottom: 1px solid #e8e0b8;
     }
+    /* Suppress TableKit duplicate sort arrow on label */
+    .tk-th-label::after { display: none !important; }
+    /* Move drop arrow immediately after header text */
+    .tk-th-label { flex: none !important; }
     /* Alternating row colors — all tables */
     table tbody tr:nth-child(even) {
       background: #f0f7ff;
@@ -676,10 +680,37 @@
       </div>
     </section>
 
-    <!-- ══ Step 4: Auction Close ══ -->
+    <!-- ══ Step 4: Record Winning Bidders ══ -->
     <section class="screen" id="screen-auction-close">
-      <div class="page-header"><h2>Step 4 — Auction Close</h2><p>Enter the winning bidder number for each item in bulk mode.</p></div>
-      <div class="placeholder-box"><div class="icon">🔒</div>Coming soon</div>
+      <div class="page-header"><h2>Step 4 — Record Winning Bidders</h2><p>Enter the winning bidder number for each auction item.</p></div>
+      <div class="card" id="winners-card">
+        <div id="winners-toolbar-wrap"></div>
+        <div style="overflow-x:auto;max-height:500px;overflow-y:auto;">
+          <table class="tablekit" id="winners-table" style="table-layout:fixed;width:100%;">
+            <colgroup>
+              <col style="width:90px;">
+              <col style="width:300px;">
+              <col style="width:100px;">
+              <col style="width:100px;">
+              <col style="width:120px;">
+              <col style="width:120px;">
+              <col style="width:220px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Item #</th>
+                <th>Description</th>
+                <th>Value</th>
+                <th>Reserve</th>
+                <th>Winning Bid</th>
+                <th>Bidder #</th>
+                <th>Bidder Name</th>
+              </tr>
+            </thead>
+            <tbody id="winners-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- ══ Step 5: Winner Announcement ══ -->
@@ -944,6 +975,8 @@ const DB = {
   saveFieldMap(v) { localStorage.setItem('sam_fieldmap', JSON.stringify(v)); },
   getBidders()    { return JSON.parse(localStorage.getItem('sam_bidders')  || '[]'); },
   saveBidders(v)  { localStorage.setItem('sam_bidders',  JSON.stringify(v)); },
+  getWinners()    { return JSON.parse(localStorage.getItem('sam_winners')  || '{}'); },
+  saveWinners(v)  { localStorage.setItem('sam_winners',  JSON.stringify(v)); },
 };
 
 // ══════════════════════════════════════
@@ -1579,6 +1612,73 @@ function addBidder() {
   });
 }
 
+// ══════════════════════════════════════
+//  RENDER — Winners table
+// ══════════════════════════════════════
+function refreshWinnersTable() {
+  const items   = Items.getAll();
+  const winners = DB.getWinners();
+  const tbody   = document.getElementById('winners-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary);">No items loaded yet. Complete Step 1 first.</td></tr>';
+    return;
+  }
+
+  const inpStyle = 'width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--text);';
+
+  items.forEach(item => {
+    const key      = String(item.item_number);
+    const w        = winners[key] || {};
+    const bidderNum = w.bidder_number || '';
+    const bidderName = w.bidder_name  || '';
+    const tr = document.createElement('tr');
+    tr.dataset.itemKey = key;
+    tr.innerHTML = `
+      <td style="font-weight:600;font-size:13px;">${escHtml(key)}</td>
+      <td style="font-size:12px;">${escHtml(item.description || '')}</td>
+      <td style="font-size:12px;">${fmtDollar(item.value)}</td>
+      <td style="font-size:12px;">${parseFloat(item.reserve_amount||0) > 0 ? fmtDollar(item.reserve_amount) : ''}</td>
+      <td><input class="win-bid" style="${inpStyle}text-align:right;" value="${escHtml(String(w.winning_bid || ''))}" placeholder="$0.00"></td>
+      <td><input class="win-num" style="${inpStyle}text-align:center;" value="${escHtml(String(bidderNum))}" placeholder="#"></td>
+      <td><span class="win-name" style="font-size:12px;">${escHtml(bidderName)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('.win-bid').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const key     = inp.closest('tr').dataset.itemKey;
+      const winners = DB.getWinners();
+      winners[key]  = Object.assign(winners[key] || {}, { winning_bid: inp.value.trim() });
+      DB.saveWinners(winners);
+    });
+  });
+
+  tbody.querySelectorAll('.win-num').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const num     = parseInt(inp.value.trim(), 10);
+      const key     = inp.closest('tr').dataset.itemKey;
+      const winners = DB.getWinners();
+      if (!num) {
+        const existing = winners[key] || {};
+        winners[key] = { winning_bid: existing.winning_bid || '' };
+        inp.closest('tr').querySelector('.win-name').textContent = '';
+        DB.saveWinners(winners);
+        return;
+      }
+      const bidder = Bidders.getAll().find(b => b.bidder_number === num);
+      const name   = bidder ? `${bidder.first_name} ${bidder.last_name}`.trim() : '(not found)';
+      winners[key] = Object.assign(winners[key] || {}, { bidder_number: num, bidder_name: name });
+      DB.saveWinners(winners);
+      inp.closest('tr').querySelector('.win-name').textContent = name;
+      inp.style.borderColor = bidder ? '' : 'var(--danger)';
+    });
+  });
+}
+
 function refreshBsItemsTable() {
   const items = Items.getAll();
   const tbody = document.getElementById('bs-items-tbody');
@@ -1816,6 +1916,19 @@ function navigate(screenId) {
       navigate._biddersToolbarInited = true;
     }
     refreshBiddersTable();
+  }
+  if (screenId === 'auction-close') {
+    if (!navigate._winnersToolbarInited) {
+      PageToolbar.init({ title: 'Record Winning Bidders', logoText: 'ETCC' });
+      const tb   = document.getElementById('page-toolbar');
+      const card = document.getElementById('winners-card');
+      if (tb && card) {
+        const wrap = card.querySelector('div[style*="overflow-x"]');
+        card.insertBefore(tb, wrap);
+      }
+      navigate._winnersToolbarInited = true;
+    }
+    refreshWinnersTable();
   }
 }
 

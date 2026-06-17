@@ -68,6 +68,8 @@ const DB = {
   saveFieldMap(v) { localStorage.setItem('sam_fieldmap', JSON.stringify(v)); },
   getBidders()    { return JSON.parse(localStorage.getItem('sam_bidders')  || '[]'); },
   saveBidders(v)  { localStorage.setItem('sam_bidders',  JSON.stringify(v)); },
+  getWinners()    { return JSON.parse(localStorage.getItem('sam_winners')  || '{}'); },
+  saveWinners(v)  { localStorage.setItem('sam_winners',  JSON.stringify(v)); },
 };
 
 const Bidders = {
@@ -497,6 +499,48 @@ function runAll() {
     assertEqual('falls back to value when missing', bidBase({ value: '40' }),                    40),
     assertEqual('zero when both missing',       bidBase({}),                                      0),
     assertEqual('handles $ in reserve',         bidBase({ reserve_amount: '$75.00', value: '35' }), 75),
+  ]);
+
+  // ── 22. DB.getWinners / saveWinners round-trip ───────────────────────────
+  _store['sam_winners'] = null;
+  renderSuite('DB.getWinners — empty store', [
+    assert('returns object',          typeof DB.getWinners() === 'object'),
+    assert('returns empty object',    Object.keys(DB.getWinners()).length === 0),
+  ]);
+
+  DB.saveWinners({ '200-1': { bidder_number: 5, bidder_name: 'Sue Jones', winning_bid: '$30.00' } });
+  const w = DB.getWinners();
+  renderSuite('DB.saveWinners / getWinners round-trip', [
+    assert('key exists',              '200-1' in w),
+    assertEqual('bidder_number',      w['200-1'].bidder_number, 5),
+    assertEqual('bidder_name',        w['200-1'].bidder_name,   'Sue Jones'),
+    assertEqual('winning_bid',        w['200-1'].winning_bid,   '$30.00'),
+  ]);
+
+  // ── 23. Winners — bidder lookup logic ────────────────────────────────────
+  function lookupBidder(num, bidderList) {
+    const bidder = bidderList.find(b => b.bidder_number === num);
+    return bidder ? `${bidder.first_name} ${bidder.last_name}`.trim() : '(not found)';
+  }
+  const testBidders = [
+    { bidder_number: 1, first_name: 'John', last_name: 'Smith' },
+    { bidder_number: 2, first_name: 'Sue',  last_name: 'Jones' },
+  ];
+  renderSuite('Winners — bidder lookup', [
+    assertEqual('found bidder #1',      lookupBidder(1, testBidders), 'John Smith'),
+    assertEqual('found bidder #2',      lookupBidder(2, testBidders), 'Sue Jones'),
+    assertEqual('unknown returns tag',  lookupBidder(9, testBidders), '(not found)'),
+  ]);
+
+  // ── 24. Winners — winning bid preserved when bidder cleared ──────────────
+  const winStore = { '900-1': { bidder_number: 3, bidder_name: 'Al Brown', winning_bid: '$50.00' } };
+  // Simulate clearing bidder number while keeping winning bid
+  const existing = winStore['900-1'] || {};
+  winStore['900-1'] = { winning_bid: existing.winning_bid || '' };
+  renderSuite('Winners — winning bid preserved on bidder clear', [
+    assert('bidder_number removed',   !('bidder_number' in winStore['900-1'])),
+    assert('bidder_name removed',     !('bidder_name'   in winStore['900-1'])),
+    assertEqual('winning_bid kept',   winStore['900-1'].winning_bid, '$50.00'),
   ]);
 
   // ── Summary ───────────────────────────────────────────────────────────────
