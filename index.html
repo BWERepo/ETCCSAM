@@ -361,22 +361,22 @@
   <nav id="nav">
     <div class="nav-section-label">Auction Steps</div>
     <div class="nav-item active" data-screen="item-load">
-      <span class="nav-badge">1</span> Item Load
+      <span class="nav-badge">1</span> Load Item Emails
     </div>
     <div class="nav-item" data-screen="bidding-sheets">
-      <span class="nav-badge">2</span> Bidding Sheets
+      <span class="nav-badge">2</span> Create Bidding Sheets
     </div>
     <div class="nav-item" data-screen="bidder-reg">
-      <span class="nav-badge">3</span> Bidder Registration
+      <span class="nav-badge">3</span> Register Bidders
     </div>
     <div class="nav-item" data-screen="auction-close">
-      <span class="nav-badge">4</span> Auction Close
+      <span class="nav-badge">4</span> Record Winning Bidders
     </div>
     <div class="nav-item" data-screen="winner-announce">
-      <span class="nav-badge">5</span> Winner Announcement
+      <span class="nav-badge">5</span> Announce Winners
     </div>
     <div class="nav-item" data-screen="payment-pickup">
-      <span class="nav-badge">6</span> Payment &amp; Pickup
+      <span class="nav-badge">6</span> Pay &amp; Pickup
     </div>
     <hr class="nav-divider" />
     <div class="nav-section-label">Management</div>
@@ -1185,7 +1185,7 @@ document.getElementById('btn-scan').addEventListener('click', () => {
   if (!accessToken) {
     log('⏳ Opening Google sign-in popup...');
     const hint = DB.getSettings().inboxEmail || '';
-    tokenClient.requestAccessToken({ prompt: 'select_account', login_hint: hint });
+    tokenClient.requestAccessToken({ prompt: '', login_hint: hint });
   } else {
     doScanInbox();
   }
