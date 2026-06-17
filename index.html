@@ -1401,35 +1401,6 @@ function refreshMetrics() {
   document.getElementById('m-cats').textContent   = cats;
   document.getElementById('m-value').textContent  = '$' + value.toLocaleString('en-US', {minimumFractionDigits:0});
 
-  // Admin panel
-  document.getElementById('adm-items').textContent = total;
-  document.getElementById('adm-value').textContent  = '$' + value.toLocaleString('en-US', {minimumFractionDigits:0});
-
-  // Admin category breakdown
-  const catMap = {};
-  items.forEach(i => {
-    const k = i.category_code;
-    if (!catMap[k]) catMap[k] = { name: i.category_name, count: 0, value: 0 };
-    catMap[k].count++;
-    const n = parseFloat(String(i.value).replace(/[^0-9.]/g, ''));
-    if (!isNaN(n)) catMap[k].value += n;
-  });
-  const admTbody = document.getElementById('adm-cat-tbody');
-  admTbody.innerHTML = '';
-  Object.entries(catMap).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).forEach(([code, data]) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">
-        <span class="badge cat-${code}" style="margin-right:6px;">${code}</span>${escHtml(data.name)}
-      </td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;">${data.count}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;">$${data.value.toLocaleString()}</td>
-    `;
-    admTbody.appendChild(tr);
-  });
-  if (!Object.keys(catMap).length) {
-    admTbody.innerHTML = '<tr><td colspan="3" style="padding:12px 8px;color:var(--text-secondary);text-align:center;">No items loaded.</td></tr>';
-  }
 }
 
 // ══════════════════════════════════════
@@ -1667,8 +1638,6 @@ document.getElementById('btn-add-field').addEventListener('click', () => {
   renderFieldMapTable();
 });
 
-// (reset fieldmap removed)
-});
 
 // ══════════════════════════════════════
 //  VIEW ALL MODAL
