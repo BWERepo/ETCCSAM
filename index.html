@@ -4,22 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ETCC Silent Auction Manager</title>
+  <link rel="stylesheet" href="css/table.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #ffffff;
-      --bg-dark:      #000000;
-      --bg-section:   #f5f5f7;
-      --text:         #1d1d1f;
+      --bg:             #ffffff;
+      --bg-dark:        #000000;
+      --bg-section:     #f5f5f7;
+      --text:           #1d1d1f;
       --text-secondary: #6e6e73;
       --text-tertiary:  #86868b;
-      --accent:       #0071e3;
-      --accent-hover: #0077ed;
-      --border:       #d2d2d7;
-      --nav-bar:      #1d1d1f;
-      --nav-width:    220px;
-      --hero-height:  80px;
+      --accent:         #0071e3;
+      --accent-hover:   #0077ed;
+      --border:         #d2d2d7;
+      --nav-bar:        #1d1d1f;
+      --nav-width:      220px;
+      --hero-height:    70px;
+      --danger:         #c62828;
+      --success:        #1a7f37;
     }
 
     body {
@@ -30,49 +33,28 @@
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      font-size: 14px;
     }
 
-    /* ── Hero Banner ── */
+    /* ── Hero ── */
     #hero {
       background: var(--nav-bar);
       color: #fff;
       height: var(--hero-height);
       display: flex;
       align-items: center;
-      padding: 0 24px;
-      gap: 16px;
+      padding: 0 20px;
+      gap: 14px;
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    #hero img {
-      height: 56px;
-      width: 56px;
-      object-fit: contain;
-      border-radius: 4px;
-    }
-    #hero .hero-title {
-      display: flex;
-      flex-direction: column;
-    }
-    #hero .hero-title h1 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-    #hero .hero-title span {
-      font-size: 0.8rem;
-      color: var(--accent);
-      letter-spacing: 0.05em;
-    }
+    #hero img { height: 48px; width: 48px; object-fit: contain; border-radius: 4px; }
+    #hero h1  { font-size: 1.1rem; font-weight: 600; }
+    #hero span { font-size: 0.75rem; color: #86868b; display: block; margin-top: 1px; }
 
-    /* ── Body layout ── */
-    #layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+    /* ── Layout ── */
+    #layout { display: flex; flex: 1; overflow: hidden; }
 
-    /* ── Left Nav ── */
+    /* ── Nav ── */
     #nav {
       width: var(--nav-width);
       background: var(--nav-bar);
@@ -80,68 +62,228 @@
       flex-direction: column;
       flex-shrink: 0;
       overflow-y: auto;
-      padding: 16px 0;
+      padding: 12px 0;
     }
-    #nav .nav-item {
+    .nav-section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #48484a;
+      padding: 10px 16px 4px;
+    }
+    .nav-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 20px;
-      color: var(--text-secondary);
+      gap: 9px;
+      padding: 10px 16px;
+      color: #aeaeb2;
       cursor: pointer;
-      font-size: 0.88rem;
-      border-left: 3px solid transparent;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      font-size: 12px;
+      border-left: 2.5px solid transparent;
+      transition: background 0.12s, color 0.12s;
       user-select: none;
     }
-    #nav .nav-item:hover {
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-    }
-    #nav .nav-item.active {
-      background: rgba(255,255,255,0.12);
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active {
+      background: rgba(255,255,255,0.1);
       border-left-color: var(--accent);
       color: #fff;
       font-weight: 600;
     }
-    #nav .nav-item .step-badge {
+    .nav-badge {
       background: var(--accent);
       color: #fff;
-      font-size: 0.7rem;
+      font-size: 10px;
       font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 10px;
+      padding: 1px 5px;
+      border-radius: 8px;
       flex-shrink: 0;
     }
-    #nav .nav-divider {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.15);
-      margin: 8px 16px;
-    }
+    .nav-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 8px 14px; }
 
-    /* ── Main Content ── */
-    #main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 32px 36px;
-    }
+    /* ── Main ── */
+    #main { flex: 1; overflow-y: auto; padding: 28px 32px; }
 
     .screen { display: none; }
     .screen.active { display: block; }
 
-    .screen h2 {
-      font-size: 1.4rem;
-      color: var(--text);
-      margin-bottom: 6px;
-      border-bottom: 2px solid var(--accent);
-      padding-bottom: 8px;
+    /* ── Page header ── */
+    .page-header { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .page-header h2 { font-size: 1.2rem; font-weight: 600; color: var(--text); }
+    .page-header p  { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* ── Metric cards ── */
+    .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .metric-card {
+      background: var(--bg-section);
+      border-radius: 8px;
+      padding: 14px 16px;
     }
-    .screen .subtitle {
+    .metric-card .m-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+    .metric-card .m-value { font-size: 22px; font-weight: 500; color: var(--text); }
+    .metric-card .m-value.accent { color: var(--accent); }
+
+    /* ── Toolbar bar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .toolbar .spacer { flex: 1; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      transition: background 0.12s;
+    }
+    .btn:hover { background: var(--bg-section); }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.primary:hover { background: var(--accent-hover); }
+    .btn.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Status badge ── */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+    .badge.new      { background: #e6f1fb; color: #0c447c; }
+    .badge.loaded   { background: #eaf3de; color: #27500a; }
+    .badge.skipped  { background: #f5f5f7; color: #6e6e73; }
+    .badge.error    { background: #fcebeb; color: #501313; }
+
+    /* ── Category badge ── */
+    .cat-100 { background: #f1efe8; color: #2c2c2a; }
+    .cat-200 { background: #e6f1fb; color: #0c447c; }
+    .cat-300 { background: #eedefe; color: #26215c; }
+    .cat-400 { background: #fbeaf0; color: #4b1528; }
+    .cat-500 { background: #faeeda; color: #633806; }
+    .cat-600 { background: #e1f5ee; color: #04342c; }
+    .cat-700 { background: #fcebeb; color: #501313; }
+    .cat-800 { background: #eaf3de; color: #173404; }
+    .cat-900 { background: #f5f5f7; color: #444441; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .card-header {
+      padding: 12px 16px;
+      background: var(--bg-section);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
       color: var(--text-secondary);
-      font-size: 0.9rem;
-      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
+    /* ── Connection status ── */
+    #gmail-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      background: var(--bg-section);
+      border: 1px solid var(--border);
+    }
+    #gmail-status .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    #gmail-status.connected .dot { background: #1a7f37; }
+    #gmail-status.disconnected .dot { background: var(--text-tertiary); }
+
+    /* ── Email list ── */
+    #email-list-wrap { margin-bottom: 20px; }
+
+    /* ── Log panel ── */
+    #process-log {
+      background: #111;
+      color: #a8ff78;
+      font-family: monospace;
+      font-size: 11px;
+      border-radius: 8px;
+      padding: 12px 16px;
+      max-height: 140px;
+      overflow-y: auto;
+      display: none;
+      line-height: 1.6;
+    }
+    #process-log.visible { display: block; }
+
+    /* ── Settings form ── */
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 16px;
+    }
+    .form-row label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+    .form-row input, .form-row select, .form-row textarea {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      font-family: inherit;
+    }
+    .form-row input:focus, .form-row select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+    /* ── Field mapping table ── */
+    #field-map-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #field-map-table th {
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--bg-section);
+      border-bottom: 1px solid var(--border);
+    }
+    #field-map-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    #field-map-table input {
+      width: 100%;
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    #field-map-table input:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Placeholder ── */
     .placeholder-box {
       background: var(--bg-section);
       border: 2px dashed var(--border);
@@ -149,20 +291,28 @@
       padding: 48px 32px;
       text-align: center;
       color: var(--text-secondary);
-      font-size: 0.95rem;
+      font-size: 13px;
     }
-    .placeholder-box .icon {
-      font-size: 2.5rem;
-      margin-bottom: 12px;
+    .placeholder-box .icon { font-size: 2.2rem; margin-bottom: 10px; }
+
+    /* ── Alert ── */
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 16px;
     }
+    .alert.info    { background: #e6f1fb; color: #0c447c; border: 1px solid #b5d4f4; }
+    .alert.warning { background: #faeeda; color: #633806; border: 1px solid #fac775; }
+    .alert.success { background: #eaf3de; color: #27500a; border: 1px solid #c0dd97; }
 
     /* ── Manual overlay ── */
     #manual-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.55);
-      z-index: 100;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
       justify-content: center;
       align-items: center;
     }
@@ -170,54 +320,35 @@
     #manual-dialog {
       background: #fff;
       border-radius: 10px;
-      width: min(720px, 92vw);
+      width: min(700px, 92vw);
       max-height: 80vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
     #manual-dialog header {
       background: var(--nav-bar);
       color: #fff;
-      padding: 16px 24px;
+      padding: 14px 20px;
       border-radius: 10px 10px 0 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    #manual-dialog header h2 { font-size: 1.1rem; }
-    #manual-dialog header button {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 1.4rem;
-      cursor: pointer;
-      line-height: 1;
-    }
-    #manual-body {
-      padding: 24px;
-      overflow-y: auto;
-      font-size: 0.9rem;
-      line-height: 1.7;
-    }
-    #manual-body h3 {
-      color: var(--accent);
-      margin: 16px 0 6px;
-      font-size: 1rem;
-    }
-    #manual-body p { margin-bottom: 8px; }
-    #manual-body ol, #manual-body ul {
-      margin-left: 20px;
-      margin-bottom: 8px;
-    }
+    #manual-dialog header h2 { font-size: 1rem; }
+    #manual-dialog header button { background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; }
+    #manual-body { padding: 20px; overflow-y: auto; font-size: 13px; line-height: 1.7; }
+    #manual-body h3 { color: var(--accent); margin: 14px 0 5px; font-size: 0.95rem; }
+    #manual-body p  { margin-bottom: 8px; }
+    #manual-body ul { margin-left: 18px; margin-bottom: 8px; }
   </style>
 </head>
 <body>
 
-<!-- Hero Banner -->
+<!-- Hero -->
 <div id="hero">
   <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" />
-  <div class="hero-title">
+  <div>
     <h1>Silent Auction Manager</h1>
     <span>East Tennessee Corvette Club</span>
   </div>
@@ -228,23 +359,32 @@
 
   <!-- Left Nav -->
   <nav id="nav">
+    <div class="nav-section-label">Auction Steps</div>
     <div class="nav-item active" data-screen="item-load">
-      <span class="step-badge">1</span> Item Load
+      <span class="nav-badge">1</span> Item Load
     </div>
     <div class="nav-item" data-screen="bidding-sheets">
-      <span class="step-badge">2</span> Bidding Sheets
+      <span class="nav-badge">2</span> Bidding Sheets
     </div>
     <div class="nav-item" data-screen="bidder-reg">
-      <span class="step-badge">3</span> Bidder Registration
+      <span class="nav-badge">3</span> Bidder Registration
     </div>
     <div class="nav-item" data-screen="auction-close">
-      <span class="step-badge">4</span> Auction Close
+      <span class="nav-badge">4</span> Auction Close
     </div>
     <div class="nav-item" data-screen="winner-announce">
-      <span class="step-badge">5</span> Winner Announcement
+      <span class="nav-badge">5</span> Winner Announcement
     </div>
     <div class="nav-item" data-screen="payment-pickup">
-      <span class="step-badge">6</span> Payment &amp; Pickup
+      <span class="nav-badge">6</span> Payment &amp; Pickup
+    </div>
+    <hr class="nav-divider" />
+    <div class="nav-section-label">Management</div>
+    <div class="nav-item" data-screen="admin">
+      ⚙ Admin Panel
+    </div>
+    <div class="nav-item" data-screen="settings">
+      ✦ Settings
     </div>
     <hr class="nav-divider" />
     <div class="nav-item" id="nav-manual">
@@ -255,70 +395,219 @@
   <!-- Main Content -->
   <main id="main">
 
-    <!-- Step 1: Item Load -->
+    <!-- ══ Step 1: Item Load ══ -->
     <section class="screen active" id="screen-item-load">
-      <h2>Step 1 — Item Load</h2>
-      <p class="subtitle">Scan the auction inbox, extract item data, and load into the item table.</p>
-      <div class="placeholder-box">
-        <div class="icon">📧</div>
-        Item Load screen — coming soon
+      <div class="page-header">
+        <h2>Step 1 — Item Load</h2>
+        <p>Scan the auction inbox, review emails, and load items into the database.</p>
+      </div>
+
+      <!-- Metric summary -->
+      <div class="metric-row" id="load-metrics">
+        <div class="metric-card"><div class="m-label">Total Items</div><div class="m-value" id="m-total">0</div></div>
+        <div class="metric-card"><div class="m-label">New This Session</div><div class="m-value accent" id="m-new">0</div></div>
+        <div class="metric-card"><div class="m-label">Categories</div><div class="m-value" id="m-cats">0</div></div>
+        <div class="metric-card"><div class="m-label">Total Value</div><div class="m-value" id="m-value">$0</div></div>
+      </div>
+
+      <!-- Gmail connection -->
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+        <div id="gmail-status" class="disconnected">
+          <span class="dot"></span>
+          <span id="gmail-status-text">Not connected to Gmail</span>
+        </div>
+        <button class="btn primary" id="btn-scan">📧 Scan</button>
+        <button class="btn" id="btn-process-all" disabled>✅ Process All New</button>
+        <button class="btn" id="btn-process-selected" disabled>Process Selected</button>
+        <div class="spacer"></div>
+        <span id="scan-note" style="font-size:11px; color:var(--text-tertiary);"></span>
+      </div>
+
+      <!-- No client ID warning -->
+      <div class="alert warning" id="no-client-id-alert" style="display:none;">
+        Gmail Client ID is not configured. Go to <strong>Settings</strong> to enter your Google OAuth Client ID before scanning.
+      </div>
+
+      <!-- Process log -->
+      <div id="process-log"></div>
+
+      <!-- Email list -->
+      <div id="email-list-wrap" style="display:none;">
+        <div class="card">
+          <div class="card-header">Inbox Emails</div>
+          <div style="overflow-x:auto;">
+            <table class="tablekit" id="email-table" data-tk-sort="false">
+              <thead>
+                <tr>
+                  <th style="width:32px;"><input type="checkbox" id="chk-all-emails" title="Select all" /></th>
+                  <th>Date</th>
+                  <th>From</th>
+                  <th>Subject</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="email-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items table -->
+      <div class="card" id="items-card">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Loaded Items</span>
+          <button class="btn danger" id="btn-clear-items" style="font-size:11px; padding:4px 10px;">Clear All</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tablekit" id="items-table">
+            <thead>
+              <tr>
+                <th>Item #</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Value</th>
+                <th>Reserve</th>
+                <th>Donor Name</th>
+                <th>Donor Email</th>
+                <th>Donor Phone</th>
+                <th>Date Loaded</th>
+              </tr>
+            </thead>
+            <tbody id="items-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- Step 2: Bidding Sheets -->
+    <!-- ══ Step 2: Bidding Sheets ══ -->
     <section class="screen" id="screen-bidding-sheets">
-      <h2>Step 2 — Create Bidding Sheets</h2>
-      <p class="subtitle">Print a bidding sheet for each auction item.</p>
-      <div class="placeholder-box">
-        <div class="icon">🖨️</div>
-        Bidding Sheets screen — coming soon
-      </div>
+      <div class="page-header"><h2>Step 2 — Create Bidding Sheets</h2><p>Print a bidding sheet for each auction item.</p></div>
+      <div class="placeholder-box"><div class="icon">🖨️</div>Coming soon</div>
     </section>
 
-    <!-- Step 3: Bidder Registration -->
+    <!-- ══ Step 3: Bidder Registration ══ -->
     <section class="screen" id="screen-bidder-reg">
-      <h2>Step 3 — Bidder Registration</h2>
-      <p class="subtitle">Register bidders, import member numbers, and send confirmation emails.</p>
-      <div class="placeholder-box">
-        <div class="icon">📋</div>
-        Bidder Registration screen — coming soon
-      </div>
+      <div class="page-header"><h2>Step 3 — Bidder Registration</h2><p>Register bidders, import member numbers, send emails.</p></div>
+      <div class="placeholder-box"><div class="icon">📋</div>Coming soon</div>
     </section>
 
-    <!-- Step 4: Auction Close -->
+    <!-- ══ Step 4: Auction Close ══ -->
     <section class="screen" id="screen-auction-close">
-      <h2>Step 4 — Auction Close</h2>
-      <p class="subtitle">Enter the winning bidder number for each item in bulk mode.</p>
-      <div class="placeholder-box">
-        <div class="icon">🔒</div>
-        Auction Close screen — coming soon
-      </div>
+      <div class="page-header"><h2>Step 4 — Auction Close</h2><p>Enter the winning bidder number for each item in bulk mode.</p></div>
+      <div class="placeholder-box"><div class="icon">🔒</div>Coming soon</div>
     </section>
 
-    <!-- Step 5: Winner Announcement -->
+    <!-- ══ Step 5: Winner Announcement ══ -->
     <section class="screen" id="screen-winner-announce">
-      <h2>Step 5 — Winner Announcement</h2>
-      <p class="subtitle">Generate and display the list of winning bidders.</p>
-      <div class="placeholder-box">
-        <div class="icon">🏆</div>
-        Winner Announcement screen — coming soon
+      <div class="page-header"><h2>Step 5 — Winner Announcement</h2><p>Generate the list of winning bidders.</p></div>
+      <div class="placeholder-box"><div class="icon">🏆</div>Coming soon</div>
+    </section>
+
+    <!-- ══ Step 6: Payment & Pickup ══ -->
+    <section class="screen" id="screen-payment-pickup">
+      <div class="page-header"><h2>Step 6 — Payment &amp; Pickup</h2><p>Tabular payment report sortable by bidder number or last name.</p></div>
+      <div class="placeholder-box"><div class="icon">💳</div>Coming soon</div>
+    </section>
+
+    <!-- ══ Admin Panel ══ -->
+    <section class="screen" id="screen-admin">
+      <div class="page-header"><h2>Admin Panel</h2><p>Overview of the current auction.</p></div>
+      <div class="metric-row">
+        <div class="metric-card"><div class="m-label">Total Items</div><div class="m-value" id="adm-items">0</div></div>
+        <div class="metric-card"><div class="m-label">Total Value</div><div class="m-value" id="adm-value">$0</div></div>
+        <div class="metric-card"><div class="m-label">Bidders</div><div class="m-value" id="adm-bidders">0</div></div>
+        <div class="metric-card"><div class="m-label">Items Closed</div><div class="m-value" id="adm-closed">0</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">Items by Category</div>
+        <div style="padding:12px 16px;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;" id="adm-cat-table">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:11px;">Category</th>
+                <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:11px;">Count</th>
+                <th style="text-align:right; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:11px;">Total Value</th>
+              </tr>
+            </thead>
+            <tbody id="adm-cat-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Quick Actions</div>
+        <div style="padding:16px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" onclick="navigate('item-load')">📧 Scan</button>
+          <button class="btn" onclick="navigate('bidding-sheets')">🖨️ Bidding Sheets</button>
+          <button class="btn" onclick="navigate('bidder-reg')">📋 Bidder Registration</button>
+          <button class="btn" onclick="navigate('auction-close')">🔒 Auction Close</button>
+          <button class="btn" onclick="navigate('winner-announce')">🏆 Announce Winners</button>
+          <button class="btn" onclick="navigate('payment-pickup')">💳 Payment &amp; Pickup</button>
+        </div>
       </div>
     </section>
 
-    <!-- Step 6: Payment & Pickup -->
-    <section class="screen" id="screen-payment-pickup">
-      <h2>Step 6 — Payment &amp; Pickup</h2>
-      <p class="subtitle">Tabular payment report sortable by bidder number or last name.</p>
-      <div class="placeholder-box">
-        <div class="icon">💳</div>
-        Payment &amp; Pickup screen — coming soon
+    <!-- ══ Settings ══ -->
+    <section class="screen" id="screen-settings">
+      <div class="page-header"><h2>Settings</h2><p>Configure Gmail access and email field extraction mapping.</p></div>
+
+      <!-- Gmail credentials -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">Gmail OAuth</div>
+        <div style="padding:16px;">
+          <div class="form-row">
+            <label for="inp-client-id">Google OAuth Client ID</label>
+            <input type="text" id="inp-client-id" value="215529370659-28knl9jlure9gells5aedltglbpdrgt4.apps.googleusercontent.com" style="font-family:monospace; font-size:12px;" />
+            <span class="form-hint">Create a Web Application credential in Google Cloud Console → APIs &amp; Services → Credentials. Add http://localhost:3000 to Authorized JavaScript Origins.</span>
+          </div>
+          <div class="form-row">
+            <label for="inp-inbox-email">Auction Email Account</label>
+            <input type="text" id="inp-inbox-email" value="etccwebsite.auction@gmail.com" />
+          </div>
+          <div class="form-row">
+            <label for="inp-email-folder">Auction Email Folder</label>
+            <input type="text" id="inp-email-folder" value="INBOX" />
+            <span class="form-hint">Gmail label/folder to scan (e.g. INBOX, or a custom label name).</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Field mapping -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Email Field Mapping</span>
+          <button class="btn" id="btn-add-field" style="font-size:11px; padding:4px 10px;">+ Add Field</button>
+        </div>
+        <div style="padding:12px 16px;">
+          <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+            Define how to extract fields from each email. The <strong>Email Label</strong> is the text prefix in the email body (e.g. "Category:"). The <strong>Table Column</strong> is the database field name to populate.
+          </p>
+          <table id="field-map-table">
+            <thead>
+              <tr>
+                <th>Email Label (prefix in body)</th>
+                <th>Table Column</th>
+                <th style="width:80px; text-align:center;">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="field-map-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn primary" id="btn-save-settings">Save Settings</button>
+        <button class="btn" id="btn-reset-fieldmap">Reset Field Map to Defaults</button>
+      </div>
+      <div id="settings-saved-msg" style="display:none; margin-top:10px;" class="alert success">Settings saved.</div>
     </section>
 
   </main>
 </div>
 
-<!-- User Manual Overlay -->
+<!-- User Manual -->
 <div id="manual-overlay">
   <div id="manual-dialog">
     <header>
@@ -326,26 +615,21 @@
       <button id="close-manual">&times;</button>
     </header>
     <div id="manual-body">
-      <p>This application manages the silent auction for the East Tennessee Corvette Club (ETCC). Follow the six steps in order for each auction event.</p>
-
+      <p>This application manages the silent auction for the East Tennessee Corvette Club. Follow the six steps in order for each auction event.</p>
       <h3>Step 1 — Item Load</h3>
-      <p>Scans the auction inbox at <strong>etccwebsite.auction@gmail.com</strong> for donation emails. Each email contains item details which are automatically extracted and loaded into the item table. Duplicate emails are skipped and each item receives a unique item number.</p>
-
+      <p>Scans <strong>etccwebsite.auction@gmail.com</strong> for donation emails. Extracts item fields and loads them into the items database. Duplicate emails are skipped. Each item receives a unique item number based on its category.</p>
       <h3>Step 2 — Create Bidding Sheets</h3>
-      <p>Generates a printable bidding sheet for each item. Each sheet displays the item number, description, starting bid, bid increment, and a table of bid rows for bidders to fill in their bidder number and initials.</p>
-
+      <p>Generates a printable bidding sheet for each item showing item number, description, starting bid, bid increment, and a table of bid rows.</p>
       <h3>Step 3 — Bidder Registration</h3>
-      <p>Register attendees as bidders. Import member numbers from a Club Express file. Send confirmation or information emails to individual bidders or to all bidders at once.</p>
-
+      <p>Register attendees as bidders. Import member numbers from a Club Express file. Send emails to individual or all bidders.</p>
       <h3>Step 4 — Auction Close</h3>
-      <p>After the auction closes, enter the winning bidder number for each item. Use bulk entry mode to move through items quickly.</p>
-
+      <p>After the auction closes, enter the winning bidder number for each item using bulk entry mode.</p>
       <h3>Step 5 — Winner Announcement</h3>
-      <p>Generates a list of all winning bidders and items that can be announced to attendees or distributed digitally.</p>
-
+      <p>Generates a list of all winning bidders and items that can be announced to attendees.</p>
       <h3>Step 6 — Payment &amp; Pickup</h3>
-      <p>Produces a payment report listing each winning bidder, the items they won, winning bid amounts, and payment details (Cash, Check, or Credit Card). Sortable by bidder number or last name.</p>
-
+      <p>Payment report listing each winning bidder, items won, and payment details. Sortable by bidder number or last name.</p>
+      <h3>Settings</h3>
+      <p>Enter your Google OAuth Client ID to enable Gmail scanning. Configure the field mapping table to match your email format.</p>
       <h3>Item Categories</h3>
       <ul>
         <li>100 — General Auto Repair / Car Items</li>
@@ -362,29 +646,583 @@
   </div>
 </div>
 
+<!-- Scripts -->
+<script src="js/table.js"></script>
+<script src="https://apis.google.com/js/api.js" async></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <script>
-  // Nav routing
-  const navItems = document.querySelectorAll('#nav .nav-item[data-screen]');
-  const screens  = document.querySelectorAll('.screen');
+// ══════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════
+const CATEGORIES = {
+  100: 'General Auto Repair / Car Items',
+  200: 'Corvette Items',
+  300: "Men's Items",
+  400: "Women's Items",
+  500: 'General Household',
+  600: 'Framed Artwork or other Artwork to be Hung',
+  700: 'Baskets / Gift Sets',
+  800: 'Gift Certificates',
+  900: 'Miscellaneous / Other'
+};
 
-  navItems.forEach(item => {
-    item.addEventListener('click', () => {
-      navItems.forEach(n => n.classList.remove('active'));
-      screens.forEach(s => s.classList.remove('active'));
-      item.classList.add('active');
-      document.getElementById('screen-' + item.dataset.screen).classList.add('active');
-    });
+const DEFAULT_FIELD_MAP = [
+  { label: 'Category',     column: 'category'      },
+  { label: 'Description',  column: 'description'   },
+  { label: 'Value',        column: 'value'          },
+  { label: 'Reserve',      column: 'reserve_amount' },
+  { label: 'Donor Name',   column: 'donor_name'     },
+  { label: 'Donor Email',  column: 'donor_email'    },
+  { label: 'Donor Phone',  column: 'donor_phone'    },
+];
+
+const DEFAULT_SETTINGS = {
+  gmailClientId:  '',
+  inboxEmail:     'etccwebsite.auction@gmail.com',
+  emailFolder:    'INBOX',
+};
+
+// ══════════════════════════════════════
+//  LOCAL STORAGE DB
+// ══════════════════════════════════════
+const DB = {
+  getItems()     { return JSON.parse(localStorage.getItem('sam_items')    || '[]'); },
+  saveItems(v)   { localStorage.setItem('sam_items',    JSON.stringify(v)); },
+  getSettings()  { return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('sam_settings')  || '{}')); },
+  saveSettings(v){ localStorage.setItem('sam_settings', JSON.stringify(v)); },
+  getFieldMap()  { return JSON.parse(localStorage.getItem('sam_fieldmap') || 'null') || DEFAULT_FIELD_MAP; },
+  saveFieldMap(v){ localStorage.setItem('sam_fieldmap', JSON.stringify(v)); },
+};
+
+// ══════════════════════════════════════
+//  ITEMS HELPERS
+// ══════════════════════════════════════
+const Items = {
+  getAll()         { return DB.getItems(); },
+  existsByMsgId(id){ return DB.getItems().some(i => i.email_message_id === id); },
+
+  nextItemNumber(categoryCode) {
+    const items = DB.getItems();
+    const code  = parseInt(categoryCode, 10);
+    const inCat = items.filter(i => Math.floor(parseInt(i.item_number, 10) / 100) * 100 === code);
+    return code + inCat.length + 1;
+  },
+
+  add(item) {
+    const items = DB.getItems();
+    items.push(item);
+    DB.saveItems(items);
+  },
+
+  clear() { DB.saveItems([]); },
+};
+
+// ══════════════════════════════════════
+//  EMAIL PARSER
+// ══════════════════════════════════════
+function parseEmailBody(body, fieldMap) {
+  const result = {};
+  const lines  = body.replace(/\r/g, '').split('\n');
+
+  fieldMap.forEach(({ label, column }) => {
+    const prefix = label.toLowerCase().replace(/:$/, '').trim();
+    for (const line of lines) {
+      const lower = line.toLowerCase().trim();
+      if (lower.startsWith(prefix + ':') || lower.startsWith(prefix + ' :')) {
+        const colon = line.indexOf(':');
+        result[column] = line.substring(colon + 1).trim();
+        break;
+      }
+    }
   });
 
-  // User manual
-  const overlay     = document.getElementById('manual-overlay');
-  const navManual   = document.getElementById('nav-manual');
-  const closeManual = document.getElementById('close-manual');
+  return result;
+}
 
-  navManual.addEventListener('click', () => overlay.classList.add('open'));
-  closeManual.addEventListener('click', () => overlay.classList.remove('open'));
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+function categoryFromValue(val) {
+  if (!val) return null;
+  const num = parseInt(String(val).replace(/\D/g, ''), 10);
+  if (!isNaN(num) && CATEGORIES[Math.floor(num / 100) * 100]) {
+    return Math.floor(num / 100) * 100;
+  }
+  for (const [code, name] of Object.entries(CATEGORIES)) {
+    if (name.toLowerCase().includes(String(val).toLowerCase())) return parseInt(code, 10);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════
+//  GOOGLE / GMAIL API
+// ══════════════════════════════════════
+let gapiReady     = false;
+let gisReady      = false;
+let tokenClient   = null;
+let accessToken   = null;
+let scannedEmails = [];
+let sessionNewCount = 0;
+
+// Poll until both Google libraries are available
+const _apiPoll = setInterval(() => {
+  if (typeof gapi !== 'undefined' && !gapiReady) {
+    gapi.load('client', () => {
+      gapi.client.init({}).then(() =>
+        gapi.client.load('https://gmail.googleapis.com/$discovery/rest?version=v1')
+      ).then(() => {
+        gapiReady = true;
+        maybeInitTokenClient();
+      }).catch(err => console.error('Gmail API init error:', err));
+    });
+  }
+  if (typeof google !== 'undefined' && google.accounts && !gisReady) {
+    gisReady = true;
+    maybeInitTokenClient();
+  }
+  if (gapiReady && gisReady) clearInterval(_apiPoll);
+}, 500);
+
+function maybeInitTokenClient() {
+  if (!gapiReady || !gisReady) return;
+  const clientId = DB.getSettings().gmailClientId;
+  if (!clientId) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/gmail.readonly',
+    callback: onTokenReceived,
+  });
+  log('✅ OAuth client ready. Click Scan Inbox to connect.');
+}
+
+function reinitTokenClient() {
+  if (!gapiReady || !gisReady) return;
+  const clientId = DB.getSettings().gmailClientId;
+  if (!clientId) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/gmail.readonly',
+    callback: onTokenReceived,
+  });
+}
+
+function onTokenReceived(resp) {
+  if (resp.error) { log('❌ Auth error: ' + resp.error); return; }
+  accessToken = resp.access_token;
+  setGmailStatus(true);
+  doScanInbox();
+}
+
+function setGmailStatus(connected) {
+  const el = document.getElementById('gmail-status');
+  const tx = document.getElementById('gmail-status-text');
+  el.className = connected ? 'connected' : 'disconnected';
+  tx.textContent = connected
+    ? 'Connected — ' + (DB.getSettings().inboxEmail || 'Gmail')
+    : 'Not connected to Gmail';
+}
+
+async function doScanInbox() {
+  const settings = DB.getSettings();
+  log('🔍 Scanning inbox...');
+  scannedEmails = [];
+
+  try {
+    const listResp = await gapi.client.gmail.users.messages.list({
+      userId: 'me',
+      maxResults: 500,
+      labelIds: [settings.emailFolder || 'INBOX'],
+    });
+
+    const messages = (listResp.result.messages || []);
+    if (!messages.length) { log('📭 No messages found.'); renderEmailTable([]); return; }
+
+    log(`📬 Found ${messages.length} message(s). Fetching details...`);
+
+    for (const msg of messages) {
+      const detail = await gapi.client.gmail.users.messages.get({
+        userId: 'me',
+        id: msg.id,
+        format: 'full',
+      });
+      const r = detail.result;
+      const headers = r.payload.headers;
+      const getH = name => (headers.find(h => h.name.toLowerCase() === name.toLowerCase()) || {}).value || '';
+
+      const body = extractBody(r.payload);
+      scannedEmails.push({
+        id:      r.id,
+        date:    new Date(parseInt(r.internalDate)).toLocaleString(),
+        from:    getH('From'),
+        subject: getH('Subject'),
+        body,
+        status:  Items.existsByMsgId(r.id) ? 'loaded' : 'new',
+      });
+    }
+
+    log(`✅ Fetched ${scannedEmails.length} emails.`);
+    renderEmailTable(scannedEmails);
+    document.getElementById('email-list-wrap').style.display = '';
+    document.getElementById('btn-process-all').disabled = false;
+    document.getElementById('btn-process-selected').disabled = false;
+    document.getElementById('scan-note').textContent =
+      'Scanned ' + new Date().toLocaleTimeString();
+
+  } catch (err) {
+    log('❌ Scan error: ' + (err.result?.error?.message || err.message || err));
+  }
+}
+
+function extractBody(payload) {
+  if (!payload) return '';
+  if (payload.body && payload.body.size > 0) {
+    return atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+  }
+  for (const part of (payload.parts || [])) {
+    const text = extractBody(part);
+    if (text) return text;
+  }
+  return '';
+}
+
+// ══════════════════════════════════════
+//  PROCESS EMAILS
+// ══════════════════════════════════════
+function processEmails(emails) {
+  const fieldMap = DB.getFieldMap();
+  let loaded = 0, skipped = 0, errors = 0;
+
+  emails.forEach(email => {
+    if (email.status === 'loaded') { skipped++; return; }
+    try {
+      const fields = parseEmailBody(email.body, fieldMap);
+      const catCode = categoryFromValue(fields.category);
+
+      const item = {
+        item_number:      catCode ? Items.nextItemNumber(catCode) : 'TBD',
+        category_code:    catCode || '',
+        category_name:    catCode ? CATEGORIES[catCode] : (fields.category || ''),
+        description:      fields.description  || '',
+        value:            fields.value         || '',
+        reserve_amount:   fields.reserve_amount || '',
+        donor_name:       fields.donor_name    || '',
+        donor_email:      fields.donor_email   || '',
+        donor_phone:      fields.donor_phone   || '',
+        email_message_id: email.id,
+        email_from:       email.from,
+        email_date:       email.date,
+        loaded_date:      new Date().toLocaleString(),
+      };
+
+      Items.add(item);
+      email.status = 'loaded';
+      loaded++;
+      sessionNewCount++;
+    } catch (e) {
+      email.status = 'error';
+      errors++;
+      log('❌ Error processing "' + email.subject + '": ' + e.message);
+    }
+  });
+
+  log(`✅ Done — ${loaded} loaded, ${skipped} skipped, ${errors} errors.`);
+  renderEmailTable(scannedEmails);
+  refreshItemsTable();
+  refreshMetrics();
+}
+
+// ══════════════════════════════════════
+//  RENDER — Email table
+// ══════════════════════════════════════
+function renderEmailTable(emails) {
+  const tbody = document.getElementById('email-tbody');
+  tbody.innerHTML = '';
+
+  if (!emails.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">No emails found.</td></tr>';
+    return;
+  }
+
+  emails.forEach((email, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" class="email-chk" data-idx="${idx}" ${email.status === 'loaded' ? 'disabled' : ''} /></td>
+      <td style="font-size:11px;white-space:nowrap;">${email.date}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;">${escHtml(email.from)}</td>
+      <td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;">${escHtml(email.subject)}</td>
+      <td><span class="badge ${email.status}">${email.status}</span></td>
+      <td>${email.status !== 'loaded'
+        ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="processEmails([scannedEmails[${idx}]])">Load</button>`
+        : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('chk-all-emails').addEventListener('change', function() {
+    document.querySelectorAll('.email-chk:not(:disabled)').forEach(c => c.checked = this.checked);
+  });
+}
+
+// ══════════════════════════════════════
+//  RENDER — Items table
+// ══════════════════════════════════════
+function refreshItemsTable() {
+  const items = Items.getAll();
+  const tbody = document.getElementById('items-tbody');
+  tbody.innerHTML = '';
+
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-secondary);">No items loaded yet.</td></tr>';
+    return;
+  }
+
+  items.forEach(item => {
+    const catCode = item.category_code ? 'cat-' + item.category_code : 'cat-900';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${escHtml(String(item.item_number))}</strong></td>
+      <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
+      <td>${escHtml(item.description)}</td>
+      <td>${escHtml(item.value)}</td>
+      <td>${escHtml(item.reserve_amount)}</td>
+      <td>${escHtml(item.donor_name)}</td>
+      <td style="font-size:11px;">${escHtml(item.donor_email)}</td>
+      <td style="font-size:11px;">${escHtml(item.donor_phone)}</td>
+      <td style="font-size:11px;white-space:nowrap;">${escHtml(item.loaded_date)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  TableKit.init(document.getElementById('items-table'));
+}
+
+// ══════════════════════════════════════
+//  RENDER — Metrics
+// ══════════════════════════════════════
+function refreshMetrics() {
+  const items = Items.getAll();
+  const total = items.length;
+  const cats  = new Set(items.map(i => i.category_code)).size;
+  const value = items.reduce((s, i) => {
+    const n = parseFloat(String(i.value).replace(/[^0-9.]/g, ''));
+    return s + (isNaN(n) ? 0 : n);
+  }, 0);
+
+  document.getElementById('m-total').textContent  = total;
+  document.getElementById('m-new').textContent    = sessionNewCount;
+  document.getElementById('m-cats').textContent   = cats;
+  document.getElementById('m-value').textContent  = '$' + value.toLocaleString('en-US', {minimumFractionDigits:0});
+
+  // Admin panel
+  document.getElementById('adm-items').textContent = total;
+  document.getElementById('adm-value').textContent  = '$' + value.toLocaleString('en-US', {minimumFractionDigits:0});
+
+  // Admin category breakdown
+  const catMap = {};
+  items.forEach(i => {
+    const k = i.category_code;
+    if (!catMap[k]) catMap[k] = { name: i.category_name, count: 0, value: 0 };
+    catMap[k].count++;
+    const n = parseFloat(String(i.value).replace(/[^0-9.]/g, ''));
+    if (!isNaN(n)) catMap[k].value += n;
+  });
+  const admTbody = document.getElementById('adm-cat-tbody');
+  admTbody.innerHTML = '';
+  Object.entries(catMap).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).forEach(([code, data]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);">
+        <span class="badge cat-${code}" style="margin-right:6px;">${code}</span>${escHtml(data.name)}
+      </td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;">${data.count}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;">$${data.value.toLocaleString()}</td>
+    `;
+    admTbody.appendChild(tr);
+  });
+  if (!Object.keys(catMap).length) {
+    admTbody.innerHTML = '<tr><td colspan="3" style="padding:12px 8px;color:var(--text-secondary);text-align:center;">No items loaded.</td></tr>';
+  }
+}
+
+// ══════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════
+function loadSettingsForm() {
+  const s = DB.getSettings();
+  document.getElementById('inp-client-id').value   = s.gmailClientId || '';
+  document.getElementById('inp-inbox-email').value = s.inboxEmail     || '';
+  document.getElementById('inp-email-folder').value= s.emailFolder    || 'INBOX';
+  document.getElementById('inp-max-emails').value  = s.maxEmails      || 50;
+  renderFieldMapTable();
+}
+
+function renderFieldMapTable() {
+  const map   = DB.getFieldMap();
+  const tbody = document.getElementById('field-map-tbody');
+  tbody.innerHTML = '';
+
+  map.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${escHtml(row.label)}"  data-idx="${idx}" data-key="label"  /></td>
+      <td><input type="text" value="${escHtml(row.column)}" data-idx="${idx}" data-key="column" /></td>
+      <td style="text-align:center;">
+        <button class="btn danger" style="font-size:11px;padding:3px 8px;" onclick="removeFieldMapRow(${idx})">✕</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function removeFieldMapRow(idx) {
+  const map = DB.getFieldMap();
+  map.splice(idx, 1);
+  DB.saveFieldMap(map);
+  renderFieldMapTable();
+}
+
+function saveSettings() {
+  const clientId = document.getElementById('inp-client-id').value.trim();
+  const settings = {
+    gmailClientId: clientId,
+    inboxEmail:    document.getElementById('inp-inbox-email').value.trim(),
+    emailFolder:   document.getElementById('inp-email-folder').value.trim() || 'INBOX',
+  };
+  DB.saveSettings(settings);
+
+  // Read current field map from inputs
+  const rows = document.querySelectorAll('#field-map-tbody tr');
+  const map  = [];
+  rows.forEach(tr => {
+    const inputs = tr.querySelectorAll('input[data-key]');
+    const label  = inputs[0]?.value.trim();
+    const column = inputs[1]?.value.trim();
+    if (label && column) map.push({ label, column });
+  });
+  DB.saveFieldMap(map);
+
+  // Re-init OAuth client with new client ID
+  if (clientId) reinitTokenClient();
+
+  document.getElementById('settings-saved-msg').style.display = 'block';
+  setTimeout(() => document.getElementById('settings-saved-msg').style.display = 'none', 2500);
+}
+
+// ══════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function log(msg) {
+  const el = document.getElementById('process-log');
+  el.classList.add('visible');
+  el.innerHTML += msg + '<br>';
+  el.scrollTop = el.scrollHeight;
+}
+
+// ══════════════════════════════════════
+//  NAV ROUTING
+// ══════════════════════════════════════
+const navItems = document.querySelectorAll('#nav .nav-item[data-screen]');
+const screens  = document.querySelectorAll('.screen');
+
+function navigate(screenId) {
+  navItems.forEach(n => n.classList.remove('active'));
+  screens.forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-' + screenId);
+  if (target) target.classList.add('active');
+  const navItem = document.querySelector(`.nav-item[data-screen="${screenId}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  if (screenId === 'settings') loadSettingsForm();
+  if (screenId === 'admin')    refreshMetrics();
+}
+
+navItems.forEach(item => item.addEventListener('click', () => navigate(item.dataset.screen)));
+
+// Manual
+const overlay   = document.getElementById('manual-overlay');
+document.getElementById('nav-manual').addEventListener('click', () => overlay.classList.add('open'));
+document.getElementById('close-manual').addEventListener('click', () => overlay.classList.remove('open'));
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+// ══════════════════════════════════════
+//  BUTTON WIRING
+// ══════════════════════════════════════
+document.getElementById('btn-scan').addEventListener('click', () => {
+  const settings = DB.getSettings();
+  if (!settings.gmailClientId) {
+    document.getElementById('no-client-id-alert').style.display = 'block';
+    return;
+  }
+  document.getElementById('no-client-id-alert').style.display = 'none';
+  document.getElementById('process-log').innerHTML = '';
+  document.getElementById('process-log').classList.add('visible');
+
+  if (!gapiReady || !gisReady) {
+    log('⏳ Google APIs loading — retrying in 3 seconds...');
+    setTimeout(() => document.getElementById('btn-scan').click(), 3000);
+    return;
+  }
+  if (!tokenClient) {
+    reinitTokenClient();
+    if (!tokenClient) { log('❌ OAuth client could not be created. Check Client ID in Settings.'); return; }
+  }
+  if (!accessToken) {
+    log('⏳ Opening Google sign-in popup...');
+    tokenClient.requestAccessToken({ prompt: '' });
+  } else {
+    doScanInbox();
+  }
+});
+
+document.getElementById('btn-process-all').addEventListener('click', () => {
+  const newEmails = scannedEmails.filter(e => e.status !== 'loaded');
+  if (!newEmails.length) { log('ℹ️ No new emails to process.'); return; }
+  processEmails(newEmails);
+});
+
+document.getElementById('btn-process-selected').addEventListener('click', () => {
+  const selected = [...document.querySelectorAll('.email-chk:checked')].map(c => scannedEmails[parseInt(c.dataset.idx)]);
+  if (!selected.length) { log('ℹ️ No emails selected.'); return; }
+  processEmails(selected);
+});
+
+document.getElementById('btn-clear-items').addEventListener('click', () => {
+  if (!confirm('Clear all loaded items? This cannot be undone.')) return;
+  Items.clear();
+  sessionNewCount = 0;
+  refreshItemsTable();
+  refreshMetrics();
+});
+
+document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+
+document.getElementById('btn-add-field').addEventListener('click', () => {
+  const map = DB.getFieldMap();
+  map.push({ label: '', column: '' });
+  DB.saveFieldMap(map);
+  renderFieldMapTable();
+});
+
+document.getElementById('btn-reset-fieldmap').addEventListener('click', () => {
+  if (!confirm('Reset field mapping to defaults?')) return;
+  DB.saveFieldMap(DEFAULT_FIELD_MAP);
+  renderFieldMapTable();
+});
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+(function init() {
+  refreshItemsTable();
+  refreshMetrics();
+
+  const settings = DB.getSettings();
+  if (!settings.gmailClientId) {
+    document.getElementById('no-client-id-alert').style.display = 'block';
+  }
+  // Token client is initialized via onGapiScriptLoad + onGisScriptLoad callbacks
+})();
 </script>
-
 </body>
 </html>
