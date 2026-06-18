@@ -505,7 +505,26 @@ function runAll() {
   DB.saveSettings(DEFAULT_SETTINGS);
   Bidders.clear();
 
-  // ── 22. Bid base value — reserve vs value fallback ───────────────────────
+  // ── 22. Bidder type — auto-assignment ────────────────────────────────────
+  Bidders.clear();
+  Bidders.add({ bidder_number: 1001, last_name: 'A', first_name: 'B', email: 'a@b.com', phone: '', bidder_type: 'walk-in' });
+  Bidders.add({ bidder_number: 1002, last_name: 'C', first_name: 'D', email: 'c@d.com', phone: '', bidder_type: 'member' });
+  Bidders.add({ bidder_number: 1003, last_name: 'E', first_name: 'F', email: 'e@f.com', phone: '', bidder_type: 'pre-registration' });
+  renderSuite('Bidder type — stored and retrieved', [
+    assertEqual('walk-in type preserved',        Bidders.getAll()[0].bidder_type, 'walk-in'),
+    assertEqual('member type preserved',         Bidders.getAll()[1].bidder_type, 'member'),
+    assertEqual('pre-registration type preserved', Bidders.getAll()[2].bidder_type, 'pre-registration'),
+  ]);
+
+  // ── 23. Bidder type — default fallback ───────────────────────────────────
+  Bidders.clear();
+  Bidders.add({ bidder_number: 1001, last_name: 'A', first_name: 'B', email: 'a@b.com', phone: '' });
+  renderSuite('Bidder type — missing defaults to walk-in', [
+    assertEqual('no bidder_type field defaults to walk-in', Bidders.getAll()[0].bidder_type || 'walk-in', 'walk-in'),
+  ]);
+  Bidders.clear();
+
+  // ── 24. Bid base value — reserve vs value fallback ───────────────────────
   function bidBase(item) {
     const r = parseFloat(String(item.reserve_amount || '0').replace(/[^0-9.]/g, '')) || 0;
     const v = parseFloat(String(item.value          || '0').replace(/[^0-9.]/g, '')) || 0;
