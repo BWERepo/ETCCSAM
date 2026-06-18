@@ -574,15 +574,15 @@
             </colgroup>
             <thead>
               <tr>
-                <th>itemNumber</th>
+                <th>Item #</th>
                 <th>Email Date</th>
-                <th>ItemCategory</th>
-                <th>itemDescription</th>
-                <th>ItemValue</th>
-                <th>ItemReserveAmount</th>
-                <th>DonorName</th>
-                <th>DonorEmail</th>
-                <th>DonorPhone</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Value</th>
+                <th>Reserve</th>
+                <th>Donor Name</th>
+                <th>Donor Email</th>
+                <th>Donor Phone</th>
                 <th>Date Loaded</th>
                 <th>Preview</th>
               </tr>
@@ -888,7 +888,10 @@
           </div>
           <div class="form-row">
             <label for="inp-square-fee">Transaction Fee</label>
-            <input type="number" id="inp-square-fee" min="0" step="any" style="width:100px;" />
+            <div style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:6px;overflow:hidden;width:100px;">
+              <span style="padding:0 6px;background:var(--bg-section);color:var(--text-secondary);font-size:13px;border-right:1px solid var(--border);">$</span>
+              <input type="number" id="inp-square-fee" min="0" step="0.01" style="width:70px;border:none;outline:none;padding:5px 6px;font-size:13px;" />
+            </div>
             <span class="form-hint">Square flat fee charged per transaction in dollars (e.g. 0.10).</span>
           </div>
           <div style="margin-top:12px;">
@@ -938,6 +941,9 @@
             <label for="inp-email-folder">Auction Email Folder</label>
             <input type="text" id="inp-email-folder" value="INBOX" />
             <span class="form-hint">Gmail label/folder to scan (e.g. INBOX, or a custom label name).</span>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="saveSettings()">Save Settings</button>
           </div>
         </div>
       </div>
@@ -1071,7 +1077,7 @@ const DEFAULT_FIELD_MAP = [
   { label: 'ItemCategory',    selectBy: 'Current Line to End',   column: 'item_category'    },
   { label: 'ItemDescription', selectBy: 'Next Line',             column: 'description' },
   { label: 'ItemValue',       selectBy: 'Current Line to End',   column: 'item_value'       },
-  { label: 'ItemReserveAmount', selectBy: 'Current Line to End', column: 'reserve_amount'   },
+  { label: 'ItemReserveAmount', selectBy: 'Next Line',             column: 'reserve_amount'   },
   { label: 'DonorName',       selectBy: 'Current Line to End',   column: 'donor_name'       },
   { label: 'DonorEmail',      selectBy: 'Current Line to End',   column: 'donor_email'      },
   { label: 'DonorPhone',      selectBy: 'Current Line to End',   column: 'donor_phone'      },
@@ -1156,12 +1162,16 @@ const Bidders = {
 // ══════════════════════════════════════
 //  EMAIL PARSER
 // ══════════════════════════════════════
+function cleanTrim(s) {
+  return (s || '').trim().replace(/[\x00-\x1F\x7F]/g, '');
+}
+
 function parseEmailBody(body, fieldMap) {
   const result   = {};
   const errors   = [];
   const rawLines = body.replace(/\r/g, '').split('\n');
 
-  fieldMap.forEach(({ label, column, selectBy }) => {
+  fieldMap.forEach(({ label, column, selectBy, loaded_items_col }) => {
     const searchLower = label.trim().toLowerCase();
     const mode        = selectBy || 'Next Line';
 
@@ -1198,16 +1208,17 @@ function parseEmailBody(body, fieldMap) {
     const line = rawLines[foundLineIdx];
 
     if (mode === 'Next Line') {
-      result[column] = (rawLines[foundLineIdx + 1] || '').trim();
+      result[column] = cleanTrim(rawLines[foundLineIdx + 1] || '');
     } else if (mode === 'Current Line to End') {
-      result[column] = line.substring(valueStart).trim();
+      result[column] = cleanTrim(line.substring(valueStart));
     } else if (mode === 'Current Line to Comma') {
-      const segment  = line.substring(valueStart).trim();
+      const segment  = cleanTrim(line.substring(valueStart));
       const commaIdx = segment.indexOf(',');
-      result[column] = commaIdx !== -1 ? segment.substring(0, commaIdx).trim() : segment;
+      result[column] = commaIdx !== -1 ? cleanTrim(segment.substring(0, commaIdx)) : cleanTrim(segment);
     } else {
-      result[column] = line.substring(valueStart).trim();
+      result[column] = cleanTrim(line.substring(valueStart));
     }
+    log(`&nbsp;&nbsp;Label: <b>${label}</b> | Data: <b>${result[column]}</b> | DB Column: <b>${column}</b> | Loaded Items Column: <b>${loaded_items_col || ''}</b>`);
   });
 
   result._parseErrors = errors;
@@ -1326,7 +1337,17 @@ async function doScanInbox() {
 
     log(`📬 Found ${messages.length} message(s). Fetching details...`);
 
+    const btnScan = document.getElementById('btn-scan');
+    const btnScanInline = document.getElementById('btn-scan-inline');
+    const noteEl = document.getElementById('scan-note');
+    const total = messages.length;
+    let fetched = 0;
+    if (btnScan) btnScan.disabled = true;
+    if (btnScanInline) btnScanInline.disabled = true;
+
     for (const msg of messages) {
+      fetched++;
+      noteEl.textContent = `Fetching ${fetched} of ${total}...`;
       const detail = await gapi.client.gmail.users.messages.get({
         userId: 'me',
         id: msg.id,
@@ -1354,13 +1375,18 @@ async function doScanInbox() {
     const scanCount = scannedEmails.length;
     log(`✅ Fetched ${scanCount} emails.`);
     renderEmailTable(scannedEmails);
+    if (btnScan) btnScan.disabled = false;
+    if (btnScanInline) btnScanInline.disabled = false;
 
-    document.getElementById('scan-note').textContent = 'Scanned ' + new Date().toLocaleTimeString();
+    document.getElementById('scan-note').textContent = 'Scanned ' + new Date().toLocaleTimeString() + ' — ' + scanCount + ' email' + (scanCount !== 1 ? 's' : '') + ' found';
     document.getElementById('m-total').textContent = scanCount;
-    alert(`Scan complete — ${scanCount} email${scanCount !== 1 ? 's' : ''} found.`);
+    // scan complete — scan-note already shows result
 
   } catch (err) {
     log('❌ Scan error: ' + (err.result?.error?.message || err.message || err));
+    const _b1 = document.getElementById('btn-scan'); if (_b1) _b1.disabled = false;
+    const _b2 = document.getElementById('btn-scan-inline'); if (_b2) _b2.disabled = false;
+    document.getElementById('scan-note').textContent = 'Scan failed.';
   }
 }
 
@@ -1429,7 +1455,7 @@ function processEmails(emails) {
   log(`✅ Done — ${loaded} loaded, ${skipped} skipped, ${errors} errors.`);
   renderEmailTable(scannedEmails);
   refreshItemsTable();
-  alert(`Update complete — ${loaded} new item${loaded !== 1 ? 's' : ''} added.`);
+  document.getElementById('scan-note').textContent = `Update complete — ${loaded} new item${loaded !== 1 ? 's' : ''} added.`;
   refreshMetrics();
 }
 
@@ -1501,15 +1527,15 @@ function refreshItemsTable() {
       : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${escHtml(String(item.item_number))}</strong></td>
-      <td style="font-size:11px;white-space:nowrap;">${escHtml(item.email_date || '')}</td>
-      <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
-      <td>${escHtml(item.description)}</td>
-      <td>${fmtDollar(item.value)}</td>
-      <td>${parseFloat(item.reserve_amount || 0) === 0 ? '' : fmtDollar(item.reserve_amount)}</td>
-      <td>${escHtml(item.donor_name)}</td>
-      <td style="font-size:11px;">${escHtml(item.donor_email)}</td>
-      <td style="font-size:11px;">${escHtml(item.donor_phone)}</td>
+      <td style="text-align:center;"><strong>${escHtml(String(item.item_number))}</strong></td>
+      <td style="font-size:11px;white-space:nowrap;text-align:center;">${escHtml(item.email_date || '')}</td>
+      <td style="text-align:center;"><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
+      <td style="text-align:center;">${escHtml(item.description)}</td>
+      <td style="text-align:center;">${fmtDollar(item.item_value)}</td>
+      <td style="text-align:center;">${escHtml(item.reserve_amount || '')}</td>
+      <td style="text-align:center;">${escHtml(item.donor_name)}</td>
+      <td style="font-size:11px;text-align:center;">${escHtml(item.donor_email)}</td>
+      <td style="font-size:11px;text-align:center;">${escHtml(item.donor_phone)}</td>
       <td style="font-size:11px;white-space:nowrap;">${escHtml(item.loaded_date)}</td>
       <td style="text-align:center;">${previewCell}</td>
     `;
@@ -2153,8 +2179,8 @@ function refreshBsItemsTable() {
       <td style="font-size:11px;white-space:nowrap;">${escHtml(item.submission_date || '')}</td>
       <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
       <td>${escHtml(item.description)}</td>
-      <td>${fmtDollar(item.value)}</td>
-      <td>${parseFloat(item.reserve_amount || 0) === 0 ? '' : fmtDollar(item.reserve_amount)}</td>
+      <td>${fmtDollar(item.item_value)}</td>
+      <td>${escHtml(item.reserve_amount || '')}</td>
       <td>${escHtml(item.donor_name)}</td>
       <td style="font-size:11px;">${escHtml(item.donor_email)}</td>
       <td style="font-size:11px;">${escHtml(item.donor_phone)}</td>
@@ -2197,7 +2223,7 @@ function loadSettingsForm() {
   document.getElementById('inp-final-bid-pct').value    = s.finalBidPct    ?? 150;
   document.getElementById('inp-bid-count').value        = s.bidCount       ?? 25;
   document.getElementById('inp-square-pct').value       = s.squarePct      ?? 2.6;
-  document.getElementById('inp-square-fee').value       = s.squareFee      ?? 0.10;
+  document.getElementById('inp-square-fee').value       = (s.squareFee ?? 0.10).toFixed(2);
   renderFieldMapTable();
 }
 
@@ -2225,7 +2251,7 @@ function renderFieldMapTable() {
   let dragSrc = null;
 
   map.forEach((row, idx) => {
-    const loadedCol = LOADED_ITEMS_COL[row.column] || '';
+    const loadedCol = row.loaded_items_col !== undefined ? row.loaded_items_col : (LOADED_ITEMS_COL[row.column] || '');
     const tr = document.createElement('tr');
     tr.draggable = true;
     tr.dataset.idx = idx;
@@ -2234,7 +2260,7 @@ function renderFieldMapTable() {
       <td class="fm-label-cell" style="font-size:13px;">${escHtml(row.label)}</td>
       <td class="fm-selectby-cell" style="font-size:12px;color:var(--text-secondary);">${escHtml(row.selectBy || 'Next Line')}</td>
       <td class="fm-column-cell" style="font-size:12px;color:var(--text-secondary);font-family:monospace;">${escHtml(row.column)}</td>
-      <td style="font-size:12px;color:var(--text-secondary);font-family:monospace;">${escHtml(loadedCol)}</td>
+      <td class="fm-loadedcol-cell" style="font-size:12px;color:var(--text-secondary);font-family:monospace;">${escHtml(loadedCol)}</td>
       <td style="text-align:center;">
         <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="editFieldMapRow(${idx})">Edit</button>
       </td>
@@ -2271,6 +2297,7 @@ function renderFieldMapTable() {
 function editFieldMapRow(idx) {
   const map = DB.getFieldMap();
   const row = map[idx];
+  const loadedCol = row.loaded_items_col !== undefined ? row.loaded_items_col : (LOADED_ITEMS_COL[row.column] || '');
   const tbody = document.getElementById('field-map-tbody');
   const tr = tbody.querySelectorAll('tr')[idx];
   const inputStyle = 'width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;';
@@ -2280,6 +2307,7 @@ function editFieldMapRow(idx) {
   tr.querySelector('.fm-label-cell').innerHTML    = `<input type="text" value="${escHtml(row.label)}"  data-idx="${idx}" data-key="label"  style="${inputStyle}" />`;
   tr.querySelector('.fm-selectby-cell').innerHTML = `<select data-idx="${idx}" data-key="selectBy" style="${inputStyle}">${selOpts}</select>`;
   tr.querySelector('.fm-column-cell').innerHTML   = `<input type="text" value="${escHtml(row.column)}" data-idx="${idx}" data-key="column" style="${inputStyle}font-family:monospace;" />`;
+  tr.querySelector('.fm-loadedcol-cell').innerHTML = `<input type="text" value="${escHtml(loadedCol)}" data-idx="${idx}" data-key="loaded_items_col" style="${inputStyle}font-family:monospace;" />`;
   const editBtn = tr.querySelector('button.btn:not(.danger)');
   editBtn.textContent = 'Save';
   editBtn.onclick = () => saveFieldMapRow(idx);
@@ -2292,6 +2320,7 @@ function saveFieldMapRow(idx) {
   map[idx].label    = tr.querySelector('[data-key="label"]').value.trim();
   map[idx].selectBy = tr.querySelector('[data-key="selectBy"]').value;
   map[idx].column   = tr.querySelector('[data-key="column"]').value.trim();
+  map[idx].loaded_items_col = tr.querySelector('[data-key="loaded_items_col"]').value.trim();
   DB.saveFieldMap(map);
   renderFieldMapTable();
 }
@@ -2555,7 +2584,7 @@ document.getElementById('btn-scan').addEventListener('click', () => {
 
 document.getElementById('btn-load-items').addEventListener('click', () => {
   const newEmails = scannedEmails.filter(e => e.status !== 'loaded');
-  if (!newEmails.length) { alert('Update complete — 0 new items added.'); return; }
+  if (!newEmails.length) { document.getElementById('scan-note').textContent = 'Update complete — 0 new items added.'; return; }
   processEmails(newEmails);
 });
 
@@ -2702,8 +2731,8 @@ function showCategoryItems(code, name) {
       <td>${escHtml(String(item.item_number || ''))}</td>
       <td>${escHtml(item.submission_date || '')}</td>
       <td>${escHtml(item.description || '')}</td>
-      <td>${fmtDollar(item.value)}</td>
-      <td>${parseFloat(item.reserve_amount || 0) === 0 ? '' : fmtDollar(item.reserve_amount)}</td>
+      <td>${fmtDollar(item.item_value)}</td>
+      <td>${escHtml(item.reserve_amount || '')}</td>
       <td>${escHtml(item.donor_name || '')}</td>
     `;
     tbody.appendChild(tr);
