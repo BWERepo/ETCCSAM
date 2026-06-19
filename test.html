@@ -849,16 +849,20 @@ function runUITests() {
     }
 
     (async () => {
-      // ── Nav: Home ──────────────────────────────────────────────────────────
+      // ── Home — workflow cards ──────────────────────────────────────────────
       nav('home');
       await delay(60);
       await suite('Home screen', () => [
-        uiCheck(d, 'screen is active',          '#screen-home.active'),
-        uiCheck(d, 'logo image present',        '#screen-home img'),
-        uiCheck(d, 'home metrics container',    '#home-metrics'),
-        uiCheck(d, 'new items metric',          '#m-new'),
-        uiCheck(d, 'categories metric',         '#m-cats'),
-        uiCheck(d, 'workflow card present',     '#screen-home .card'),
+        uiCheck(d, 'screen is active',                    '#screen-home.active'),
+        uiCheck(d, 'logo image present',                  '#screen-home img'),
+        uiCheck(d, 'home metrics container',              '#home-metrics'),
+        uiCheck(d, 'new items metric',                    '#m-new'),
+        uiCheck(d, 'categories metric',                   '#m-cats'),
+        uiCheck(d, 'workflow card present',               '#screen-home .card'),
+        uiAnyContains(d, 'Print Invoices card (step 5)',  '#screen-home .card span', '5'),
+        uiAnyContains(d, 'Announce Winners card (step 6)','#screen-home .card span', '6'),
+        uiAnyContains(d, 'Pay & Pickup card (step 7)',    '#screen-home .card span', '7'),
+        uiAnyContains(d, 'Post Auction card (step 8)',    '#screen-home .card span', '8'),
       ]);
 
       // ── Nav: Load Items ────────────────────────────────────────────────────

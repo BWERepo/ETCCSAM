@@ -505,7 +505,7 @@
 
         <div class="card" style="margin-bottom:20px;">
           <div class="card-header">Auction Workflow</div>
-          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:10px;">
+          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column dense;gap:10px;">
             <div onclick="navigate('item-load')"       style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">1</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Load Item Emails</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Scan the auction inbox and import items from Gmail</div></div>
@@ -522,16 +522,20 @@
               <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">4</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Record Winning Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Enter the winning bidder number for each item</div></div>
             </div>
-            <div onclick="navigate('winner-announce')" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div onclick="navigate('auction-close');setTimeout(printAllInvoices,400)" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">5</span>
+              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Print Invoices</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print invoices for all winning bidders</div></div>
+            </div>
+            <div onclick="navigate('winner-announce')" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+              <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">6</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Announce Winners</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Display and email the list of winning bidders</div></div>
             </div>
             <div onclick="navigate('payment-pickup')"  style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">6</span>
+              <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">7</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Pay &amp; Pickup</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Record payments and item pickup for each winner</div></div>
             </div>
             <div onclick="navigate('post-auction')"    style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">7</span>
+              <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;flex-shrink:0;">8</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Post Auction</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Post-auction tasks and reporting</div></div>
             </div>
           </div>
