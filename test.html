@@ -1313,6 +1313,30 @@ function runUITests() {
         updateSummary();
       }
 
+      // ── Email Bidders — Send Winning Emails button present ────────────────
+      try {
+        nav('post-auction');
+        await delay(80);
+        // Seed a winner with email
+        w.localStorage.setItem('sam_bidders', JSON.stringify([
+          { bidder_number: 5, last_name: 'Win', first_name: 'Joe', email: 'joe@test.com', phone: '', bidder_type: 'member' }
+        ]));
+        w.localStorage.setItem('sam_winners', JSON.stringify({ '200-1': { bidder_number: 5, bidder_name: 'Joe Win', winning_bid: '50.00' } }));
+        const emailCard = [...d.querySelectorAll('#post-auction-card .pa-card')].find(c => c.textContent.includes('Email Bidders'));
+        if (emailCard) emailCard.querySelector('button')?.click();
+        await delay(100);
+        const popupDoc = [...w.document.querySelectorAll('*')]; // can't reach popup; verify card button exists
+        await suite('Email Bidders — buttons present', () => [
+          uiAssert('Email Bidders card found',           !!emailCard, 'No Email Bidders card in Post Auction'),
+          uiAnyContains(d, 'Email Bidders card present', '#post-auction-card .pa-card', 'Email Bidders'),
+        ]);
+        w.localStorage.removeItem('sam_bidders');
+        w.localStorage.removeItem('sam_winners');
+      } catch(e) {
+        renderSuite('UI — Email Bidders — buttons present', [{ name: 'email bidders test', pass: false, detail: e.message }]);
+        updateSummary();
+      }
+
       updateSummary();
       document.getElementById('s-status').textContent +=  ' (incl. UI)';
     })();

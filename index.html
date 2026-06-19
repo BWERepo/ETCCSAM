@@ -500,7 +500,7 @@
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;" id="home-metrics"></div>
 
         <div style="padding:20px 24px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--text);">
-          <strong>Welcome to your new Auction Management site!</strong> This is your home base for running the whole show — from items rolling in automatically off email, to printing bidding forms, tracking winners, and getting invoices out the door without you lifting a finger. No database skills needed, nothing to maintain, just a tool built to take the busywork off your plate so you can focus on running a great auction. Glad to have you trying it out!
+          <div style="text-align:center;"><strong>Welcome to your new Auction Management site!</strong></div><br>This is your home base for running the whole show — from items rolling in automatically off email, to printing bidding forms, tracking winners, and getting invoices out the door without you lifting a finger. No database skills needed, nothing to maintain, just a tool built to take the busywork off your plate so you can focus on running a great auction. Glad to have you trying it out!
         </div>
 
         <div class="card" style="margin-bottom:20px;">
@@ -3360,7 +3360,7 @@ function openEmailBiddersPage() {
     </tr>`;
   }).join('');
 
-  const biddersJson = JSON.stringify(bidders.map(b => ({ email: b.email || '', name: `${b.first_name} ${b.last_name}`.trim() })));
+  const biddersJson = JSON.stringify(bidders.map(b => ({ email: b.email || '', name: `${b.first_name} ${b.last_name}`.trim(), isWinner: winnerNums.has(String(b.bidder_number)) })));
   const payments = DB.getPayments();
   const winnersJson = JSON.stringify(winners);
   const paymentsJson = JSON.stringify(payments);
@@ -3450,7 +3450,8 @@ function openEmailBiddersPage() {
         </table>
       </div>
       <div class="footer">
-        <button class="btn-primary" onclick="sendEmail()">✉ Open Email Client</button>
+        <button class="btn-primary" onclick="sendWinnerEmails()">✉ Send Winning Emails</button>
+        <button class="btn-sec" onclick="sendNowinEmails()">✉ Send NonWinners Emails</button>
         <button class="btn-sec" onclick="selectAll(true)">Select All</button>
         <button class="btn-sec" onclick="selectAll(false)">Clear All</button>
       </div>
@@ -3543,12 +3544,32 @@ function openEmailBiddersPage() {
       updateStatus();
     }
     document.querySelectorAll('.bidder-cb').forEach(cb => cb.addEventListener('change', updateStatus));
-    function sendEmail() {
+    function getCheckedAddrs(winnersOnly) {
       const checked = [...document.querySelectorAll('.bidder-cb:checked')].map(cb => parseInt(cb.dataset.idx));
-      const addrs = checked.map(i => allBidders[i].email).filter(Boolean);
-      if (!addrs.length) { alert('No bidders selected, or selected bidders have no email address.'); return; }
-      const subject = encodeURIComponent(document.getElementById('email-subject').value.trim());
-      window.location.href = 'mailto:?bcc=' + encodeURIComponent(addrs.join(',')) + '&subject=' + subject;
+      return checked.filter(i => winnersOnly ? allBidders[i].isWinner : !allBidders[i].isWinner).map(i => allBidders[i].email).filter(Boolean);
+    }
+    function openMailto(addrs, count, isWinner) {
+      const subject  = encodeURIComponent(document.getElementById('email-subject').value.trim());
+      const bcc      = encodeURIComponent(addrs.join(','));
+      const panels   = document.querySelectorAll('.ep-body');
+      const bodyEl   = isWinner ? panels[1] : panels[0];
+      const bodyText = bodyEl ? bodyEl.innerText.trim() : '';
+      const body     = encodeURIComponent(bodyText);
+      const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=' + subject + '&cc=' + bcc + '&body=' + body;
+      if (!confirm('Send email to ' + count + ' recipient' + (count !== 1 ? 's' : '') + '?')) return;
+      const a = document.createElement('a');
+      a.href = gmailUrl; a.target = '_blank'; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    function sendWinnerEmails() {
+      const addrs = getCheckedAddrs(true);
+if (!addrs.length) { alert('No winners selected with email addresses.'); return; }
+      openMailto(addrs, addrs.length, true);
+    }
+    function sendNowinEmails() {
+      const addrs = getCheckedAddrs(false);
+      if (!addrs.length) { alert('No non-winners selected with email addresses.'); return; }
+      openMailto(addrs, addrs.length, false);
     }
   <\/script>
   </div></body></html>`;
