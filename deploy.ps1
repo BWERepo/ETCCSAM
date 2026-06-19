@@ -6,12 +6,16 @@ $creds = @{}
 Get-Content "$PSScriptRoot\.ftp-credentials" | ForEach-Object {
     if ($_ -match "^(\w+)=(.+)$") { $creds[$Matches[1]] = $Matches[2] }
 }
-$ftpHost   = $creds["FTP_HOST"]
-$ftpUser   = $creds["FTP_USER"]
-$ftpPass   = $creds["FTP_PASS"]
-$ftpPort   = $creds["FTP_PORT"]
+$ftpHost    = $creds["FTP_HOST"]
+$ftpUser    = $creds["FTP_USER"]
+$ftpPass    = $creds["FTP_PASS"]
+$ftpPort    = $creds["FTP_PORT"]
 $remotePath = $creds["FTP_REMOTE_PATH"]
-$local     = $PSScriptRoot
+$local      = $PSScriptRoot
+
+# Write netrc to temp file so password special chars aren't interpreted by shell
+$netrcFile = "$env:TEMP\.netrc-sam"
+"machine $ftpHost login $ftpUser password $ftpPass" | Out-File -FilePath $netrcFile -Encoding ascii
 
 $exclude = @(".git", ".ftp-credentials", "deploy.ps1", "CLAUDE.md", "README.md")
 
@@ -26,9 +30,9 @@ function Should-Exclude($path) {
 function Deploy-File($rel) {
     $localPath  = Join-Path $local $rel
     $relForward = $rel -replace "\\", "/"
-    $url = "ftp://${ftpHost}:${ftpPort}/${remotePath}/${relForward}"
+    $url = if ($remotePath) { "ftp://${ftpHost}:${ftpPort}/${remotePath}/${relForward}" } else { "ftp://${ftpHost}:${ftpPort}/${relForward}" }
     Write-Host "Uploading $rel ..." -ForegroundColor Cyan
-    $out = & curl.exe --ftp-create-dirs -u "${ftpUser}:${ftpPass}" -T $localPath $url 2>&1
+    $out = & curl.exe --ssl --insecure --ftp-create-dirs --netrc-file $netrcFile -T $localPath $url 2>&1
     if ($LASTEXITCODE -eq 0) { Write-Host "  OK" -ForegroundColor Green }
     else { Write-Host "  FAILED: $out" -ForegroundColor Red }
 }
@@ -36,6 +40,7 @@ function Deploy-File($rel) {
 # Single file mode
 if ($args.Count -gt 0) {
     Deploy-File $args[0]
+    Remove-Item $netrcFile -Force -ErrorAction SilentlyContinue
     exit
 }
 
@@ -49,4 +54,5 @@ foreach ($file in $files) {
     Write-Progress -Activity "Deploying" -Status "$i of $($files.Count): $rel" -PercentComplete (($i / $files.Count) * 100)
     Deploy-File $rel
 }
+Remove-Item $netrcFile -Force -ErrorAction SilentlyContinue
 Write-Host "Deploy complete." -ForegroundColor Green
