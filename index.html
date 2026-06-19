@@ -1131,11 +1131,13 @@
         </div>
       </div>
 
-      <div id="settings-saved-msg" style="display:none; margin-top:10px;" class="alert success">Settings saved.</div>
     </section>
 
   </main>
 </div>
+
+<!-- ══ Settings Saved Toast ══ -->
+<div id="settings-saved-msg" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.18);" class="alert success">Settings saved.</div>
 
 <!-- ══ View All Modal ══ -->
 <div id="view-all-modal" style="display:none;position:fixed;inset:0;z-index:900;background:var(--bg);flex-direction:column;">
@@ -1802,6 +1804,12 @@ function printBiddingSheets() {
         <tbody>${bidRows}<tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody>
       </table>
     </div>
+    <div class="label-page">
+      <div class="label-content">
+        <div class="label-item-num">Item # ${escHtml(String(item.item_number))}</div>
+        <div class="label-desc">${escHtml(item.description || '')}</div>
+      </div>
+    </div>
   `;
   }).join('');
 
@@ -1825,8 +1833,13 @@ function printBiddingSheets() {
   .bid-table td:first-child { text-align: center; width: 22px; color: #6e6e73; font-size: 9px; }
   .bid-table th:nth-child(2), .bid-table td:nth-child(2),
   .bid-table th:nth-child(5), .bid-table td:nth-child(5) { width: 60px; }
+  .label-page { width: 7.5in; margin: 0 auto; page-break-before: always; page-break-after: always; page-break-inside: avoid; height: 10in; position: relative; }
+  .label-page:last-child { page-break-after: auto; }
+  .label-content { position: absolute; top: 66.6%; left: 0; right: 0; text-align: center; padding: 0 0.5in; }
+  .label-item-num { font-size: 35pt; font-weight: 800; color: #0071e3; line-height: 1.2; }
+  .label-desc { font-size: 35pt; font-weight: 600; color: #1d1d1f; line-height: 1.2; margin-top: 8px; }
   @page { size: letter portrait; margin: 0.3in; }
-  @media print { body { margin: 0; } .sheet { width: 100%; padding: 0; } }
+  @media print { body { margin: 0; } .sheet { width: 100%; padding: 0; } .label-page { width: 100%; height: 100vh; } }
 </style>
 </head><body>${sheets}
 <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
