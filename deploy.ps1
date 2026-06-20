@@ -37,14 +37,32 @@ function Deploy-File($rel) {
     else { Write-Host "  FAILED: $out" -ForegroundColor Red }
 }
 
+# Auto-increment version and date in index.html before deploying
+function Update-Version {
+    $indexPath = Join-Path $local "index.html"
+    $content = [System.IO.File]::ReadAllText($indexPath, [System.Text.Encoding]::UTF8)
+    if ($content -match 'id="app-version">(\d+)\.(\d+)<') {
+        $major   = [int]$Matches[1]
+        $minor   = [int]$Matches[2] + 1
+        $ver     = "$major.$minor"
+        $dateStr = Get-Date -Format "MMM d, yyyy h:mm tt"
+        $content = $content -replace '(?<=id="app-version">)[^<]+', $ver
+        $content = $content -replace '(?<=id="app-build-date">)[^<]+', $dateStr
+        [System.IO.File]::WriteAllText($indexPath, $content, [System.Text.Encoding]::UTF8)
+        Write-Host "  Version bumped to $ver  |  Date: $dateStr" -ForegroundColor Cyan
+    }
+}
+
 # Single file mode
 if ($args.Count -gt 0) {
+    if ($args[0] -eq "index.html") { Update-Version }
     Deploy-File $args[0]
     Remove-Item $netrcFile -Force -ErrorAction SilentlyContinue
     exit
 }
 
 # Full deploy
+Update-Version
 Write-Host "Deploying all SAM files to $ftpHost/$remotePath ..." -ForegroundColor Yellow
 $files = Get-ChildItem -Path $local -Recurse -File | Where-Object { -not (Should-Exclude $_.FullName) }
 $i = 0

@@ -1379,6 +1379,54 @@ function runUITests() {
         uiAssert('localStorage.setItem intercepted', w.localStorage.setItem !== w._samOrigSetItem, 'setItem was not intercepted'),
       ]);
 
+      // ── App footer ────────────────────────────────────────────────────────
+      nav('home');
+      await delay(60);
+      await suite('App footer', () => [
+        uiCheck(d,    'footer element present',         '#app-footer'),
+        uiCheck(d,    'version span present',           '#app-version'),
+        uiCheck(d,    'build date span present',        '#app-build-date'),
+        uiAssert('version is non-empty',                (d.querySelector('#app-version')?.textContent || '').trim().length > 0, 'app-version is empty'),
+        uiAssert('build date is non-empty',             (d.querySelector('#app-build-date')?.textContent || '').trim().length > 0, 'app-build-date is empty'),
+        uiAnyContains(d, 'footer has ETCC club name',  '#app-footer div', 'East Tennessee Corvette Club'),
+      ]);
+
+      // ── Home screen title ─────────────────────────────────────────────────
+      await suite('Home screen title', () => [
+        uiAssert('title includes (SAM)',
+          (d.querySelector('#screen-home h1')?.textContent || '').includes('(SAM)'),
+          'h1 does not contain "(SAM)"'),
+        uiCheck(d, 'Return to Dashboard link present', '#screen-home a[href="https://etccapps.com"]'),
+      ]);
+
+      // ── Nav: Return to Dashboard link ─────────────────────────────────────
+      await suite('Nav — Return to Dashboard', () => [
+        uiCheck(d,    'dashboard link in nav',          '#nav a[href="https://etccapps.com"]'),
+        uiAnyContains(d, 'link text contains Dashboard', '#nav a[href="https://etccapps.com"]', 'Dashboard'),
+      ]);
+
+      // ── buildMimeMessage ──────────────────────────────────────────────────
+      await suite('buildMimeMessage', () => {
+        const fn = w.buildMimeMessage;
+        if (typeof fn !== 'function') {
+          return [uiAssert('buildMimeMessage is defined', false, 'function not found on window')];
+        }
+        const raw = fn('test@example.com', 'Hello World', 'Body text here.');
+        const isBase64url = /^[A-Za-z0-9\-_]+$/.test(raw);
+        let decoded = '';
+        try {
+          decoded = decodeURIComponent(escape(atob(raw.replace(/-/g,'+').replace(/_/g,'/'))));
+        } catch(e) { decoded = ''; }
+        return [
+          uiAssert('returns a string',            typeof raw === 'string',             'not a string'),
+          uiAssert('output is base64url encoded', isBase64url,                         'contains non-base64url chars'),
+          uiAssert('decoded contains To header',  decoded.includes('To: test@example.com'), 'missing To header'),
+          uiAssert('decoded contains body text',  decoded.includes('Body text here.'), 'missing body text'),
+          uiAssert('decoded contains MIME-Version', decoded.includes('MIME-Version: 1.0'), 'missing MIME-Version'),
+          uiAssert('decoded contains Content-Type', decoded.includes('text/plain'),    'missing Content-Type'),
+        ];
+      });
+
       updateSummary();
       document.getElementById('s-status').textContent +=  ' (incl. UI)';
     })();

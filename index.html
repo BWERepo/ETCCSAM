@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -22,6 +22,7 @@
       --nav-bar:        #1d1d1f;
       --nav-width:      220px;
       --hero-height:    70px;
+      --footer-height:  58px;
       --danger:         #c62828;
       --success:        #1a7f37;
     }
@@ -453,6 +454,29 @@
     #manual-body h3 { color: var(--accent); margin: 14px 0 5px; font-size: 0.95rem; }
     #manual-body p  { margin-bottom: 8px; }
     #manual-body ul { margin-left: 18px; margin-bottom: 8px; }
+
+    /* ── App footer ── */
+    #app-footer {
+      position: fixed;
+      bottom: 0;
+      left: var(--nav-width);
+      right: 0;
+      height: var(--footer-height);
+      background: #1d1d1f;
+      color: #888;
+      font-size: 11px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border-top: 1px solid #333;
+      z-index: 50;
+      line-height: 1.5;
+    }
+    #app-footer a { color: #aaa; text-decoration: none; }
+    #app-footer a:hover { color: #fff; }
   </style>
 </head>
 <body>
@@ -482,6 +506,10 @@
     <div class="nav-item" id="nav-manual">
       📖 User Manual
     </div>
+    <hr class="nav-divider" />
+    <a href="https://etccapps.com" class="nav-item" style="text-decoration:none;display:block;margin-top:auto;">
+      🏠 Return to Dashboard
+    </a>
   </nav>
 
   <!-- Main Content -->
@@ -490,20 +518,20 @@
     <!-- ══ Step 1: Item Load ══ -->
     <!-- ══ Home / Splash ══ -->
     <section class="screen active" id="screen-home">
-      <div style="max-width:700px;margin:40px auto 0;">
-        <div style="text-align:center;margin-bottom:36px;">
-          <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" style="height:80px;margin-bottom:16px;" />
-          <h1 style="font-size:1.8rem;font-weight:700;color:var(--text);margin:0 0 8px;">Silent Auction Manager</h1>
-          <p style="font-size:14px;color:var(--text-secondary);margin:0;">East Tennessee Corvette Club</p>
+      <div style="max-width:700px;margin:16px auto 0;">
+        <div style="text-align:center;margin-bottom:16px;">
+          <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" style="height:60px;margin-bottom:10px;" />
+          <h1 style="font-size:1.5rem;font-weight:700;color:var(--text);margin:0 0 4px;">Silent Auction Manager (SAM)</h1>
+          <p style="font-size:13px;color:var(--text-secondary);margin:0;">East Tennessee Corvette Club</p>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;" id="home-metrics"></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;" id="home-metrics"></div>
 
-        <div style="padding:20px 24px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--text);">
+        <div style="padding:16px 20px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;font-size:13px;line-height:1.7;color:var(--text);">
           <div style="text-align:center;"><strong>Welcome to your new Auction Management site!</strong></div><br>This is your home base for running the whole show — from items rolling in automatically off email, to printing bidding forms, tracking winners, and getting invoices out the door without you lifting a finger. No database skills needed, nothing to maintain, just a tool built to take the busywork off your plate so you can focus on running a great auction. Glad to have you trying it out!
         </div>
 
-        <div class="card" style="margin-bottom:20px;">
+        <div class="card" style="margin-bottom:0;">
           <div class="card-header">Auction Workflow</div>
           <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column dense;gap:10px;">
             <div onclick="navigate('item-load')"       style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
@@ -540,6 +568,11 @@
             </div>
           </div>
         </div>
+
+        <div style="text-align:center;padding:14px 0 4px;">
+          <a href="https://etccapps.com" style="font-size:12px;color:var(--text-secondary);text-decoration:none;letter-spacing:.01em;">&#8592; Return to ETCC Dashboard</a>
+        </div>
+
       </div>
     </section>
 
@@ -652,7 +685,7 @@
 
       <div class="card" id="bs-items-card">
         <div id="bs-toolbar-wrap"></div>
-        <div style="overflow-x:auto;max-height:calc(100vh - 220px);overflow-y:auto;">
+        <div style="overflow-x:auto;max-height:calc(100vh - 278px);overflow-y:auto;">
           <table class="tablekit" id="bs-items-table" style="table-layout:fixed;width:100%;">
             <colgroup>
               <col style="width:32px;"><col style="width:80px;"><col style="width:130px;"><col style="width:160px;">
@@ -762,7 +795,7 @@
 
       <div class="card" id="bidders-card">
         <div id="bidders-toolbar-wrap"></div>
-        <div style="overflow-x:auto;max-height:calc(100vh - 330px);overflow-y:auto;">
+        <div style="overflow-x:auto;max-height:calc(100vh - 388px);overflow-y:auto;">
           <table class="tablekit" id="bidders-table" style="table-layout:fixed;width:100%;">
             <colgroup>
               <col style="width:100px;"><col style="width:130px;"><col style="width:180px;"><col style="width:180px;">
@@ -791,7 +824,7 @@
       <div class="card" id="winners-card">
         <div id="winners-toolbar-wrap"></div>
         <div style="padding:4px 16px;min-height:20px;"><span id="winners-save-note" style="font-size:12px;"></span></div>
-        <div style="overflow-x:auto;max-height:calc(100vh - 220px);overflow-y:auto;">
+        <div style="overflow-x:auto;max-height:calc(100vh - 278px);overflow-y:auto;">
           <table class="tablekit" id="winners-table" style="table-layout:fixed;width:100%;">
             <colgroup>
               <col style="width:36px;">
@@ -826,7 +859,7 @@
       <div class="page-header"><h2>Step 5 — Announce Winners</h2><p>Review and announce winning bidders for each item.</p></div>
       <div class="card" id="announce-card" style="max-width:560px;">
         <div id="announce-toolbar-wrap"></div>
-        <div style="overflow-y:auto;max-height:calc(100vh - 220px);">
+        <div style="overflow-y:auto;max-height:calc(100vh - 278px);">
           <table class="tablekit" id="announce-table" style="table-layout:fixed;width:380px;">
             <colgroup>
               <col style="width:120px;">
@@ -887,7 +920,7 @@
       <div class="page-header"><h2>Print Invoices</h2><p>Select winning bidders and print their invoices.</p></div>
       <div class="card" id="print-invoices-card" style="max-width:640px;">
         <div id="print-invoices-toolbar-wrap"></div>
-        <div style="overflow-y:auto;max-height:calc(100vh - 220px);">
+        <div style="overflow-y:auto;max-height:calc(100vh - 278px);">
           <table class="tablekit" id="print-invoices-table" style="table-layout:fixed;width:100%;">
             <colgroup>
               <col style="width:32px;">
@@ -1207,7 +1240,7 @@
   <div style="padding:16px 28px;">
     <div style="max-width:640px;">
       <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-        <div style="overflow-x:auto;max-height:calc(100vh - 230px);overflow-y:auto;">
+        <div style="overflow-x:auto;max-height:calc(100vh - 288px);overflow-y:auto;">
           <table class="tablekit" id="cat-table" style="width:100%;">
             <thead><tr><th style="width:80px;text-align:center;">Items</th><th>Category</th><th style="width:80px;"></th></tr></thead>
             <tbody id="cat-tbody"></tbody>
@@ -1224,7 +1257,7 @@
   <div id="cat-items-toolbar-wrap"></div>
   <div style="padding:16px 28px;">
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-      <div style="overflow-x:auto;max-height:calc(100vh - 230px);overflow-y:auto;">
+      <div style="overflow-x:auto;max-height:calc(100vh - 288px);overflow-y:auto;">
         <table class="tablekit" id="cat-items-table" style="width:100%;">
           <thead><tr><th>Item #</th><th>Submission Date</th><th>Description</th><th>Value</th><th>Reserve</th><th>Donor Name</th></tr></thead>
           <tbody id="cat-items-tbody"></tbody>
@@ -4865,5 +4898,11 @@ function showCategoryItems(code, name) {
   // Token client is initialized via onGapiScriptLoad + onGisScriptLoad callbacks
 })();
 </script>
+
+<div id="app-footer">
+  <div>&copy; 2026 East Tennessee Corvette Club &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
+  <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
+  <div>Version: <span id="app-version">1.23</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 7:30 AM</span></div>
+</div>
 </body>
 </html>
