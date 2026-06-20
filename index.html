@@ -456,6 +456,9 @@
     #manual-body p  { margin-bottom: 8px; }
     #manual-body ul { margin-left: 18px; margin-bottom: 8px; }
 
+    /* ── Archived mode ── */
+    body.archived-mode .workflow-edit-btn { display: none !important; }
+
     /* ── Workflow step badges ── */
     .step-badge {
       display: inline-flex; align-items: center; justify-content: center;
@@ -532,68 +535,101 @@
   <!-- Main Content -->
   <main id="main">
 
-    <!-- ══ Step 1: Item Load ══ -->
     <!-- ══ Home / Splash ══ -->
     <section class="screen active" id="screen-home">
-      <div style="max-width:700px;margin:4px auto 0;">
+      <div style="max-width:760px;margin:4px auto 0;">
+
+        <!-- Club branding -->
         <div style="text-align:center;margin-bottom:8px;">
           <img src="Images/ETCClogoWhiteBackground.png" alt="${getClub().shortName} Logo" id="home-club-logo" style="height:44px;margin-bottom:4px;" />
           <h1 style="font-size:1.2rem;font-weight:700;color:var(--text);margin:0 0 2px;">Silent Auction Manager (SAM)</h1>
           <p style="font-size:12px;color:var(--text-secondary);margin:0;" id="home-club-name">${getClub().name}</p>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;" id="home-metrics"></div>
-
-        <div style="padding:10px 16px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:12px;line-height:1.5;color:var(--text);text-align:center;">
-          <strong>Welcome to Silent Auction Manager (SAM)!</strong><br>Your home base for running the whole auction — from loading items off email, printing bid sheets, tracking winners, and getting invoices out the door. You run the auction and I'll manage the administration.
+        <!-- Archived banner -->
+        <div id="home-archived-banner" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:8px 16px;margin-bottom:8px;font-size:12px;color:#856404;text-align:center;">
+          <strong>Archived Auction</strong> — This auction is read-only. No changes can be made.
         </div>
 
-        <div class="card" style="margin-bottom:0;">
-          <div class="card-header">Auction Workflow</div>
-          <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column dense;gap:8px;">
-            <div id="step-card-1" onclick="navigate('item-load')"       style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-1" class="step-badge">1</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Load Item Emails</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Scan the auction inbox and import items from Gmail</div></div>
+        <!-- Current auction panel (shown when auction is selected) -->
+        <div id="home-auction-panel" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:8px 12px;background:var(--bg-section);border:1px solid var(--border);border-radius:8px;">
+            <div>
+              <div style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Current Auction</div>
+              <div id="home-current-auction-name" style="font-size:15px;font-weight:700;color:var(--text);"></div>
             </div>
-            <div id="step-card-2" onclick="navigate('bidding-sheets')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-2" class="step-badge">2</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Create Bid Sheets</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print bid sheets for each auction item</div></div>
+            <button class="btn" onclick="deselectAuction()" style="font-size:11px;">Change Auction</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;" id="home-metrics"></div>
+
+          <div style="padding:10px 16px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:12px;line-height:1.5;color:var(--text);text-align:center;">
+            <strong>Welcome to Silent Auction Manager (SAM)!</strong><br>Your home base for running the whole auction — from loading items off email, printing bid sheets, tracking winners, and getting invoices out the door.
+          </div>
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header">Auction Workflow</div>
+            <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column dense;gap:8px;">
+              <div id="step-card-1" onclick="navigate('item-load')"       style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-1" class="step-badge">1</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Load Item Emails</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Scan the auction inbox and import items from Gmail</div></div>
+              </div>
+              <div id="step-card-2" onclick="navigate('bidding-sheets')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-2" class="step-badge">2</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Create Bid Sheets</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print bid sheets for each auction item</div></div>
+              </div>
+              <div id="step-card-3" onclick="navigate('bidder-reg')"      style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-3" class="step-badge">3</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Register Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Add bidders and assign bidder numbers</div></div>
+              </div>
+              <div id="step-card-4" onclick="navigate('auction-close')"   style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-4" class="step-badge">4</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Record Winning Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Enter the winning bidder number for each item</div></div>
+              </div>
+              <div id="step-card-5" onclick="navigate('print-invoices')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-5" class="step-badge">5</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Print Invoices</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print invoices for all winning bidders</div></div>
+              </div>
+              <div id="step-card-6" onclick="navigate('winner-announce')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-6" class="step-badge">6</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Announce Winners</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Display and email the list of winning bidders</div></div>
+              </div>
+              <div id="step-card-7" onclick="navigate('payment-pickup')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-7" class="step-badge">7</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Pay &amp; Pickup</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Record payments and item pickup for each winner</div></div>
+              </div>
+              <div id="step-card-8" onclick="navigate('post-auction')"    style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+                <span id="step-badge-8" class="step-badge">8</span>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Post Auction</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Post-auction tasks and reporting</div></div>
+              </div>
             </div>
-            <div id="step-card-3" onclick="navigate('bidder-reg')"      style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-3" class="step-badge">3</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Register Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Add bidders and assign bidder numbers</div></div>
-            </div>
-            <div id="step-card-4" onclick="navigate('auction-close')"   style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-4" class="step-badge">4</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Record Winning Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Enter the winning bidder number for each item</div></div>
-            </div>
-            <div id="step-card-5" onclick="navigate('print-invoices')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-5" class="step-badge">5</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Print Invoices</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print invoices for all winning bidders</div></div>
-            </div>
-            <div id="step-card-6" onclick="navigate('winner-announce')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-6" class="step-badge">6</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Announce Winners</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Display and email the list of winning bidders</div></div>
-            </div>
-            <div id="step-card-7" onclick="navigate('payment-pickup')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-7" class="step-badge">7</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Pay &amp; Pickup</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Record payments and item pickup for each winner</div></div>
-            </div>
-            <div id="step-card-8" onclick="navigate('post-auction')"    style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
-              <span id="step-badge-8" class="step-badge">8</span>
-              <div><div style="font-size:13px;font-weight:600;color:var(--text);">Post Auction</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Post-auction tasks and reporting</div></div>
-            </div>
+          </div>
+
+          <div id="home-workflow-btns" style="display:flex;gap:8px;justify-content:center;padding:10px 0 2px;">
+            <button class="btn workflow-edit-btn" onclick="clearWorkflow()" style="font-size:12px;">Reset Workflow</button>
+            <button class="btn workflow-edit-btn" onclick="completeWorkflow()" style="font-size:12px;">Complete Workflow</button>
+            <a href="https://etccapps.com" class="btn" style="font-size:12px;text-decoration:none;">Return to Dashboard</a>
           </div>
         </div>
 
-        <div style="display:flex;gap:8px;justify-content:center;padding:10px 0 2px;">
-          <button class="btn" onclick="clearWorkflow()" style="font-size:12px;">Reset Workflow</button>
-          <button class="btn" onclick="completeWorkflow()" style="font-size:12px;">Complete Workflow</button>
-          <a href="https://etccapps.com" class="btn" style="font-size:12px;text-decoration:none;">Return to Dashboard</a>
+        <!-- No-auction welcome (shown when no auction is selected) -->
+        <div id="home-no-auction" style="padding:16px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:12px;line-height:1.6;color:var(--text);text-align:center;">
+          <strong>Welcome to Silent Auction Manager (SAM)!</strong><br>Create a new auction or select an existing one below to get started.
+        </div>
+
+        <!-- Auctions list (shown only when no auction is selected) -->
+        <div id="home-auctions-card" class="card" style="margin-top:10px;display:none;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Auctions</span>
+            <button class="btn primary" onclick="createAuction()" style="font-size:12px;">+ New Auction</button>
+          </div>
+          <div id="home-auctions-list"></div>
         </div>
 
       </div>
     </section>
+
+    <!-- ══ Step 1: Item Load ══ -->
 
     <!-- ══ Step 1: Item Load ══ -->
     <section class="screen" id="screen-item-load">
@@ -603,8 +639,8 @@
           <p>Scan the auction inbox, review emails, and load items into the database.</p>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
-          <button id="step1-complete-btn" class="tk-btn" style="background:#fff;border-color:var(--success);color:var(--success);" onclick="markStepComplete('sam_ts_items')">Step Complete</button>
-          <button id="step1-uncomplete-btn" class="tk-btn" style="background:#fff;border-color:#e65100;color:#e65100;" onclick="markStepUncomplete('sam_ts_items')">Step Uncomplete</button>
+          <button id="step1-complete-btn" class="tk-btn workflow-edit-btn" style="background:#fff;border-color:var(--success);color:var(--success);" onclick="markStepComplete('items')">Step Complete</button>
+          <button id="step1-uncomplete-btn" class="tk-btn workflow-edit-btn" style="background:#fff;border-color:#e65100;color:#e65100;" onclick="markStepUncomplete('items')">Step Uncomplete</button>
           <button class="tk-btn tk-btn-close" onclick="navigate('home')">&#x2715; Close</button>
         </div>
       </div>
@@ -624,7 +660,7 @@
           <span id="gmail-status-text">Not connected to Gmail</span>
         </div>
         <span id="gmail-login-note" style="font-size:12px;color:#633806;background:#faeeda;border:1px solid #fac775;border-radius:8px;padding:10px 14px;"><strong>Note:</strong> The first time emails are scanned, you will be required to log in to the auction email account <strong id="gmail-login-email"></strong>. Please obtain the credentials from your administrator.</span>
-        <button class="btn primary" id="btn-scan" style="display:none;">📧 Scan</button>
+        <button class="btn primary workflow-edit-btn" id="btn-scan" style="display:none;">📧 Scan</button>
         <div class="spacer"></div>
         <span id="scan-note" style="font-size:11px; color:var(--text-tertiary);"></span>
       </div>
@@ -643,7 +679,7 @@
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
             <span>Inbox Emails</span>
             <div style="display:flex;gap:8px;">
-              <button class="btn primary" id="btn-scan-inline" style="font-size:11px;padding:3px 10px;">📧 Scan</button>
+              <button class="btn primary workflow-edit-btn" id="btn-scan-inline" style="font-size:11px;padding:3px 10px;">📧 Scan</button>
               <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showViewAll('emails')">View All</button>
             </div>
           </div>
@@ -668,7 +704,7 @@
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
           <span>Loaded Items</span>
           <div style="display:flex;gap:8px;">
-            <button class="btn primary" id="btn-load-items" style="font-size:11px; padding:4px 10px;">Update Items</button>
+            <button class="btn primary workflow-edit-btn" id="btn-load-items" style="font-size:11px; padding:4px 10px;">Update Items</button>
             <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showCategories()">View Categories</button>
             <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showViewAll('items')">View All</button>
           </div>
@@ -768,9 +804,9 @@
         </div>
         <!-- Footer -->
         <div style="padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;border-top:1px solid var(--border);background:var(--bg);">
-          <button class="btn primary" onclick="addCheckedToWalkins()">Add to Bidders</button>
-          <button class="btn" onclick="selectAllMembers(true)">Select All</button>
-          <button class="btn" onclick="selectAllMembers(false)">Clear All</button>
+          <button class="btn primary workflow-edit-btn" onclick="addCheckedToWalkins()">Add to Bidders</button>
+          <button class="btn workflow-edit-btn" onclick="selectAllMembers(true)">Select All</button>
+          <button class="btn workflow-edit-btn" onclick="selectAllMembers(false)">Clear All</button>
           <span id="member-db-walkin-status" style="font-size:12px;color:var(--text-secondary);"></span>
         </div>
       </div>
@@ -811,7 +847,7 @@
           </div>
           <div style="display:flex;justify-content:flex-end;gap:8px;">
             <button class="btn" onclick="closeBidderEditModal()">Cancel</button>
-            <button class="btn primary" onclick="saveBidderEdit()">Save</button>
+            <button class="btn primary workflow-edit-btn" onclick="saveBidderEdit()">Save</button>
           </div>
         </div>
       </div>
@@ -1426,7 +1462,7 @@
     const tb = document.getElementById('page-toolbar');
     if (tb) tb.querySelectorAll('.tk-btn:not(.tk-btn-close)').forEach(b => {
       const label = b.textContent.trim();
-      if (label === 'Export' || label === 'Import' || label === 'Email' || label === 'Print') b.remove();
+      if (label === 'Export' || label === 'Import' || label === 'Email' || label === 'Print' || label === 'Refresh') b.remove();
     });
   };
 })();
@@ -1526,25 +1562,236 @@ const DEFAULT_SETTINGS = {
 //  LOCAL STORAGE DB
 // ══════════════════════════════════════
 const DB = {
-  getItems()      { return JSON.parse(localStorage.getItem('sam_items')    || '[]'); },
-  saveItems(v)    { localStorage.setItem('sam_items',    JSON.stringify(v)); },
+  // ── Auction registry (global) ──
+  getAuctions()           { return JSON.parse(localStorage.getItem('sam_auctions') || '[]'); },
+  saveAuctions(v)         { localStorage.setItem('sam_auctions', JSON.stringify(v)); },
+  getCurrentAuctionId()   { return localStorage.getItem('sam_current_auction') || ''; },
+  setCurrentAuctionId(id) { if (id) localStorage.setItem('sam_current_auction', id); else localStorage.removeItem('sam_current_auction'); },
+
+  // ── Namespace helper ──
+  _k(key) {
+    const id = this.getCurrentAuctionId();
+    return id ? `sam_${id}_${key}` : `sam_${key}`;
+  },
+
+  // ── Per-auction data ──
+  getItems()      { return JSON.parse(localStorage.getItem(this._k('items'))    || '[]'); },
+  saveItems(v)    { if (isReadOnly()) return; localStorage.setItem(this._k('items'),    JSON.stringify(v)); },
   getMembers()    { return JSON.parse(localStorage.getItem('sam_members')  || '[]'); },
   saveMembers(v)  { localStorage.setItem('sam_members', JSON.stringify(v)); },
   getRegDB()      { return JSON.parse(localStorage.getItem('sam_regdb')   || '[]'); },
   saveRegDB(v)    { localStorage.setItem('sam_regdb',   JSON.stringify(v)); },
-  getSettings()   { return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('sam_settings')  || '{}')); },
+  getBidders()    { return JSON.parse(localStorage.getItem(this._k('bidders'))  || '[]'); },
+  saveBidders(v)  { if (isReadOnly()) return; localStorage.setItem(this._k('bidders'),  JSON.stringify(v)); },
+  getWinners()    { return JSON.parse(localStorage.getItem(this._k('winners'))  || '{}'); },
+  saveWinners(v)  { if (isReadOnly()) return; localStorage.setItem(this._k('winners'),  JSON.stringify(v)); },
+  getPayments()   { return JSON.parse(localStorage.getItem(this._k('payments')) || '{}'); },
+  savePayments(v) { if (isReadOnly()) return; localStorage.setItem(this._k('payments'), JSON.stringify(v)); },
+  getEmails()     { return JSON.parse(localStorage.getItem(this._k('emails'))   || '[]'); },
+  saveEmails(v)   { if (isReadOnly()) return; localStorage.setItem(this._k('emails'),   JSON.stringify(v)); },
+
+  // ── Global settings (not per-auction) ──
+  getSettings()   { return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem('sam_settings') || '{}')); },
   saveSettings(v) { localStorage.setItem('sam_settings', JSON.stringify(v)); },
   getFieldMap()   { return JSON.parse(localStorage.getItem('sam_fieldmap') || 'null') || DEFAULT_FIELD_MAP; },
   saveFieldMap(v) { localStorage.setItem('sam_fieldmap', JSON.stringify(v)); },
-  getBidders()    { return JSON.parse(localStorage.getItem('sam_bidders')  || '[]'); },
-  saveBidders(v)  { localStorage.setItem('sam_bidders',  JSON.stringify(v)); },
-  getWinners()    { return JSON.parse(localStorage.getItem('sam_winners')  || '{}'); },
-  saveWinners(v)  { localStorage.setItem('sam_winners',  JSON.stringify(v)); },
-  getPayments()   { return JSON.parse(localStorage.getItem('sam_payments') || '{}'); },
-  savePayments(v) { localStorage.setItem('sam_payments', JSON.stringify(v)); },
-  getEmails()     { return JSON.parse(localStorage.getItem('sam_emails')   || '[]'); },
-  saveEmails(v)   { localStorage.setItem('sam_emails',   JSON.stringify(v)); },
 };
+
+// ══════════════════════════════════════
+//  AUCTION MANAGEMENT
+// ══════════════════════════════════════
+function currentAuction() {
+  const id = DB.getCurrentAuctionId();
+  if (!id) return null;
+  return DB.getAuctions().find(a => a.id === id) || null;
+}
+
+function isReadOnly() {
+  const a = currentAuction();
+  return a ? a.status === 'archived' : false;
+}
+
+function migrateGlobalData() {
+  // members and regdb are global — move them back if they ended up under a per-auction key
+  const auctions = DB.getAuctions();
+  for (const a of auctions) {
+    for (const k of ['regdb', 'members']) {
+      if (!localStorage.getItem('sam_' + k)) {
+        const v = localStorage.getItem(`sam_${a.id}_${k}`);
+        if (v !== null) {
+          localStorage.setItem('sam_' + k, v);
+          localStorage.removeItem(`sam_${a.id}_${k}`);
+        }
+      }
+    }
+  }
+}
+
+function migrateToMultiAuction() {
+  if (localStorage.getItem('sam_auctions') !== null) return;
+  const legacyKeys = ['items','bidders','winners','payments','emails'];
+  const tsNames    = ['items','bidsheets','bidders','winners','invoices','announce','paid','postauction'];
+  const hasData    = legacyKeys.some(k => localStorage.getItem('sam_' + k) !== null) ||
+                     tsNames.some(k => localStorage.getItem('sam_ts_' + k) !== null);
+  const auctions = [];
+  if (hasData) {
+    const id = 'a' + Date.now();
+    auctions.push({ id, name: 'Default Auction', status: 'active', created: new Date().toISOString() });
+    legacyKeys.forEach(k => {
+      const v = localStorage.getItem('sam_' + k);
+      if (v !== null) { localStorage.setItem(`sam_${id}_${k}`, v); localStorage.removeItem('sam_' + k); }
+    });
+    tsNames.forEach(k => {
+      const v = localStorage.getItem('sam_ts_' + k);
+      if (v !== null) { localStorage.setItem(`sam_${id}_ts_${k}`, v); localStorage.removeItem('sam_ts_' + k); }
+    });
+    localStorage.setItem('sam_current_auction', id);
+  }
+  localStorage.setItem('sam_auctions', JSON.stringify(auctions));
+}
+
+function createAuction() {
+  const name = prompt('Enter auction name:');
+  if (!name || !name.trim()) return;
+  const id = 'a' + Date.now();
+  const auctions = DB.getAuctions();
+  auctions.push({ id, name: name.trim(), status: 'active', created: new Date().toISOString() });
+  DB.saveAuctions(auctions);
+
+  // Pre-populate bidders from the registration database
+  const regDB = DB.getRegDB();
+  if (regDB.length) {
+    const bidders = regDB.map(r => ({
+      bidder_number: parseInt(r.member_number, 10) || 0,
+      last_name:     r.last_name  || '',
+      first_name:    r.first_name || '',
+      email:         r.email      || '',
+      phone:         r.cell_phone || '',
+      bidder_type:   'pre-registration',
+    })).filter(b => b.bidder_number > 0);
+    localStorage.setItem(`sam_${id}_bidders`, JSON.stringify(bidders));
+  }
+
+  openAuction(id);
+}
+
+function openAuction(id) {
+  DB.setCurrentAuctionId(id);
+  updateHomeAuctionPanel();
+  renderAuctionsList();
+  refreshHomeMetrics();
+}
+
+function deselectAuction() {
+  DB.setCurrentAuctionId('');
+  updateHomeAuctionPanel();
+  renderAuctionsList();
+}
+
+function archiveAuction(id) {
+  if (!confirm('Archive this auction? It will become read-only.')) return;
+  const auctions = DB.getAuctions();
+  const a = auctions.find(x => x.id === id);
+  if (a) a.status = 'archived';
+  DB.saveAuctions(auctions);
+  if (id === DB.getCurrentAuctionId()) updateHomeAuctionPanel();
+  renderAuctionsList();
+}
+
+function unarchiveAuction(id) {
+  const auctions = DB.getAuctions();
+  const a = auctions.find(x => x.id === id);
+  if (a) a.status = 'active';
+  DB.saveAuctions(auctions);
+  if (id === DB.getCurrentAuctionId()) updateHomeAuctionPanel();
+  renderAuctionsList();
+}
+
+function renameAuction(id) {
+  const auctions = DB.getAuctions();
+  const a = auctions.find(x => x.id === id);
+  if (!a) return;
+  const name = prompt('Enter new auction name:', a.name);
+  if (!name || !name.trim()) return;
+  a.name = name.trim();
+  DB.saveAuctions(auctions);
+  if (id === DB.getCurrentAuctionId()) {
+    const el = document.getElementById('home-current-auction-name');
+    if (el) el.textContent = a.name;
+  }
+  renderAuctionsList();
+}
+
+function updateHomeAuctionPanel() {
+  const auction        = currentAuction();
+  const auctionPanel   = document.getElementById('home-auction-panel');
+  const noAuctionEl    = document.getElementById('home-no-auction');
+  const auctionsCard   = document.getElementById('home-auctions-card');
+  const archivedBanner = document.getElementById('home-archived-banner');
+  const nameEl         = document.getElementById('home-current-auction-name');
+  if (!auctionPanel) return;
+  if (auction) {
+    auctionPanel.style.display   = '';
+    noAuctionEl.style.display    = 'none';
+    if (auctionsCard) auctionsCard.style.display = 'none';
+    nameEl.textContent           = auction.name;
+    const isArch = auction.status === 'archived';
+    archivedBanner.style.display = isArch ? '' : 'none';
+    document.body.classList.toggle('archived-mode', isArch);
+  } else {
+    auctionPanel.style.display   = 'none';
+    noAuctionEl.style.display    = '';
+    if (auctionsCard) auctionsCard.style.display = '';
+    archivedBanner.style.display = 'none';
+    document.body.classList.remove('archived-mode');
+  }
+}
+
+function renderAuctionsList() {
+  const el = document.getElementById('home-auctions-list');
+  if (!el) return;
+  const auctions  = DB.getAuctions();
+  const currentId = DB.getCurrentAuctionId();
+  if (!auctions.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary);font-size:13px;">No auctions yet. Click <strong>+ New Auction</strong> to get started.</div>';
+    return;
+  }
+  const rows = auctions.map(a => {
+    const isCurrent  = a.id === currentId;
+    const isArchived = a.status === 'archived';
+    const created    = new Date(a.created).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+    const statusBadge = isArchived
+      ? `<span style="background:#6c757d;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">ARCHIVED</span>`
+      : `<span style="background:var(--success);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">ACTIVE</span>`;
+    const currentBadge = isCurrent
+      ? ` <span style="background:var(--accent);color:#fff;padding:2px 6px;border-radius:10px;font-size:10px;">Current</span>` : '';
+    const openBtn   = `<button class="btn primary" style="font-size:11px;padding:2px 8px;" onclick="openAuction('${a.id}')">Open</button>`;
+    const renameBtn = `<button class="btn" style="font-size:11px;padding:2px 8px;" onclick="renameAuction('${a.id}')">Rename</button>`;
+    const archBtn   = isArchived
+      ? `<button class="btn" style="font-size:11px;padding:2px 8px;" onclick="unarchiveAuction('${a.id}')">Unarchive</button>`
+      : `<button class="btn" style="font-size:11px;padding:2px 8px;" onclick="archiveAuction('${a.id}')">Archive</button>`;
+    return `<tr>
+      <td>${a.name}${currentBadge}</td>
+      <td>${statusBadge}</td>
+      <td style="color:var(--text-secondary);">${created}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <div style="display:inline-flex;gap:4px;">${openBtn}${renameBtn}${archBtn}</div>
+      </td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<div style="overflow-x:auto;">
+    <table class="tablekit" style="width:100%;font-size:12px;" data-tk-sort="false">
+      <thead><tr>
+        <th style="text-align:left;">Name</th>
+        <th style="text-align:left;">Status</th>
+        <th style="text-align:left;">Created</th>
+        <th style="text-align:right;">Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  const tbl = el.querySelector('table');
+  if (tbl) TableKit.init(tbl);
+}
 
 // ══════════════════════════════════════
 //  ITEMS HELPERS
@@ -2171,8 +2418,8 @@ function refreshBiddersTable() {
       <td style="${tdStyle}">${escHtml(b.email      || '')}</td>
       <td style="${tdStyle}">${escHtml(fmtPhone(b.phone))}</td>
       <td style="text-align:center;white-space:nowrap;padding:2px 8px;">
-        <button class="btn" data-edit="${b.bidder_number}" style="font-size:11px;padding:2px 8px;margin-right:4px;">Edit</button>
-        <button class="btn danger" data-num="${b.bidder_number}" style="font-size:11px;padding:2px 8px;">Delete</button>
+        <button class="btn workflow-edit-btn" data-edit="${b.bidder_number}" style="font-size:11px;padding:2px 8px;margin-right:4px;">Edit</button>
+        <button class="btn danger workflow-edit-btn" data-num="${b.bidder_number}" style="font-size:11px;padding:2px 8px;">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -2374,7 +2621,7 @@ function addBidder() {
     <td style="padding:4px 6px;"><input class="nb-email" style="${inp}" placeholder="Email" type="email"></td>
     <td style="padding:4px 6px;"><input class="nb-phone" style="${inp}" placeholder="Phone" type="tel"></td>
     <td style="text-align:center;white-space:nowrap;padding:4px 6px;">
-      <button class="btn primary nb-save" style="font-size:11px;padding:2px 8px;margin-right:4px;">Save</button>
+      <button class="btn primary nb-save workflow-edit-btn" style="font-size:11px;padding:2px 8px;margin-right:4px;">Save</button>
       <button class="btn nb-cancel" style="font-size:11px;padding:2px 8px;">Cancel</button>
     </td>
   `;
@@ -2740,7 +2987,7 @@ function refreshPrintInvoicesTable() {
     const tr = document.createElement('tr');
     tr.dataset.bidderNum = num;
     tr.innerHTML = `
-      <td style="${tdStyle}text-align:center;"><input type="checkbox" class="pi-chk" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);"></td>
+      <td style="${tdStyle}text-align:center;"><input type="checkbox" class="pi-chk" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);" ${isReadOnly() ? 'disabled' : ''}></td>
       <td style="${tdStyle}font-weight:600;">${num}</td>
       <td style="${tdStyle}">${escHtml(bidder.last_name  || '')}</td>
       <td style="${tdStyle}">${escHtml(bidder.first_name || '')}</td>
@@ -2977,6 +3224,7 @@ function refreshPaymentTable() {
       tr.style.borderTop  = ii === 0 ? '2px solid var(--border)' : '1px solid #eaeaea';
       if (ii === 0) {
         // Bidder header cells (first item row)
+        const ro = isReadOnly() ? 'disabled' : '';
         tr.innerHTML = `
           <td style="padding:5px 8px;font-weight:700;" rowspan="${group.items.length}">${escHtml(String(num))}</td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">${escHtml(bidder.last_name  || '')}</td>
@@ -2986,25 +3234,25 @@ function refreshPaymentTable() {
           <td style="padding:5px 8px;">${escHtml(item.itemKey)} — ${escHtml(item.desc)}</td>
           <td style="padding:5px 8px;text-align:right;font-weight:600;" rowspan="${group.items.length}">${fmtDollar(totalBid)}</td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
-            <input type="text" class="pay-checknum" data-num="${num}" value="${escHtml(pay.checknum || '')}" placeholder="—" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;">
+            <input type="text" class="pay-checknum" data-num="${num}" value="${escHtml(pay.checknum || '')}" placeholder="—" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;" ${ro}>
           </td>
           <td style="padding:5px 8px;text-align:right;font-weight:600;" rowspan="${group.items.length}">${fmtDollar(totalBid * sqPct + sqFee)}</td>
           <td style="padding:5px 8px;text-align:right;font-weight:600;" rowspan="${group.items.length}">${fmtDollar(totalBid + totalBid * sqPct + sqFee)}</td>
           <td style="text-align:center;padding:5px 8px;" rowspan="${group.items.length}">
-            <input type="checkbox" class="pay-paid" data-num="${num}" style="width:16px;height:16px;cursor:pointer;" ${pay.paid ? 'checked' : ''}>
+            <input type="checkbox" class="pay-paid" data-num="${num}" style="width:16px;height:16px;cursor:pointer;" ${pay.paid ? 'checked' : ''} ${ro}>
           </td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
-            <select class="pay-method" data-num="${num}" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;width:88px;">
+            <select class="pay-method" data-num="${num}" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;width:88px;" ${ro}>
               <option value="Credit Card" ${(pay.method||'Credit Card')==='Credit Card'?'selected':''}>Credit Card</option>
               <option value="Cash"        ${(pay.method||'Credit Card')==='Cash'       ?'selected':''}>Cash</option>
               <option value="Check"       ${(pay.method||'Credit Card')==='Check'      ?'selected':''}>Check</option>
             </select>
           </td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
-            <input type="number" class="pay-other" data-num="${num}" value="${pay.other || ''}" placeholder="0.00" min="0" step="any" style="width:62px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;">
+            <input type="number" class="pay-other" data-num="${num}" value="${pay.other || ''}" placeholder="0.00" min="0" step="any" style="width:62px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;" ${ro}>
           </td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
-            <input type="text" class="pay-other-reason" data-num="${num}" value="${escHtml(pay.otherReason || '')}" placeholder="—" style="width:105px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;">
+            <input type="text" class="pay-other-reason" data-num="${num}" value="${escHtml(pay.otherReason || '')}" placeholder="—" style="width:105px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;" ${ro}>
             <div class="pay-other-err" data-num="${num}" style="display:none;color:var(--danger);font-size:11px;margin-top:3px;">Reason is required.</div>
           </td>
           <td style="padding:5px 8px;text-align:center;" rowspan="${group.items.length}">
@@ -3020,6 +3268,11 @@ function refreshPaymentTable() {
       tbody.appendChild(tr);
     });
   });
+
+  // Disable all inputs/selects in archived mode
+  if (isReadOnly()) {
+    tbody.querySelectorAll('input, select').forEach(el => { el.disabled = true; el.style.opacity = '0.5'; });
+  }
 
   // Sort indicators
   const bidderInd = document.getElementById('pay-sort-bidder');
@@ -3188,14 +3441,14 @@ function refreshWinnersTable() {
     const tr = document.createElement('tr');
     tr.dataset.itemKey = key;
     tr.innerHTML = `
-      <td style="text-align:center;"><input type="checkbox" class="win-print-chk" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);"></td>
+      <td style="text-align:center;"><input type="checkbox" class="win-print-chk" checked style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);" ${isReadOnly() ? 'disabled' : ''}></td>
       <td style="font-weight:600;font-size:13px;">${escHtml(key)}</td>
       <td style="font-size:12px;">${escHtml(item.description || '')}</td>
       <td style="font-size:12px;">${fmtDollar(item.value)}</td>
       <td style="font-size:12px;">${parseFloat(item.reserve_amount||0) > 0 ? fmtDollar(item.reserve_amount) : ''}</td>
-      <td><input class="win-bid" style="${inpStyle}text-align:right;" value="${escHtml(String(bidderNum ? (w.winning_bid || '') : ''))}" placeholder="$0.00"></td>
-      <td><select class="win-num" style="${selStyle}"><option value="">— select bidder —</option>${bidderOptions}</select></td>
-      <td style="text-align:center;"><button class="btn danger win-clear" style="font-size:11px;padding:2px 8px;">Clear</button></td>
+      <td><input class="win-bid" style="${inpStyle}text-align:right;" value="${escHtml(String(bidderNum ? (w.winning_bid || '') : ''))}" placeholder="$0.00" ${isReadOnly() ? 'disabled' : ''}></td>
+      <td><select class="win-num" style="${selStyle}" ${isReadOnly() ? 'disabled' : ''}><option value="">— select bidder —</option>${bidderOptions}</select></td>
+      <td style="text-align:center;"><button class="btn danger win-clear workflow-edit-btn" style="font-size:11px;padding:2px 8px;">Clear</button></td>
     `;
     // Set selected option after insertion
     const sel = tr.querySelector('.win-num');
@@ -3270,7 +3523,7 @@ function refreshBsItemsTable() {
     const catCode = item.category_code ? 'cat-' + item.category_code : 'cat-900';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="text-align:center;"><input type="checkbox" class="bs-chk" /></td>
+      <td style="text-align:center;"><input type="checkbox" class="bs-chk" ${isReadOnly() ? 'disabled' : ''}/></td>
       <td><strong>${escHtml(String(item.item_number))}</strong></td>
       <td style="font-size:11px;white-space:nowrap;">${escHtml(item.email_date || '')}</td>
       <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
@@ -3561,16 +3814,16 @@ function refreshHomeMetrics() {
       <div class="m-value accent">${m.value}</div>
     </div>`).join('');
 
-  const tsItems      = parseInt(localStorage.getItem('sam_ts_items')      || '0');
+  const tsName = n => DB._k('ts_' + n);
   const done = [
-    tsItems > 0,                                             // 1 Load Items
-    parseInt(localStorage.getItem('sam_ts_bidsheets')  || '0') > 0, // 2 Bid Sheets
-    parseInt(localStorage.getItem('sam_ts_bidders')    || '0') > 0, // 3 Register Bidders
-    parseInt(localStorage.getItem('sam_ts_winners')    || '0') > 0, // 4 Record Winners
-    parseInt(localStorage.getItem('sam_ts_invoices')   || '0') > 0, // 5 Print Invoices
-    parseInt(localStorage.getItem('sam_ts_announce')   || '0') > 0, // 6 Announce Winners
-    parseInt(localStorage.getItem('sam_ts_paid')       || '0') > 0, // 7 Pay & Pickup
-    parseInt(localStorage.getItem('sam_ts_postauction')|| '0') > 0, // 8 Post Auction
+    !!localStorage.getItem(tsName('items')),
+    !!localStorage.getItem(tsName('bidsheets')),
+    !!localStorage.getItem(tsName('bidders')),
+    !!localStorage.getItem(tsName('winners')),
+    !!localStorage.getItem(tsName('invoices')),
+    !!localStorage.getItem(tsName('announce')),
+    !!localStorage.getItem(tsName('paid')),
+    !!localStorage.getItem(tsName('postauction')),
   ];
   done.forEach((isDone, i) => {
     const badge = document.getElementById('step-badge-' + (i + 1));
@@ -3578,40 +3831,40 @@ function refreshHomeMetrics() {
   });
 }
 
-function markStepComplete(tsKey) {
-  localStorage.setItem(tsKey, Date.now());
+function markStepComplete(stepName) {
+  localStorage.setItem(DB._k('ts_' + stepName), Date.now());
   refreshHomeMetrics();
   navigate('home');
 }
 
-function markStepUncomplete(tsKey) {
-  localStorage.removeItem(tsKey);
+function markStepUncomplete(stepName) {
+  localStorage.removeItem(DB._k('ts_' + stepName));
   refreshHomeMetrics();
   navigate('home');
 }
 
 function clearWorkflow() {
   if (!confirm('Clear all steps to uncomplete?')) return;
-  ['sam_ts_items','sam_ts_bidsheets','sam_ts_bidders','sam_ts_winners',
-   'sam_ts_invoices','sam_ts_announce','sam_ts_paid','sam_ts_postauction']
-    .forEach(k => localStorage.removeItem(k));
+  ['items','bidsheets','bidders','winners','invoices','announce','paid','postauction']
+    .forEach(k => localStorage.removeItem(DB._k('ts_' + k)));
   refreshHomeMetrics();
 }
 
 function completeWorkflow() {
   if (!confirm('Mark all steps as complete?')) return;
   const now = Date.now();
-  ['sam_ts_items','sam_ts_bidsheets','sam_ts_bidders','sam_ts_winners',
-   'sam_ts_invoices','sam_ts_announce','sam_ts_paid','sam_ts_postauction']
-    .forEach(k => localStorage.setItem(k, now));
+  ['items','bidsheets','bidders','winners','invoices','announce','paid','postauction']
+    .forEach(k => localStorage.setItem(DB._k('ts_' + k), now));
   refreshHomeMetrics();
 }
 
-function addStepBtns(tsKey, actions, closeBtn) {
+function addStepBtns(stepName, actions, closeBtn) {
+  if (isReadOnly()) return;
+  const tsKey  = DB._k('ts_' + stepName);
   const isDone = !!localStorage.getItem(tsKey);
   const mkB = (label, fn, active) => {
     const b = document.createElement('button');
-    b.className = 'tk-btn';
+    b.className = 'tk-btn workflow-edit-btn';
     b.style.cssText = active
       ? 'background:#fff;color:var(--success);border-color:var(--success);'
       : 'background:#fff;';
@@ -3619,16 +3872,20 @@ function addStepBtns(tsKey, actions, closeBtn) {
     b.addEventListener('click', fn);
     return b;
   };
-  actions.insertBefore(mkB('Step Complete',   () => markStepComplete(tsKey),   isDone),  closeBtn);
+  actions.insertBefore(mkB('Step Complete',   () => markStepComplete(stepName),   isDone),  closeBtn);
   const uBtn = document.createElement('button');
-  uBtn.className = 'tk-btn';
+  uBtn.className = 'tk-btn workflow-edit-btn';
   uBtn.style.cssText = 'background:#fff;color:#e65100;border-color:#e65100;';
   uBtn.textContent = 'Step Uncomplete';
-  uBtn.addEventListener('click', () => markStepUncomplete(tsKey));
+  uBtn.addEventListener('click', () => markStepUncomplete(stepName));
   actions.insertBefore(uBtn, closeBtn);
 }
 
 function navigate(screenId) {
+  const workflowScreens = ['item-load','bidding-sheets','bidder-reg','auction-close','print-invoices','winner-announce','payment-pickup','post-auction'];
+  if (workflowScreens.includes(screenId) && !DB.getCurrentAuctionId()) {
+    screenId = 'home';
+  }
   navItems.forEach(n => n.classList.remove('active'));
   screens.forEach(s => s.classList.remove('active'));
   const target = document.getElementById('screen-' + screenId);
@@ -3636,15 +3893,17 @@ function navigate(screenId) {
   const navItem = document.querySelector(`.nav-item[data-screen="${screenId}"]`);
   if (navItem) navItem.classList.add('active');
 
-  if (screenId === 'home')           refreshHomeMetrics();
+  if (screenId === 'home') { updateHomeAuctionPanel(); renderAuctionsList(); refreshHomeMetrics(); }
   if (screenId === 'item-load') {
     renderEmailTable(scannedEmails);
     const emailEl = document.getElementById('gmail-login-email');
     if (emailEl) emailEl.textContent = DB.getSettings().inboxEmail || '(not set in Settings)';
-    const cBtn = document.getElementById('step1-complete-btn');
-    const uBtn = document.getElementById('step1-uncomplete-btn');
-    if (cBtn) cBtn.style.cssText = 'background:#fff;border-color:var(--success);color:var(--success);';
-    if (uBtn) uBtn.style.cssText = 'background:#fff;border-color:#e65100;color:#e65100;';
+    if (!isReadOnly()) {
+      const cBtn = document.getElementById('step1-complete-btn');
+      const uBtn = document.getElementById('step1-uncomplete-btn');
+      if (cBtn) cBtn.style.cssText = 'background:#fff;border-color:var(--success);color:var(--success);';
+      if (uBtn) uBtn.style.cssText = 'background:#fff;border-color:#e65100;color:#e65100;';
+    }
   }
   if (screenId === 'settings')       loadSettingsForm();
   if (screenId === 'bidding-sheets') {
@@ -3663,10 +3922,11 @@ function navigate(screenId) {
         b.addEventListener('click', fn);
         return b;
       };
-      actions.insertBefore(mkBtn('Check All',  bsCheckAll),       closeBtn);
-      actions.insertBefore(mkBtn('Clear All',  bsClearAll),       closeBtn);
-      actions.insertBefore(mkBtn('Print Bid Sheets', printBiddingSheets), closeBtn);
-      addStepBtns('sam_ts_bidsheets', actions, closeBtn);
+      [mkBtn('Check All', bsCheckAll), mkBtn('Clear All', bsClearAll)].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
+      const pbsBtn = mkBtn('Print Bid Sheets', printBiddingSheets);
+      pbsBtn.classList.add('workflow-edit-btn');
+      actions.insertBefore(pbsBtn, closeBtn);
+      addStepBtns('bidsheets', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -3688,12 +3948,12 @@ function navigate(screenId) {
         actionBar.id = 'bidders-action-bar';
         actionBar.style.cssText = 'display:flex;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg);';
         const addBtn = document.createElement('button');
-        addBtn.className = 'btn primary';
+        addBtn.className = 'btn primary workflow-edit-btn';
         addBtn.textContent = '+ Add Bidder';
         addBtn.addEventListener('click', addBidder);
         actionBar.appendChild(addBtn);
         const viewMembersBtn = document.createElement('button');
-        viewMembersBtn.className = 'btn';
+        viewMembersBtn.className = 'btn workflow-edit-btn';
         viewMembersBtn.textContent = 'View Member Database';
         viewMembersBtn.style.marginLeft = '8px';
         viewMembersBtn.addEventListener('click', showMemberDBModal);
@@ -3707,7 +3967,7 @@ function navigate(screenId) {
       const closeBtn = actions.querySelector('.tk-btn-close');
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
       actions.insertBefore(mkBtn('Print', printBiddersList), closeBtn);
-      addStepBtns('sam_ts_bidders', actions, closeBtn);
+      addStepBtns('bidders', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -3719,7 +3979,7 @@ function navigate(screenId) {
     refreshRegDBTable();
   }
   if (screenId === 'auction-close') {
-    PageToolbar.init({ title: '' });
+    PageToolbar.init({ title: '', tableSelector: '#winners-table' });
     const tb   = document.getElementById('page-toolbar');
     const wrap = document.getElementById('winners-toolbar-wrap');
     if (tb && wrap) wrap.appendChild(tb);
@@ -3736,10 +3996,11 @@ function navigate(screenId) {
       };
       actions.insertBefore(mkBtn('Print Invoices', printAllInvoices), closeBtn);
       actions.insertBefore(mkBtn('Print', printWinnersTable), closeBtn);
-      actions.insertBefore(mkBtn('Check All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = true)), closeBtn);
-      actions.insertBefore(mkBtn('Clear All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = false)), closeBtn);
-      actions.insertBefore(mkBtn('Save', saveAllWinners), closeBtn);
-      addStepBtns('sam_ts_winners', actions, closeBtn);
+      [mkBtn('Check All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = true)),
+       mkBtn('Clear All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = false))
+      ].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
+      const saveBtn = mkBtn('Save', saveAllWinners); saveBtn.classList.add('workflow-edit-btn'); actions.insertBefore(saveBtn, closeBtn);
+      addStepBtns('winners', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -3758,10 +4019,11 @@ function navigate(screenId) {
     if (actions) {
       const closeBtn = actions.querySelector('.tk-btn-close');
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
-      actions.insertBefore(mkBtn('Check All',  () => document.querySelectorAll('#print-invoices-tbody .pi-chk').forEach(c => c.checked = true)),  closeBtn);
-      actions.insertBefore(mkBtn('Clear All',  () => document.querySelectorAll('#print-invoices-tbody .pi-chk').forEach(c => c.checked = false)), closeBtn);
+      [mkBtn('Check All', () => document.querySelectorAll('#print-invoices-tbody .pi-chk').forEach(c => c.checked = true)),
+       mkBtn('Clear All', () => document.querySelectorAll('#print-invoices-tbody .pi-chk').forEach(c => c.checked = false))
+      ].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
       actions.insertBefore(mkBtn('Print All',  printCheckedInvoices), closeBtn);
-      addStepBtns('sam_ts_invoices', actions, closeBtn);
+      addStepBtns('invoices', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -3782,7 +4044,7 @@ function navigate(screenId) {
       const closeBtn = actions.querySelector('.tk-btn-close');
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
       actions.insertBefore(mkBtn('Print', printAnnounceTable), closeBtn);
-      addStepBtns('sam_ts_announce', actions, closeBtn);
+      addStepBtns('announce', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -3809,7 +4071,7 @@ function navigate(screenId) {
       const closeBtn = actions.querySelector('.tk-btn-close');
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
       actions.insertBefore(mkBtn('Print', printPaymentTable), closeBtn);
-      addStepBtns('sam_ts_paid', actions, closeBtn);
+      addStepBtns('paid', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -3828,7 +4090,7 @@ function navigate(screenId) {
       bar.id = 'pay-action-bar';
       bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--bg);';
       const saveBtn = document.createElement('button');
-      saveBtn.className = 'btn primary';
+      saveBtn.className = 'btn primary workflow-edit-btn';
       saveBtn.textContent = 'Save';
       saveBtn.style.cssText = 'font-size:12px;padding:4px 16px;';
       saveBtn.addEventListener('click', () => {
@@ -3861,7 +4123,7 @@ function navigate(screenId) {
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     const actions8 = tb ? tb.querySelector('.tk-toolbar-actions') : null;
     if (actions8 && closeBtn) {
-      addStepBtns('sam_ts_postauction', actions8, closeBtn);
+      addStepBtns('postauction', actions8, closeBtn);
     }
     if (closeBtn) {
       const fresh = closeBtn.cloneNode(true);
@@ -3984,10 +4246,10 @@ function openEmailBiddersPage() {
         </table>
       </div>
       <div class="footer">
-        <button class="btn-primary" onclick="sendWinnerEmails()">✉ Send Winning Emails</button>
-        <button class="btn-sec" onclick="sendNowinEmails()">✉ Send NonWinners Emails</button>
-        <button class="btn-sec" onclick="selectAll(true)">Select All</button>
-        <button class="btn-sec" onclick="selectAll(false)">Clear All</button>
+        <button class="btn-primary workflow-edit-btn" onclick="sendWinnerEmails()">✉ Send Winning Emails</button>
+        <button class="btn-sec workflow-edit-btn" onclick="sendNowinEmails()">✉ Send NonWinners Emails</button>
+        <button class="btn-sec workflow-edit-btn" onclick="selectAll(true)">Select All</button>
+        <button class="btn-sec workflow-edit-btn" onclick="selectAll(false)">Clear All</button>
       </div>
     </div>
     <div class="preview-panel" style="display:flex;gap:16px;align-items:flex-start;">
@@ -4968,17 +5230,23 @@ function showViewAll(type) {
 }
 
 function exportBackup() {
-  const keys = ['sam_items','sam_bidders','sam_winners','sam_payments','sam_settings','sam_fieldmap','sam_emails'];
-  const backup = { exported: new Date().toISOString(), version: 1 };
-  keys.forEach(k => {
-    const v = localStorage.getItem(k);
+  const auction = currentAuction();
+  const dataKeys = ['items','bidders','winners','payments','emails'];
+  const backup = { exported: new Date().toISOString(), version: 2, auctionName: auction ? auction.name : '' };
+  dataKeys.forEach(k => {
+    const v = localStorage.getItem(DB._k(k));
+    if (v) backup[k] = JSON.parse(v);
+  });
+  ['settings','fieldmap'].forEach(k => {
+    const v = localStorage.getItem('sam_' + k);
     if (v) backup[k] = JSON.parse(v);
   });
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const date = new Date().toISOString().slice(0,10);
+  const slug = (auction ? auction.name : 'sam').replace(/[^a-z0-9]/gi, '-').toLowerCase();
   const a    = document.createElement('a');
-  a.href = url; a.download = `sam-backup-${date}.json`;
+  a.href = url; a.download = `sam-backup-${slug}-${date}.json`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -4991,9 +5259,15 @@ function importBackup(input) {
   reader.onload = e => {
     let data;
     try { data = JSON.parse(e.target.result); } catch { alert('Invalid backup file.'); return; }
-    if (!confirm('This will overwrite ALL current auction data with the backup. Continue?')) return;
-    const keys = ['sam_items','sam_bidders','sam_winners','sam_payments','sam_settings','sam_fieldmap','sam_emails'];
-    keys.forEach(k => { if (data[k] !== undefined) localStorage.setItem(k, JSON.stringify(data[k])); });
+    if (!confirm('This will overwrite the current auction\'s data with the backup. Continue?')) return;
+    const dataKeys = ['items','bidders','winners','payments','emails'];
+    dataKeys.forEach(k => { if (data[k] !== undefined) localStorage.setItem(DB._k(k), JSON.stringify(data[k])); });
+    ['settings','fieldmap'].forEach(k => { if (data[k] !== undefined) localStorage.setItem('sam_' + k, JSON.stringify(data[k])); });
+    // support old v1 format (keys had sam_ prefix)
+    if (data.version !== 2) {
+      const legacyMap = { sam_items:'items', sam_bidders:'bidders', sam_winners:'winners', sam_payments:'payments', sam_emails:'emails' };
+      Object.entries(legacyMap).forEach(([old, k]) => { if (data[old] !== undefined) localStorage.setItem(DB._k(k), JSON.stringify(data[old])); });
+    }
     alert('Backup restored successfully. Reloading…');
     location.reload();
   };
@@ -5097,6 +5371,10 @@ function showCategoryItems(code, name) {
 // ══════════════════════════════════════
 (async function init() {
   await window._samServerSync;
+  migrateToMultiAuction();
+  migrateGlobalData();
+  updateHomeAuctionPanel();
+  renderAuctionsList();
   renderEmailTable(scannedEmails);
   refreshItemsTable();
   refreshMetrics();
@@ -5115,7 +5393,7 @@ function showCategoryItems(code, name) {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">1.67</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 12:19 PM</span></div>
+  <div>Version: <span id="app-version">1.101</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 4:00 PM</span></div>
 </div>
 </body>
 </html>

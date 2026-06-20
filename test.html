@@ -873,6 +873,14 @@ function runUITests() {
 
     function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+    // Returns the correct localStorage key for per-auction data (mirrors DB._k in
+    // the app). The app's DB is a `const` (not on window), so we read the current
+    // auction id straight from localStorage instead of via w.DB.
+    function samKey(key) {
+      const id = w.localStorage.getItem('sam_current_auction') || '';
+      return id ? `sam_${id}_${key}` : `sam_${key}`;
+    }
+
     async function suite(title, fn) {
       const tests = await fn();
       renderSuite('UI — ' + title, tests);
@@ -880,9 +888,39 @@ function runUITests() {
     }
 
     (async () => {
+      // ── Global cleanup before any tests ────────────────────────────────────
+      // 1. Wait for the server sync (api.php get_all) to finish loading, so it
+      //    can't asynchronously re-populate localStorage AFTER we clear it.
+      try { await w._samServerSync; } catch (e) {}
+      // 2. Permanently block server writes for the rest of the test session.
+      //    The setItem override skips the api.php POST while this flag is true,
+      //    so tests write only to localStorage and never pollute the MySQL DB.
+      w._samLoadingFromServer = true;
+      // 3. Remove ALL localStorage keys starting with 'sam_' (flat + namespaced).
+      const clearSam = () => {
+        const keysToRemove = [];
+        for (let i = 0; i < w.localStorage.length; i++) {
+          const key = w.localStorage.key(i);
+          if (key?.startsWith('sam_')) keysToRemove.push(key);
+        }
+        keysToRemove.forEach(k => w.localStorage.removeItem(k));
+      };
+      clearSam();
+      // 4. Create an active test auction. The app now requires a current auction
+      //    for all workflow screens (navigate() redirects to home otherwise), and
+      //    per-auction data lives under namespaced keys (sam_<id>_<key>). Tests use
+      //    the samKey() helper so their seeded data matches what the app reads.
+      const testAuctionId = 'test_' + Date.now();
+      w._samOrigSetItem('sam_auctions', JSON.stringify([
+        { id: testAuctionId, name: 'Test Auction', status: 'active', created: new Date().toISOString() }
+      ]));
+      w._samOrigSetItem('sam_current_auction', testAuctionId);
+      w.updateHomeAuctionPanel?.();
+      w.refreshHomeMetrics?.();
+
       // ── Home — workflow cards ──────────────────────────────────────────────
       nav('home');
-      await delay(60);
+      await delay(100);
       await suite('Home screen', () => [
         uiCheck(d, 'screen is active',                    '#screen-home.active'),
         uiCheck(d, 'logo image present',                  '#screen-home img'),
@@ -903,21 +941,18 @@ function runUITests() {
 
       // ── Workflow step badges ───────────────────────────────────────────────
       nav('home');
-      await delay(60);
-      // Clear all timestamps first
-      const tsKeys = ['sam_ts_items','sam_ts_bidsheets','sam_ts_bidders','sam_ts_winners',
-                      'sam_ts_invoices','sam_ts_announce','sam_ts_paid','sam_ts_postauction'];
-      tsKeys.forEach(k => w.localStorage.removeItem(k));
+      await delay(100);
       w.refreshHomeMetrics();
-      await delay(30);
+      await delay(50);
       await suite('Workflow step badges — uncomplete', () => [
         uiAssert('step 1 badge blue when uncomplete',
           !d.getElementById('step-badge-1')?.classList.contains('done'), 'step 1 should not be done'),
       ]);
-      // Mark step 1 complete
-      w.localStorage.setItem('sam_ts_items', Date.now());
+      // Mark step 1 complete (timestamps are per-auction → namespaced)
+      w.localStorage.setItem(samKey('ts_items'), Date.now());
+      await delay(20);
       w.refreshHomeMetrics();
-      await delay(30);
+      await delay(50);
       await suite('Workflow step badges — complete', () => [
         uiAssert('step 1 badge green when complete',
           d.getElementById('step-badge-1')?.classList.contains('done'), 'step 1 should be done'),
@@ -925,7 +960,8 @@ function runUITests() {
           !d.getElementById('step-badge-2')?.classList.contains('done'), 'step 2 should be independent'),
       ]);
       // Clear timestamps after test
-      tsKeys.forEach(k => w.localStorage.removeItem(k));
+      ['items','bidsheets','bidders','winners','invoices','announce','paid','postauction']
+        .forEach(s => w.localStorage.removeItem(samKey('ts_' + s)));
 
       // ── Nav: Load Items ────────────────────────────────────────────────────
       nav('item-load');
@@ -1032,12 +1068,15 @@ function runUITests() {
 
       // ── Edit bidder modal opens ───────────────────────────────────────────
       nav('bidder-reg');
-      await delay(60);
+      await delay(80);
       try {
-        w.localStorage.setItem('sam_bidders', JSON.stringify([
+        // Clean slate for this test
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([
           { bidder_number: 1001, last_name: 'TestLast', first_name: 'TestFirst', email: '', phone: '', bidder_type: 'walk-in' }
         ]));
         w.refreshBiddersTable();
+        await delay(50);
         await delay(60);
         const editBtn = d.querySelector('#bidders-tbody button[data-edit]');
         if (editBtn) editBtn.click();
@@ -1051,7 +1090,7 @@ function runUITests() {
           uiAssert('Modal populated with bidder', numVal === '1001', `edit-bidder-num = "${numVal}"`),
         ]);
         if (modal) modal.style.display = 'none';
-        w.localStorage.removeItem('sam_bidders');
+        w.localStorage.removeItem(samKey('bidders'));
         w.refreshBiddersTable();
       } catch(e) {
         renderSuite('UI — Edit bidder modal', [{ name: 'edit modal test', pass: false, detail: e.message }]);
@@ -1087,18 +1126,23 @@ function runUITests() {
 
       // ── Add to bidders uses member_number as bidder_number ─────────────────
       try {
-        w.localStorage.setItem('sam_bidders', JSON.stringify([]));
+        nav('bidder-reg');
+        await delay(80);
+        // Clean slate for this test
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.removeItem('sam_members');
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([]));
         w.localStorage.setItem('sam_members', JSON.stringify([
           { member_number: '42',  last_name: 'Doe',   first_name: 'Jane', primary_email: 'j@t.com', cell_phone: '555-0001' },
           { member_number: '101', last_name: 'Smith',  first_name: 'Bob',  primary_email: 'b@t.com', cell_phone: '555-0002' },
         ]));
         w.showMemberDBModal();
-        await delay(80);
+        await delay(100);
         // Check all checkboxes
         d.querySelectorAll('#member-db-modal-table tbody input[type="checkbox"]').forEach(cb => cb.checked = true);
         w.addCheckedToWalkins();
         await delay(60);
-        const bidders = JSON.parse(w.localStorage.getItem('sam_bidders') || '[]');
+        const bidders = JSON.parse(w.localStorage.getItem(samKey('bidders')) || '[]');
         const b42  = bidders.find(b => b.bidder_number === 42);
         const b101 = bidders.find(b => b.bidder_number === 101);
         await suite('Add to bidders uses member_number', () => [
@@ -1109,7 +1153,7 @@ function runUITests() {
           uiAssert('last_name preserved',        b42?.last_name === 'Doe',    `Got ${b42?.last_name}`),
         ]);
         d.getElementById('member-db-modal').style.display = 'none';
-        w.localStorage.setItem('sam_bidders', JSON.stringify([]));
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([]));
       } catch(e) {
         renderSuite('UI — Add to bidders uses member_number', [{ name: 'add test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1150,7 +1194,7 @@ function runUITests() {
       try {
         nav('bidder-reg');
         await delay(80);
-        w.localStorage.setItem('sam_bidders', JSON.stringify([]));
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([]));
         w.refreshBiddersTable();
         await delay(40);
         const addBtn = [...d.querySelectorAll('#bidders-action-bar button')].find(b => b.textContent.includes('Add Bidder'));
@@ -1172,7 +1216,7 @@ function runUITests() {
         await suite('Register Bidders — Cancel new bidder row', () => [
           uiAssert('Cancel removes the new row',  rowGone, 'new-bidder-row still present after Cancel'),
         ]);
-        w.localStorage.removeItem('sam_bidders');
+        w.localStorage.removeItem(samKey('bidders'));
       } catch(e) {
         renderSuite('UI — Register Bidders — Add Bidder button', [{ name: 'add bidder test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1182,10 +1226,12 @@ function runUITests() {
       try {
         nav('bidder-reg');
         await delay(80);
-        w.localStorage.setItem('sam_bidders', JSON.stringify([
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([
           { bidder_number: 55, last_name: 'Del', first_name: 'Me', email: 'd@t.com', phone: '', bidder_type: 'walk-in' }
         ]));
         w.refreshBiddersTable();
+        await delay(50);
         await delay(40);
         const orig = w.confirm;
         w.confirm = () => true;
@@ -1193,12 +1239,12 @@ function runUITests() {
         if (delBtn) delBtn.click();
         await delay(40);
         w.confirm = orig;
-        const remaining = JSON.parse(w.localStorage.getItem('sam_bidders') || '[]');
+        const remaining = JSON.parse(w.localStorage.getItem(samKey('bidders')) || '[]');
         await suite('Register Bidders — Delete bidder button', () => [
           uiAssert('Delete button found',      !!delBtn,          'No delete button in bidders-tbody'),
           uiAssert('Bidder removed from DB',   remaining.length === 0, `Expected 0 bidders, got ${remaining.length}`),
         ]);
-        w.localStorage.removeItem('sam_bidders');
+        w.localStorage.removeItem(samKey('bidders'));
       } catch(e) {
         renderSuite('UI — Register Bidders — Delete bidder button', [{ name: 'delete bidder test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1208,10 +1254,12 @@ function runUITests() {
       try {
         nav('bidder-reg');
         await delay(80);
-        w.localStorage.setItem('sam_bidders', JSON.stringify([
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([
           { bidder_number: 77, last_name: 'Edit', first_name: 'Me', email: 'e@t.com', phone: '', bidder_type: 'walk-in' }
         ]));
         w.refreshBiddersTable();
+        await delay(50);
         await delay(40);
         const editBtn = d.querySelector('#bidders-tbody button[data-edit]');
         if (editBtn) editBtn.click();
@@ -1224,7 +1272,7 @@ function runUITests() {
           uiAssert('Cancel button found in edit modal', !!cancelEditBtn, 'No Cancel button in bidder-edit-modal'),
           uiAssert('Modal closes after Cancel',         modalClosed,     'bidder-edit-modal still visible after Cancel'),
         ]);
-        w.localStorage.removeItem('sam_bidders');
+        w.localStorage.removeItem(samKey('bidders'));
       } catch(e) {
         renderSuite('UI — Bidder Edit modal — Cancel button', [{ name: 'cancel edit test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1272,7 +1320,8 @@ function runUITests() {
       try {
         nav('bidding-sheets');
         await delay(80);
-        w.localStorage.setItem('sam_items', JSON.stringify([
+        w.localStorage.removeItem(samKey('items'));
+        w.localStorage.setItem(samKey('items'), JSON.stringify([
           { item_number: '200-1', description: 'Test Item', category_name: 'Corvette Items', category_code: '200', value: '$50', reserve_amount: '', donor_name: 'Donor' }
         ]));
         w.refreshBSTable && w.refreshBSTable();
@@ -1291,7 +1340,7 @@ function runUITests() {
           uiAssert('Clear All button found',       !!clearAllBtn,   'No Clear All button on Bid Sheets screen'),
           uiAssert('Clear All unchecks all items', allBsUnchecked,  'Not all bs-chk unchecked after Clear All'),
         ]);
-        w.localStorage.removeItem('sam_items');
+        w.localStorage.removeItem(samKey('items'));
       } catch(e) {
         renderSuite('UI — Bid Sheets — Check All / Clear All', [{ name: 'check/clear test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1354,11 +1403,13 @@ function runUITests() {
       // ── Settings — Delete Bidders button ───────────────────────────────────
       try {
         nav('settings');
-        await delay(60);
-        w.localStorage.setItem('sam_bidders', JSON.stringify([
+        await delay(80);
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([
           { bidder_number: 1, last_name: 'A', first_name: 'B', email: '', phone: '', bidder_type: 'walk-in' },
           { bidder_number: 2, last_name: 'C', first_name: 'D', email: '', phone: '', bidder_type: 'member' },
         ]));
+        await delay(40);
         d.getElementById('sel-clear-bidders').value = 'all';
         const orig = w.confirm;
         w.confirm = () => true;
@@ -1366,14 +1417,14 @@ function runUITests() {
         if (delBiddersBtn) delBiddersBtn.click();
         await delay(40);
         w.confirm = orig;
-        const afterDelete = JSON.parse(w.localStorage.getItem('sam_bidders') || '[]');
+        const afterDelete = JSON.parse(w.localStorage.getItem(samKey('bidders')) || '[]');
         const statusMsg = d.getElementById('bidder-db-status')?.textContent;
         await suite('Settings — Delete Bidders button', () => [
           uiAssert('Delete Bidders button found',  !!delBiddersBtn,       'No Delete Bidders button on Settings screen'),
           uiAssert('All bidders cleared from DB',  afterDelete.length === 0, `Expected 0, got ${afterDelete.length}`),
           uiAssert('Status message shown',         statusMsg && statusMsg.includes('removed'), `Status: "${statusMsg}"`),
         ]);
-        w.localStorage.removeItem('sam_bidders');
+        w.localStorage.removeItem(samKey('bidders'));
       } catch(e) {
         renderSuite('UI — Settings — Delete Bidders button', [{ name: 'delete bidders test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1383,11 +1434,15 @@ function runUITests() {
       try {
         nav('post-auction');
         await delay(80);
+        // Clean slate for this test
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.removeItem(samKey('winners'));
         // Seed a winner with email
-        w.localStorage.setItem('sam_bidders', JSON.stringify([
+        w.localStorage.setItem(samKey('bidders'), JSON.stringify([
           { bidder_number: 5, last_name: 'Win', first_name: 'Joe', email: 'joe@test.com', phone: '', bidder_type: 'member' }
         ]));
-        w.localStorage.setItem('sam_winners', JSON.stringify({ '200-1': { bidder_number: 5, bidder_name: 'Joe Win', winning_bid: '50.00' } }));
+        w.localStorage.setItem(samKey('winners'), JSON.stringify({ '200-1': { bidder_number: 5, bidder_name: 'Joe Win', winning_bid: '50.00' } }));
+        await delay(40);
         const emailCard = [...d.querySelectorAll('#post-auction-card .pa-card')].find(c => c.textContent.includes('Email Bidders'));
         if (emailCard) emailCard.querySelector('button')?.click();
         await delay(100);
@@ -1396,8 +1451,8 @@ function runUITests() {
           uiAssert('Email Bidders card found',           !!emailCard, 'No Email Bidders card in Post Auction'),
           uiAnyContains(d, 'Email Bidders card present', '#post-auction-card .pa-card', 'Email Bidders'),
         ]);
-        w.localStorage.removeItem('sam_bidders');
-        w.localStorage.removeItem('sam_winners');
+        w.localStorage.removeItem(samKey('bidders'));
+        w.localStorage.removeItem(samKey('winners'));
       } catch(e) {
         renderSuite('UI — Email Bidders — buttons present', [{ name: 'email bidders test', pass: false, detail: e.message }]);
         updateSummary();
@@ -1457,6 +1512,213 @@ function runUITests() {
           uiAssert('decoded contains Content-Type', decoded.includes('text/plain'),    'missing Content-Type'),
         ];
       });
+
+      // ── Button wiring ─────────────────────────────────────────────────────────
+      try {
+        // Set up a test auction so workflow screens are accessible
+        const bwAuctionId = 'bw_' + Date.now();
+        w.localStorage.setItem('sam_auctions', JSON.stringify([
+          { id: bwAuctionId, name: 'Button Wiring Test', status: 'active', created: new Date().toISOString() }
+        ]));
+        w.localStorage.setItem('sam_current_auction', bwAuctionId);
+        w.updateHomeAuctionPanel();
+
+        // ── Step 1: Load Items ──────────────────────────────────────────────────
+        nav('item-load');
+        await delay(80);
+        await suite('Button wiring — Load Items', () => {
+          const s = d.getElementById('screen-item-load');
+          const allBtns = s ? [...s.querySelectorAll('button')] : [];
+          return [
+            uiCheck(d,  'Step Complete button exists',   '#step1-complete-btn'),
+            uiCheck(d,  'Step Uncomplete button exists', '#step1-uncomplete-btn'),
+            uiAssert('Step Complete has onclick',    !!d.getElementById('step1-complete-btn')?.getAttribute('onclick'),    'no onclick on step1-complete-btn'),
+            uiAssert('Step Uncomplete has onclick',  !!d.getElementById('step1-uncomplete-btn')?.getAttribute('onclick'),  'no onclick on step1-uncomplete-btn'),
+            uiAssert('Scan button present',          !!(d.getElementById('btn-scan-inline') || d.getElementById('btn-scan')), 'no #btn-scan-inline / #btn-scan'),
+            uiAssert('Update Items button present',  !!d.getElementById('btn-load-items'), 'no #btn-load-items'),
+          ];
+        });
+
+        // ── Step 2: Bid Sheets ──────────────────────────────────────────────────
+        nav('bidding-sheets');
+        await delay(80);
+        await suite('Button wiring — Bid Sheets', () => {
+          const btns = [...d.querySelectorAll('#bs-toolbar-wrap button')];
+          return [
+            uiAssert('Check All present',        btns.some(b => b.textContent.trim() === 'Check All'),        'no Check All'),
+            uiAssert('Clear All present',        btns.some(b => b.textContent.trim() === 'Clear All'),        'no Clear All'),
+            uiAssert('Print Bid Sheets present', btns.some(b => b.textContent.includes('Print Bid Sheets')),  'no Print Bid Sheets'),
+            uiAssert('Step Complete present',    btns.some(b => b.textContent.trim() === 'Step Complete'),    'no Step Complete'),
+            uiAssert('Step Uncomplete present',  btns.some(b => b.textContent.trim() === 'Step Uncomplete'),  'no Step Uncomplete'),
+          ];
+        });
+
+        // ── Step 3: Register Bidders ────────────────────────────────────────────
+        nav('bidder-reg');
+        await delay(80);
+        await suite('Button wiring — Register Bidders', () => {
+          const toolbarBtns  = [...d.querySelectorAll('#bidders-card .tk-toolbar-actions button')];
+          const actionBarBtns = [...d.querySelectorAll('#bidders-action-bar button')];
+          return [
+            uiAssert('Add Bidder present',             actionBarBtns.some(b => b.textContent.includes('Add Bidder')),           'no Add Bidder in action bar'),
+            uiAssert('View Member Database present',   actionBarBtns.some(b => b.textContent.includes('Member Database')),      'no View Member Database in action bar'),
+            uiAssert('Print present',                  toolbarBtns.some(b => b.textContent.trim() === 'Print'),                 'no Print in toolbar'),
+            uiAssert('Step Complete present',          toolbarBtns.some(b => b.textContent.trim() === 'Step Complete'),         'no Step Complete in toolbar'),
+            uiAssert('Step Uncomplete present',        toolbarBtns.some(b => b.textContent.trim() === 'Step Uncomplete'),       'no Step Uncomplete in toolbar'),
+          ];
+        });
+
+        // ── Step 4: Record Winning Bidders ──────────────────────────────────────
+        nav('auction-close');
+        await delay(80);
+        await suite('Button wiring — Record Winning Bidders', () => {
+          const btns = [...d.querySelectorAll('#winners-toolbar-wrap button')];
+          return [
+            uiAssert('Save present',           btns.some(b => b.textContent.trim() === 'Save'),           'no Save'),
+            uiAssert('Check All present',      btns.some(b => b.textContent.trim() === 'Check All'),      'no Check All'),
+            uiAssert('Clear All present',      btns.some(b => b.textContent.trim() === 'Clear All'),      'no Clear All'),
+            uiAssert('Print Invoices present', btns.some(b => b.textContent.trim() === 'Print Invoices'), 'no Print Invoices'),
+            uiAssert('Print present',          btns.some(b => b.textContent.trim() === 'Print'),          'no Print'),
+            uiAssert('Step Complete present',  btns.some(b => b.textContent.trim() === 'Step Complete'),  'no Step Complete'),
+            uiAssert('Step Uncomplete present',btns.some(b => b.textContent.trim() === 'Step Uncomplete'),'no Step Uncomplete'),
+            uiAssert('Clear Filters present',  btns.some(b => b.textContent.trim() === 'Clear Filters'),  'no Clear Filters'),
+          ];
+        });
+
+        // ── Clear Filters functional (Record Winning Bidders) ───────────────────
+        try {
+          w.localStorage.setItem(samKey('items'), JSON.stringify([
+            { item_number: '200-1', description: 'Brochure', item_category: 'Corvette Items', item_value: '$25', reserve_amount: '', donor_name: 'Donor A' },
+            { item_number: '300-1', description: 'Hat',      item_category: "Men's Items",    item_value: '$20', reserve_amount: '', donor_name: 'Donor B' },
+          ]));
+          nav('auction-close');
+          await delay(100);
+          // Hide a row to simulate an active filter
+          const firstRow = d.querySelector('#winners-tbody tr');
+          if (firstRow) firstRow.dataset.tkHidden = 'true';
+          const clearFiltersBtn = [...d.querySelectorAll('#winners-toolbar-wrap button')].find(b => b.textContent.trim() === 'Clear Filters');
+          if (clearFiltersBtn) clearFiltersBtn.click();
+          await delay(40);
+          const allVisible = [...d.querySelectorAll('#winners-tbody tr')].every(r => r.dataset.tkHidden !== 'true');
+          await suite('Button wiring — Clear Filters functional', () => [
+            uiAssert('Clear Filters button found',        !!clearFiltersBtn, 'no Clear Filters button in winners toolbar'),
+            uiAssert('Clear Filters unhides all rows',    allVisible,        'some rows still hidden after Clear Filters'),
+          ]);
+          w.localStorage.removeItem(samKey('items'));
+        } catch(ef) {
+          renderSuite('UI — Button wiring — Clear Filters functional', [{ name: 'clear filters test', pass: false, detail: ef.message }]);
+          updateSummary();
+        }
+
+        // ── Step 5: Print Invoices ──────────────────────────────────────────────
+        nav('print-invoices');
+        await delay(80);
+        await suite('Button wiring — Print Invoices', () => {
+          const btns = [...d.querySelectorAll('#print-invoices-toolbar-wrap button')];
+          return [
+            uiAssert('Print All present',      btns.some(b => b.textContent.trim() === 'Print All'),      'no Print All'),
+            uiAssert('Check All present',      btns.some(b => b.textContent.trim() === 'Check All'),      'no Check All'),
+            uiAssert('Clear All present',      btns.some(b => b.textContent.trim() === 'Clear All'),      'no Clear All'),
+            uiAssert('Step Complete present',  btns.some(b => b.textContent.trim() === 'Step Complete'),  'no Step Complete'),
+            uiAssert('Step Uncomplete present',btns.some(b => b.textContent.trim() === 'Step Uncomplete'),'no Step Uncomplete'),
+          ];
+        });
+
+        // ── Step 6: Announce Winners ────────────────────────────────────────────
+        nav('winner-announce');
+        await delay(80);
+        await suite('Button wiring — Announce Winners', () => {
+          const btns = [...d.querySelectorAll('#announce-toolbar-wrap button')];
+          return [
+            uiAssert('Print present',          btns.some(b => b.textContent.trim() === 'Print'),          'no Print'),
+            uiAssert('Step Complete present',  btns.some(b => b.textContent.trim() === 'Step Complete'),  'no Step Complete'),
+            uiAssert('Step Uncomplete present',btns.some(b => b.textContent.trim() === 'Step Uncomplete'),'no Step Uncomplete'),
+          ];
+        });
+
+        // ── Step 7: Pay & Pickup ────────────────────────────────────────────────
+        nav('payment-pickup');
+        await delay(80);
+        await suite('Button wiring — Pay & Pickup', () => {
+          const toolbarBtns = [...d.querySelectorAll('#payment-toolbar-wrap button')];
+          const payBar      = d.getElementById('pay-action-bar');
+          return [
+            uiAssert('Print present',           toolbarBtns.some(b => b.textContent.trim() === 'Print'),          'no Print in toolbar'),
+            uiAssert('Step Complete present',   toolbarBtns.some(b => b.textContent.trim() === 'Step Complete'),  'no Step Complete in toolbar'),
+            uiAssert('Step Uncomplete present', toolbarBtns.some(b => b.textContent.trim() === 'Step Uncomplete'),'no Step Uncomplete in toolbar'),
+            uiAssert('Save action bar present', !!payBar,                                                          'no pay-action-bar'),
+            uiAssert('Save button in action bar', !!payBar?.querySelector('button'),                               'no button in pay-action-bar'),
+          ];
+        });
+
+        // ── Step 8: Post Auction ────────────────────────────────────────────────
+        nav('post-auction');
+        await delay(80);
+        await suite('Button wiring — Post Auction', () => {
+          const btns = [...d.querySelectorAll('#post-auction-toolbar-wrap button')];
+          return [
+            uiAssert('Step Complete present',  btns.some(b => b.textContent.trim() === 'Step Complete'),  'no Step Complete'),
+            uiAssert('Step Uncomplete present',btns.some(b => b.textContent.trim() === 'Step Uncomplete'),'no Step Uncomplete'),
+          ];
+        });
+
+        // ── Bidder Edit modal — Save / Cancel wired ─────────────────────────────
+        try {
+          w.localStorage.setItem(samKey('bidders'), JSON.stringify([
+            { bidder_number: 999, last_name: 'Wiring', first_name: 'Test', email: '', phone: '', bidder_type: 'walk-in' }
+          ]));
+          nav('bidder-reg');
+          await delay(80);
+          const editBtn2 = d.querySelector('#bidders-tbody button[data-edit]');
+          if (editBtn2) editBtn2.click();
+          await delay(50);
+          const modal2 = d.getElementById('bidder-edit-modal');
+          const modalBtns = modal2 ? [...modal2.querySelectorAll('button')] : [];
+          await suite('Button wiring — Bidder Edit modal', () => [
+            uiAssert('Save button in modal',   modalBtns.some(b => b.textContent.trim() === 'Save'),   'no Save in bidder-edit-modal'),
+            uiAssert('Cancel button in modal', modalBtns.some(b => b.textContent.trim() === 'Cancel'), 'no Cancel in bidder-edit-modal'),
+          ]);
+          if (modal2) modal2.style.display = 'none';
+          w.localStorage.removeItem(samKey('bidders'));
+        } catch(em) {
+          renderSuite('UI — Button wiring — Bidder Edit modal', [{ name: 'modal wiring test', pass: false, detail: em.message }]);
+          updateSummary();
+        }
+
+        // ── Archived mode — Step buttons absent from toolbars ───────────────────
+        w.localStorage.setItem('sam_auctions', JSON.stringify([
+          { id: bwAuctionId, name: 'Button Wiring Test', status: 'archived', created: new Date().toISOString() }
+        ]));
+        w.updateHomeAuctionPanel();
+        await delay(30);
+        nav('bidding-sheets');
+        await delay(80);
+        const archBsToolbarBtns = [...d.querySelectorAll('#bs-toolbar-wrap button')];
+        nav('auction-close');
+        await delay(80);
+        const archWinToolbarBtns = [...d.querySelectorAll('#winners-toolbar-wrap button')];
+        // The Save button is added with .workflow-edit-btn and hidden via CSS in
+        // archived mode (not removed from the DOM), so verify it's not visible.
+        const archSaveBtn = archWinToolbarBtns.find(b => b.textContent.trim() === 'Save');
+        const saveHidden  = !archSaveBtn || archSaveBtn.offsetParent === null
+          || w.getComputedStyle(archSaveBtn).display === 'none';
+        await suite('Button wiring — Archived mode hides step buttons', () => [
+          uiAssert('body.archived-mode class set',                      d.body.classList.contains('archived-mode'),                                    'archived-mode class not on body'),
+          uiAssert('Step Complete absent from Bid Sheets toolbar',      !archBsToolbarBtns.some(b => b.textContent.trim() === 'Step Complete'),        'Step Complete still in Bid Sheets toolbar'),
+          uiAssert('Step Uncomplete absent from Bid Sheets toolbar',    !archBsToolbarBtns.some(b => b.textContent.trim() === 'Step Uncomplete'),      'Step Uncomplete still in Bid Sheets toolbar'),
+          uiAssert('Save hidden in Record Winners toolbar',            saveHidden,                                                                     'Save still visible in Record Winners toolbar'),
+          uiAssert('Step Complete absent from Record Winners toolbar',  !archWinToolbarBtns.some(b => b.textContent.trim() === 'Step Complete'),       'Step Complete still in Record Winners toolbar'),
+        ]);
+
+        // Clean up
+        w.localStorage.removeItem('sam_auctions');
+        w.localStorage.removeItem('sam_current_auction');
+        w.updateHomeAuctionPanel();
+
+      } catch(e) {
+        renderSuite('UI — Button wiring', [{ name: 'button wiring setup', pass: false, detail: e.message }]);
+        updateSummary();
+      }
 
       updateSummary();
       document.getElementById('s-status').textContent +=  ' (incl. UI)';
