@@ -501,10 +501,10 @@
 
 <!-- Hero -->
 <div id="hero">
-  <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" />
+  <img src="Images/ETCClogoWhiteBackground.png" alt="${getClub().shortName} Logo" id="nav-club-logo" />
   <div>
     <h1>Silent Auction Manager</h1>
-    <span>East Tennessee Corvette Club</span>
+    <span id="nav-club-name">${getClub().name}</span>
   </div>
 </div>
 
@@ -537,49 +537,49 @@
     <section class="screen active" id="screen-home">
       <div style="max-width:700px;margin:4px auto 0;">
         <div style="text-align:center;margin-bottom:8px;">
-          <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" style="height:44px;margin-bottom:4px;" />
+          <img src="Images/ETCClogoWhiteBackground.png" alt="${getClub().shortName} Logo" id="home-club-logo" style="height:44px;margin-bottom:4px;" />
           <h1 style="font-size:1.2rem;font-weight:700;color:var(--text);margin:0 0 2px;">Silent Auction Manager (SAM)</h1>
-          <p style="font-size:12px;color:var(--text-secondary);margin:0;">East Tennessee Corvette Club</p>
+          <p style="font-size:12px;color:var(--text-secondary);margin:0;" id="home-club-name">${getClub().name}</p>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;" id="home-metrics"></div>
 
         <div style="padding:10px 16px;background:var(--bg-section);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:12px;line-height:1.5;color:var(--text);text-align:center;">
-          <strong>Welcome to Silent Auction Manager (SAM)!</strong><br>Your home base for running the whole auction — from loading items off email, printing bid sheets, tracking winners, and getting invoices out the door. No database skills needed.
+          <strong>Welcome to Silent Auction Manager (SAM)!</strong><br>Your home base for running the whole auction — from loading items off email, printing bid sheets, tracking winners, and getting invoices out the door. You run the auction and I'll manage the administration.
         </div>
 
         <div class="card" style="margin-bottom:0;">
           <div class="card-header">Auction Workflow</div>
           <div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column dense;gap:8px;">
-            <div id="step-card-1" onclick="navigate('item-load')"       style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-1" onclick="navigate('item-load')"       style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-1" class="step-badge">1</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Load Item Emails</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Scan the auction inbox and import items from Gmail</div></div>
             </div>
-            <div id="step-card-2" onclick="navigate('bidding-sheets')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-2" onclick="navigate('bidding-sheets')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-2" class="step-badge">2</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Create Bid Sheets</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print bid sheets for each auction item</div></div>
             </div>
-            <div id="step-card-3" onclick="navigate('bidder-reg')"      style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-3" onclick="navigate('bidder-reg')"      style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-3" class="step-badge">3</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Register Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Add bidders and assign bidder numbers</div></div>
             </div>
-            <div id="step-card-4" onclick="navigate('auction-close')"   style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-4" onclick="navigate('auction-close')"   style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-4" class="step-badge">4</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Record Winning Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Enter the winning bidder number for each item</div></div>
             </div>
-            <div id="step-card-5" onclick="navigate('print-invoices')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-5" onclick="navigate('print-invoices')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-5" class="step-badge">5</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Print Invoices</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Print invoices for all winning bidders</div></div>
             </div>
-            <div id="step-card-6" onclick="navigate('winner-announce')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-6" onclick="navigate('winner-announce')" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-6" class="step-badge">6</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Announce Winners</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Display and email the list of winning bidders</div></div>
             </div>
-            <div id="step-card-7" onclick="navigate('payment-pickup')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-7" onclick="navigate('payment-pickup')"  style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-7" class="step-badge">7</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Pay &amp; Pickup</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Record payments and item pickup for each winner</div></div>
             </div>
-            <div id="step-card-8" onclick="navigate('post-auction')"    style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:2px solid var(--accent);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
+            <div id="step-card-8" onclick="navigate('post-auction')"    style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
               <span id="step-badge-8" class="step-badge">8</span>
               <div><div style="font-size:13px;font-weight:600;color:var(--text);">Post Auction</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Post-auction tasks and reporting</div></div>
             </div>
@@ -587,7 +587,7 @@
         </div>
 
         <div style="display:flex;gap:8px;justify-content:center;padding:10px 0 2px;">
-          <button class="btn" onclick="clearWorkflow()" style="font-size:12px;">Clear Workflow</button>
+          <button class="btn" onclick="clearWorkflow()" style="font-size:12px;">Reset Workflow</button>
           <button class="btn" onclick="completeWorkflow()" style="font-size:12px;">Complete Workflow</button>
           <a href="https://etccapps.com" class="btn" style="font-size:12px;text-decoration:none;">Return to Dashboard</a>
         </div>
@@ -1019,6 +1019,34 @@
     <section class="screen" id="screen-settings">
       <div class="page-header"><h2>Settings</h2><p>Configure Gmail access and email field extraction mapping.</p></div>
 
+      <!-- Club Branding -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">Club Branding</div>
+        <div style="padding:16px;">
+          <div class="form-row">
+            <label for="inp-club-name">Club Name</label>
+            <input type="text" id="inp-club-name" style="width:320px;" placeholder="e.g. East Tennessee Corvette Club" />
+          </div>
+          <div class="form-row">
+            <label for="inp-club-short-name">Club Short Name</label>
+            <input type="text" id="inp-club-short-name" style="width:200px;" placeholder="e.g. ETCC" />
+          </div>
+          <div class="form-row">
+            <label for="inp-club-logo">Club Logo URL</label>
+            <input type="text" id="inp-club-logo" style="width:400px;" placeholder="https://... or relative path to logo image" />
+            <span class="form-hint">Used on the home screen and bid sheets.</span>
+          </div>
+          <div class="form-row">
+            <label for="inp-club-favicon">Club Favicon URL</label>
+            <input type="text" id="inp-club-favicon" style="width:400px;" placeholder="https://... or relative path to favicon image" />
+            <span class="form-hint">Displayed in the browser tab.</span>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Auction Location -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">Auction Location</div>
@@ -1309,7 +1337,7 @@
 <div id="manual-overlay">
   <div id="manual-dialog">
     <header>
-      <h2>📖 ETCC Silent Auction Manager — User Manual</h2>
+      <h2>📖 <span id="manual-short-name">ETCC</span> Silent Auction Manager — User Manual</h2>
       <div style="display:flex;gap:8px;">
         <button onclick="window.print()" style="background:#0071e3;color:#fff;border:none;border-radius:5px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;">🖨 Print</button>
         <button id="close-manual">&times;</button>
@@ -2047,7 +2075,7 @@ function printBiddingSheets() {
     return `
     <div class="sheet">
       <div class="sheet-header">
-        <div class="sheet-title">East Tennessee Corvette Club — Silent Auction</div>
+        <div class="sheet-title">${getClub().name} — Silent Auction</div>
         <div class="sheet-item-num">Item # ${escHtml(String(item.item_number))}</div>
       </div>
       <table class="sheet-info">
@@ -2439,8 +2467,8 @@ function printInvoice(bidderNum) {
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
     <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href}" alt="ETCC Logo" style="height:60px;">
-      <div><h2>Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">East Tennessee Corvette Club</div></div>
+      <img src="${new URL(getClub().logo, window.location.href).href}" alt="${getClub().shortName} Logo" style="height:60px;">
+      <div><h2>Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">${getClub().name}</div></div>
     </div>
     <div style="display:flex;gap:8px;">
       <button onclick="window.print()" style="padding:8px 18px;background:#0071e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">🖨 Print</button>
@@ -2461,7 +2489,7 @@ function printInvoice(bidderNum) {
   </table>
   <div style="margin-top:32px;padding:16px 20px;border:1px solid #000;border-radius:6px;text-align:center;">
     <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Thank You for Your Support!</div>
-    <div style="font-size:13px;color:#333;line-height:1.6;">The East Tennessee Corvette Club sincerely appreciates your participation in our Silent Auction. Your generosity helps support our club and the charitable organizations we proudly serve.</div>
+    <div style="font-size:13px;color:#333;line-height:1.6;">The ${getClub().name} sincerely appreciates your participation in our Silent Auction. Your generosity helps support our club and the charitable organizations we proudly serve.</div>
   </div>
   </body></html>`;
 
@@ -2494,7 +2522,7 @@ function printBiddersList() {
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
     <div>
-      <h2>East Tennessee Corvette Club — Silent Auction</h2>
+      <h2>${getClub().name} — Silent Auction</h2>
       <div class="sub">Registered Bidders &nbsp;|&nbsp; Printed: ${new Date().toLocaleString()}</div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -2567,7 +2595,7 @@ function printPaymentTable() {
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
     <div>
-      <h2>East Tennessee Corvette Club — Silent Auction</h2>
+      <h2>${getClub().name} — Silent Auction</h2>
       <div class="sub">Pay &amp; Pickup &nbsp;|&nbsp; Printed: ${new Date().toLocaleString()}</div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -2617,7 +2645,7 @@ function printAnnounceTable() {
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
     <div>
-      <h2>East Tennessee Corvette Club — Silent Auction</h2>
+      <h2>${getClub().name} — Silent Auction</h2>
       <div class="sub">Announce Winners &nbsp;|&nbsp; Printed: ${new Date().toLocaleString()}</div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -2663,7 +2691,7 @@ function printWinnersTable() {
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
     <div>
-      <h2>East Tennessee Corvette Club — Silent Auction</h2>
+      <h2>${getClub().name} — Silent Auction</h2>
       <div class="sub">Winning Bidders &nbsp;|&nbsp; Printed: ${new Date().toLocaleString()}</div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -2745,7 +2773,7 @@ function printCheckedInvoices() {
   const sqFee    = settings.squareFee  || 0;
   const itemMap  = {};
   items.forEach(i => { itemMap[String(i.item_number)] = i; });
-  const logoUrl  = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl  = new URL(getClub().logo, window.location.href).href;
 
   const pages = checked.map(bidderNum => {
     const bidder   = bidders.find(b => b.bidder_number === bidderNum) || {};
@@ -2765,8 +2793,8 @@ function printCheckedInvoices() {
     return `<div style="page-break-after:always;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:14px;">
-          <img src="${logoUrl}" alt="ETCC Logo" style="height:60px;">
-          <div><h2 style="margin:0 0 4px;">Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">East Tennessee Corvette Club</div></div>
+          <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
+          <div><h2 style="margin:0 0 4px;">Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">${getClub().name}</div></div>
         </div>
       </div>
       <div style="margin-bottom:20px;font-size:18px;font-weight:800;">${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Bidder #${bidderNum} &nbsp;|&nbsp; ${escHtml(method)}</div>
@@ -2781,7 +2809,7 @@ function printCheckedInvoices() {
       </table>
       <div style="margin-top:32px;padding:16px 20px;border:1px solid #000;border-radius:6px;text-align:center;">
         <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Thank You for Your Support!</div>
-        <div style="font-size:13px;color:#333;line-height:1.6;">The East Tennessee Corvette Club sincerely appreciates your participation in our Silent Auction.</div>
+        <div style="font-size:13px;color:#333;line-height:1.6;">The ${getClub().name} sincerely appreciates your participation in our Silent Auction.</div>
       </div>
     </div>`;
   });
@@ -2826,7 +2854,7 @@ function printAllInvoices() {
   const bidderNums = (checkedNums.size ? validWinnerNums.filter(n => checkedNums.has(n)) : validWinnerNums).sort((a, b) => a - b);
   if (!bidderNums.length) { alert('No winners recorded yet.'); return; }
 
-  const logoUrl = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl = new URL(getClub().logo, window.location.href).href;
 
   const invoicePages = bidderNums.map((bidderNum, pageIdx) => {
     const bidder   = bidders.find(b => b.bidder_number === bidderNum) || {};
@@ -2851,8 +2879,8 @@ function printAllInvoices() {
     <div style="${pageBreak}max-width:520px;margin:40px auto;padding:0 20px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:14px;">
-          <img src="${logoUrl}" alt="ETCC Logo" style="height:60px;">
-          <div><h2 style="margin:0 0 4px;">Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">East Tennessee Corvette Club</div></div>
+          <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
+          <div><h2 style="margin:0 0 4px;">Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">${getClub().name}</div></div>
         </div>
       </div>
       <div style="margin-bottom:20px;">
@@ -2870,7 +2898,7 @@ function printAllInvoices() {
       </table>
       <div style="margin-top:32px;padding:16px 20px;border:1px solid #000;border-radius:6px;text-align:center;">
         <div style="font-size:15px;font-weight:700;margin-bottom:8px;">Thank You for Your Support!</div>
-        <div style="font-size:13px;color:#333;line-height:1.6;">The East Tennessee Corvette Club sincerely appreciates your participation in our Silent Auction.</div>
+        <div style="font-size:13px;color:#333;line-height:1.6;">The ${getClub().name} sincerely appreciates your participation in our Silent Auction.</div>
       </div>
     </div>`;
   }).join('');
@@ -3309,6 +3337,10 @@ function loadSettingsForm() {
   document.getElementById('inp-square-fee').value       = (s.squareFee ?? 0.10).toFixed(2);
   document.getElementById('inp-venue-name').value       = s.venueName    || '';
   document.getElementById('inp-venue-address').value    = s.venueAddress || '';
+  document.getElementById('inp-club-name').value        = s.clubName      || '';
+  document.getElementById('inp-club-short-name').value  = s.clubShortName || '';
+  document.getElementById('inp-club-logo').value        = s.clubLogo      || '';
+  document.getElementById('inp-club-favicon').value     = s.clubFavicon  || '';
   renderFieldMapTable();
 }
 
@@ -3432,15 +3464,46 @@ function saveSettings() {
     squareFee:      parseFloat(document.getElementById('inp-square-fee').value)     || 0,
     venueName:      document.getElementById('inp-venue-name').value.trim(),
     venueAddress:   document.getElementById('inp-venue-address').value.trim(),
+    clubName:       document.getElementById('inp-club-name').value.trim(),
+    clubShortName:  document.getElementById('inp-club-short-name').value.trim(),
+    clubLogo:       document.getElementById('inp-club-logo').value.trim(),
+    clubFavicon:    document.getElementById('inp-club-favicon').value.trim(),
   };
   DB.saveSettings(settings);
-
+  applyBranding(settings);
 
   // Re-init OAuth client with new client ID
   if (clientId) reinitTokenClient();
 
   document.getElementById('settings-saved-msg').style.display = 'block';
   setTimeout(() => document.getElementById('settings-saved-msg').style.display = 'none', 2500);
+}
+
+function getClub() {
+  const s = DB.getSettings();
+  return {
+    name:      s.clubName      || 'East Tennessee Corvette Club',
+    shortName: s.clubShortName || 'ETCC',
+    logo:      s.clubLogo      || 'Images/ETCClogoWhiteBackground.png',
+    favicon:   s.clubFavicon   || 'Images/ETCClogoWhiteBackground.png',
+  };
+}
+
+function applyBranding(s) {
+  const c = getClub();
+  document.title = c.shortName + ' Silent Auction Manager';
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const setSrc  = (id, v) => { const el = document.getElementById(id); if (el) el.src = v; };
+  setText('nav-club-name',  c.name);
+  setText('home-club-name', c.name);
+  setText('footer-club-name', c.name);
+  setText('manual-short-name', c.shortName);
+  const setAlt = (id, v) => { const el = document.getElementById(id); if (el) el.alt = v; };
+  setSrc('nav-club-logo',  c.logo);  setAlt('nav-club-logo',  c.shortName + ' Logo');
+  setSrc('home-club-logo', c.logo);  setAlt('home-club-logo', c.shortName + ' Logo');
+  let link = document.querySelector("link[rel='icon']");
+  if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+  link.href = c.favicon;
 }
 
 // ══════════════════════════════════════
@@ -3512,8 +3575,6 @@ function refreshHomeMetrics() {
   done.forEach((isDone, i) => {
     const badge = document.getElementById('step-badge-' + (i + 1));
     if (badge) badge.classList.toggle('done', isDone);
-    const card = document.getElementById('step-card-' + (i + 1));
-    if (card) card.style.borderColor = isDone ? 'var(--success)' : 'var(--accent)';
   });
 }
 
@@ -3848,7 +3909,7 @@ function openEmailBiddersPage() {
   const sampleItemRows = sampleItems.length
     ? sampleItems.map(([itemNum, w]) => `<tr><td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;">${itemNum}</td><td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;">${escHtml(w.bidder_name||'')}</td><td style="padding:4px 8px;border-bottom:1px solid #e0e0e0;text-align:right;">$${parseFloat(w.winning_bid||0).toFixed(2)}</td></tr>`).join('')
     : `<tr><td colspan="3" style="padding:8px;color:#888;font-style:italic;">No winner data recorded yet.</td></tr>`;
-  const logoUrl = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl = new URL(getClub().logo, window.location.href).href;
 
   const html = `<!DOCTYPE html><html><head><title>Email Bidders</title>
   <style>
@@ -3898,14 +3959,14 @@ function openEmailBiddersPage() {
   </style>
   </head><body><div class="page">
   <div class="top-bar">
-    <img src="${logoUrl}" alt="ETCC">
-    <span>Email Bidders — East Tennessee Corvette Club</span>
+    <img src="${logoUrl}" alt="${getClub().shortName}">
+    <span>Email Bidders — ${getClub().name}</span>
     <button class="btn-close" onclick="window.close()">✕ Close</button>
   </div>
   <div class="ctrl-bar">
     <input type="text" id="search-name" placeholder="Search last name…" style="width:140px;" oninput="filterRows(this.value)">
     <label for="email-subject">Subject:</label>
-    <input id="email-subject" type="text" class="subj" value="East Tennessee Corvette Club Silent Auction" oninput="updatePreview()">
+    <input id="email-subject" type="text" class="subj" value="${getClub().name} Silent Auction" oninput="updatePreview()">
     <span class="status" id="sel-status">${bidders.length} of ${bidders.length} selected</span>
   </div>
   <div class="body-row">
@@ -3934,38 +3995,38 @@ function openEmailBiddersPage() {
       <div class="preview-label">No Win Email</div>
       <div class="email-preview">
         <div class="ep-header">
-          <img src="${logoUrl}" alt="ETCC Logo">
+          <img src="${logoUrl}" alt="${getClub().shortName} Logo">
           <div class="ep-header-text">
-            <h2>East Tennessee Corvette Club</h2>
+            <h2>${getClub().name}</h2>
             <p>Silent Auction</p>
           </div>
         </div>
         <div class="ep-body">
-          <h3 id="prev-subject">East Tennessee Corvette Club Silent Auction</h3>
+          <h3 id="prev-subject">${getClub().name} Silent Auction</h3>
           <p>Dear Auction Participant,</p>
-          <p>Thank you for your participation in the East Tennessee Corvette Club Silent Auction! Your support means a great deal to our club and to the charitable organizations we proudly serve.</p>
+          <p>Thank you for your participation in the ${getClub().name} Silent Auction! Your support means a great deal to our club and to the charitable organizations we proudly serve.</p>
           <p>We hope you enjoyed the event and that you were able to take home a few treasures. The success of our auction is made possible by generous bidders like you.</p>
           <hr class="ep-divider">
-          <p>We look forward to seeing you at future ETCC events!</p>
-          <p style="margin-top:16px;font-weight:700;">Warm regards,<br>East Tennessee Corvette Club</p>
+          <p>We look forward to seeing you at future ${getClub().shortName} events!</p>
+          <p style="margin-top:16px;font-weight:700;">Warm regards,<br>${getClub().name}</p>
         </div>
-        <div class="ep-footer">East Tennessee Corvette Club &nbsp;|&nbsp; etccapps.com</div>
+        <div class="ep-footer">${getClub().name} &nbsp;|&nbsp; etccapps.com</div>
       </div>
       </div>
       <div style="flex:1;min-width:0;">
       <div class="preview-label">Winner Email</div>
       <div class="email-preview">
         <div class="ep-header">
-          <img src="${logoUrl}" alt="ETCC Logo">
+          <img src="${logoUrl}" alt="${getClub().shortName} Logo">
           <div class="ep-header-text">
-            <h2>East Tennessee Corvette Club</h2>
+            <h2>${getClub().name}</h2>
             <p>Silent Auction</p>
           </div>
         </div>
         <div class="ep-body">
-          <h3 id="prev-subject-winner">East Tennessee Corvette Club Silent Auction</h3>
+          <h3 id="prev-subject-winner">${getClub().name} Silent Auction</h3>
           <p>Dear Auction Winner,</p>
-          <p>Congratulations! You are a winner in the East Tennessee Corvette Club Silent Auction! Thank you for your enthusiastic bidding — your support makes a real difference for our club.</p>
+          <p>Congratulations! You are a winner in the ${getClub().name} Silent Auction! Thank you for your enthusiastic bidding — your support makes a real difference for our club.</p>
           <p style="font-weight:600;margin-bottom:6px;">Your Winning Item(s):</p>
           <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;">
             <thead><tr style="background:#dbeafe;">
@@ -3981,10 +4042,10 @@ function openEmailBiddersPage() {
           </table>
           <p>Please make arrangements to pick up your item(s) at your earliest convenience. If you have any questions, please don't hesitate to reach out.</p>
           <hr class="ep-divider">
-          <p>We look forward to seeing you at future ETCC events!</p>
-          <p style="margin-top:16px;font-weight:700;">Warm regards,<br>East Tennessee Corvette Club</p>
+          <p>We look forward to seeing you at future ${getClub().shortName} events!</p>
+          <p style="margin-top:16px;font-weight:700;">Warm regards,<br>${getClub().name}</p>
         </div>
-        <div class="ep-footer">East Tennessee Corvette Club &nbsp;|&nbsp; etccapps.com</div>
+        <div class="ep-footer">${getClub().name} &nbsp;|&nbsp; etccapps.com</div>
       </div>
       </div>
     </div>
@@ -4030,14 +4091,14 @@ function openEmailBiddersPage() {
         return "  " + e[0] + "   " + (e[1].bidder_name || bidder.name) + "   $" + parseFloat(e[1].winning_bid || 0).toFixed(2);
       }).join("\\n");
       return subject + "\\n\\nDear " + bidder.name + ",\\n\\n"
-        + "Congratulations! You are a winner in the East Tennessee Corvette Club Silent Auction! "
+        + "Congratulations! You are a winner in the ${getClub().name} Silent Auction! "
         + "Thank you for your enthusiastic bidding - your support makes a real difference for our club.\\n\\n"
         + "Your Winning Item(s):\\n\\nItem #   Winner   Winning Bid\\n"
         + itemLines + "\\n\\nTotal: $" + total.toFixed(2) + "\\n\\n"
         + "Please make arrangements to pick up your item(s) at your earliest convenience. "
         + "If you have any questions, please don't hesitate to reach out.\\n\\n"
-        + "We look forward to seeing you at future ETCC events!\\n\\n"
-        + "Warm regards,\\nEast Tennessee Corvette Club";
+        + "We look forward to seeing you at future ${getClub().shortName} events!\\n\\n"
+        + "Warm regards,\\n${getClub().name}";
     }
 
     async function sendWinnerEmails() {
@@ -4093,7 +4154,7 @@ function printAuctionSummary() {
   const bidders  = Bidders.getAll();
   const winners  = DB.getWinners();
   const payments = DB.getPayments();
-  const logoUrl  = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl  = new URL(getClub().logo, window.location.href).href;
 
   // Build bidder lookup
   const bidderMap = {};
@@ -4173,10 +4234,10 @@ function printAuctionSummary() {
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
     <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${logoUrl}" alt="ETCC Logo" style="height:60px;">
+      <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
       <div>
         <h1>Auction Summary Report</h1>
-        <div class="subtitle">East Tennessee Corvette Club &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
+        <div class="subtitle">${getClub().name} &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
         <div class="subtitle">Items: ${items.length} &nbsp;|&nbsp; Bidders: ${bidders.length} &nbsp;|&nbsp; Winners: ${Object.values(winners).filter(w=>w.bidder_number).length} &nbsp;|&nbsp; Total Income: <strong>${fmtDollar(totalIncome)}</strong></div>
       </div>
     </div>
@@ -4216,7 +4277,7 @@ function printWinningBidderReport() {
   const items    = Items.getAll();
   const winners  = DB.getWinners();
   const bidders  = Bidders.getAll();
-  const logoUrl  = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl  = new URL(getClub().logo, window.location.href).href;
 
   const itemMap = {};
   items.forEach(i => { itemMap[String(i.item_number)] = i; });
@@ -4291,10 +4352,10 @@ function printWinningBidderReport() {
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
     <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${logoUrl}" alt="ETCC Logo" style="height:60px;">
+      <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
       <div>
         <h1>Winning Bidder Report</h1>
-        <div class="subtitle">East Tennessee Corvette Club &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
+        <div class="subtitle">${getClub().name} &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
         <div class="subtitle">${sortedGroups.length} winner(s)</div>
       </div>
     </div>
@@ -4314,7 +4375,7 @@ function printWinningBidderReport() {
 function printDonorReport() {
   const items   = Items.getAll();
   const winners = DB.getWinners();
-  const logoUrl = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl = new URL(getClub().logo, window.location.href).href;
 
   if (!items.length) { alert('No items loaded yet.'); return; }
 
@@ -4397,10 +4458,10 @@ function printDonorReport() {
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
     <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${logoUrl}" alt="ETCC Logo" style="height:60px;">
+      <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
       <div>
         <h1>Donor Report</h1>
-        <div class="subtitle">East Tennessee Corvette Club &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
+        <div class="subtitle">${getClub().name} &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
         <div class="subtitle">${sortedDonors.length} donor(s) &nbsp;|&nbsp; ${items.length} item(s)</div>
       </div>
     </div>
@@ -4431,7 +4492,7 @@ function printClubIncomeReport() {
   const s        = DB.getSettings();
   const sqPct    = (s.squarePct || 2.6) / 100;
   const sqFee    = s.squareFee  || 0.10;
-  const logoUrl  = new URL('Images/ETCClogoWhiteBackground.png', window.location.href).href;
+  const logoUrl  = new URL(getClub().logo, window.location.href).href;
 
   const bidderMap = {};
   bidders.forEach(b => { bidderMap[String(b.bidder_number)] = b; });
@@ -4564,10 +4625,10 @@ function printClubIncomeReport() {
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
     <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${logoUrl}" alt="ETCC Logo" style="height:60px;">
+      <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
       <div>
         <h1>Club Financial Summary Report</h1>
-        <div class="subtitle">East Tennessee Corvette Club &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
+        <div class="subtitle">${getClub().name} &nbsp;|&nbsp; ${escHtml(auctionDate)}</div>
       </div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -5041,6 +5102,7 @@ function showCategoryItems(code, name) {
   refreshMetrics();
   TableKit.initAll();
   fixAllStickyHeaders();
+  applyBranding();
 
   const settings = DB.getSettings();
   if (!settings.gmailClientId) {
@@ -5051,9 +5113,9 @@ function showCategoryItems(code, name) {
 </script>
 
 <div id="app-footer">
-  <div>&copy; 2026 East Tennessee Corvette Club &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
+  <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">1.62</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 11:54 AM</span></div>
+  <div>Version: <span id="app-version">1.67</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 12:19 PM</span></div>
 </div>
 </body>
 </html>

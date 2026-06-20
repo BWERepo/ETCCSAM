@@ -896,7 +896,7 @@ function runUITests() {
         uiAnyContains(d, 'Post Auction card (step 8)',    '#screen-home .card span', '8'),
         uiCheck(d, 'step card 1 present',   '#step-card-1'),
         uiCheck(d, 'step card 8 present',   '#step-card-8'),
-        uiCheck(d, 'Clear Workflow button',    '#screen-home button[onclick*="clearWorkflow"]'),
+        uiCheck(d, 'Reset Workflow button',    '#screen-home button[onclick*="clearWorkflow"]'),
         uiCheck(d, 'Complete Workflow button', '#screen-home button[onclick*="completeWorkflow"]'),
         uiCheck(d, 'Return to Dashboard link', '#screen-home a[href*="etccapps"]'),
       ]);
@@ -913,10 +913,6 @@ function runUITests() {
       await suite('Workflow step badges — uncomplete', () => [
         uiAssert('step 1 badge blue when uncomplete',
           !d.getElementById('step-badge-1')?.classList.contains('done'), 'step 1 should not be done'),
-        uiAssert('step-card-1 border accent (blue)',
-          d.getElementById('step-card-1')?.style.borderColor.includes('accent') ||
-          d.getElementById('step-card-1')?.style.borderColor !== '',
-          'step-card-1 border not set'),
       ]);
       // Mark step 1 complete
       w.localStorage.setItem('sam_ts_items', Date.now());
