@@ -2663,6 +2663,36 @@ function addBidder() {
   });
 }
 
+function addRegisteredMembers() {
+  const regDB = DB.getRegDB();
+  if (!regDB.length) {
+    alert('No registered members in the database.');
+    return;
+  }
+  const existing = Bidders.getAll();
+  const existingEmails = new Set(existing.map(b => (b.email || '').toLowerCase().trim()).filter(Boolean));
+  const existingNames  = new Set(existing.map(b => (b.last_name + '|' + b.first_name).toLowerCase().trim()));
+  let added = 0;
+  regDB.forEach(r => {
+    const email = (r.email || '').toLowerCase().trim();
+    const name  = (r.last_name + '|' + r.first_name).toLowerCase().trim();
+    if ((email && existingEmails.has(email)) || existingNames.has(name)) return;
+    Bidders.add({
+      bidder_number: parseInt(r.member_number, 10) || Bidders.nextNumber(),
+      last_name:     r.last_name  || '',
+      first_name:    r.first_name || '',
+      email:         r.email      || '',
+      phone:         r.cell_phone || '',
+      bidder_type:   'pre-registration'
+    });
+    existingEmails.add(email);
+    existingNames.add(name);
+    added++;
+  });
+  refreshBiddersTable();
+  alert(added + ' registered member' + (added !== 1 ? 's' : '') + ' added.');
+}
+
 // ══════════════════════════════════════
 //  RENDER — Winners table
 // ══════════════════════════════════════
@@ -3974,6 +4004,12 @@ function navigate(screenId) {
         viewMembersBtn.style.marginLeft = '8px';
         viewMembersBtn.addEventListener('click', showMemberDBModal);
         actionBar.appendChild(viewMembersBtn);
+        const addRegBtn = document.createElement('button');
+        addRegBtn.className = 'btn workflow-edit-btn';
+        addRegBtn.textContent = 'Add Registered Members';
+        addRegBtn.style.marginLeft = '8px';
+        addRegBtn.addEventListener('click', addRegisteredMembers);
+        actionBar.appendChild(addRegBtn);
         card.insertBefore(actionBar, wrap);
       }
       card.insertBefore(tb, actionBar);
@@ -5432,7 +5468,7 @@ function showCategoryItems(code, name) {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">1.117</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 5:00 PM</span></div>
+  <div>Version: <span id="app-version">1.118</span> &nbsp;&middot;&nbsp; Date: <span id="app-build-date">Jun 20, 2026 5:03 PM</span></div>
 </div>
 </body>
 </html>
