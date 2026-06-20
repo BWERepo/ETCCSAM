@@ -42,8 +42,8 @@ function Update-Version {
     $indexPath = Join-Path $local "index.html"
     $content = [System.IO.File]::ReadAllText($indexPath, [System.Text.Encoding]::UTF8)
     $deployDate = Get-Date -Format "MMM d, yyyy"
-    # Update the deploy date input field in Settings
-    $content = $content -replace '(inp-deploy-date.*?value=")[^"]*', "`${1}$deployDate"
+    # Update the deploy date data attribute so the app syncs it to Settings on page load
+    $content = $content -replace '(inp-deploy-date.*?data-deploy-date=")[^"]*', "`${1}$deployDate"
     [System.IO.File]::WriteAllText($indexPath, $content, [System.Text.Encoding]::UTF8)
     Write-Host "  Deployed: $deployDate" -ForegroundColor Cyan
 }
