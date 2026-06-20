@@ -3946,21 +3946,24 @@ const navItems = document.querySelectorAll('#nav .nav-item[data-screen]');
 const screens  = document.querySelectorAll('.screen');
 
 // Sync deploy date from HTML data attribute to Settings on page load
-(() => {
+function syncDeployDate() {
   const deployDateEl = document.getElementById('inp-deploy-date');
   if (deployDateEl && deployDateEl.dataset.deployDate) {
     const deployDate = deployDateEl.dataset.deployDate;
-    const s = DB.getSettings();
-    if (deployDate && s.deployDate !== deployDate) {
+    if (deployDate) {
+      const s = DB.getSettings();
       s.deployDate = deployDate;
       DB.saveSettings(s);
+      // Update footer immediately with the deploy date
+      const dateEl = document.getElementById('app-deploy-date');
+      if (dateEl) dateEl.textContent = deployDate;
     }
   }
-})();
+}
 
 // Update footer version and deploy date from Settings
 updateFooterVersion();
-updateFooterDeployDate();
+syncDeployDate();
 
 function refreshHomeMetrics() {
   const el = document.getElementById('home-metrics');
