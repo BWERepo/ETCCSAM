@@ -1290,13 +1290,17 @@ function runUITests() {
       try {
         nav('item-load');
         await delay(80);
-        const viewAllBtn = [...d.querySelectorAll('#screen-item-load button')].find(b => b.textContent.trim() === 'View All');
-        if (viewAllBtn) viewAllBtn.click();
-        await delay(40);
+        const viewAllBtn = [...d.querySelectorAll('#screen-item-load button[onclick*="showViewAll(\'items\')"]')][0];
+        w.showViewAll('items');
+        await delay(60);
         const modalVisible = d.getElementById('view-all-modal')?.style.display !== 'none';
+        const titleEl = d.querySelector('#view-all-toolbar-wrap .tk-toolbar-title');
+        const titleVisible = titleEl && w.getComputedStyle(titleEl).display !== 'none';
         await suite('Load Items — View All button', () => [
-          uiAssert('View All button found',     !!viewAllBtn,  'No View All button on Load Items screen'),
-          uiAssert('View All modal opens',      modalVisible,  'view-all-modal not visible after click'),
+          uiAssert('Items View All button found', !!viewAllBtn,  'No items View All button on Load Items screen'),
+          uiAssert('View All modal opens',        modalVisible,  'view-all-modal not visible after showViewAll(items)'),
+          uiAssert('Title text is "Loaded Items View All"', titleEl && titleEl.textContent.trim() === 'Loaded Items View All', 'Title text mismatch: "' + (titleEl ? titleEl.textContent.trim() : 'none') + '"'),
+          uiAssert('Title is visible (not display:none)', titleVisible, 'Title hidden via display:none'),
         ]);
         w.closeViewAll();
         await delay(20);
