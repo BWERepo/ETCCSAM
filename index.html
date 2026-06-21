@@ -1336,7 +1336,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 21, 2026 6:35 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 21, 2026 7:54 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -1774,6 +1774,34 @@ function unarchiveAuction(id) {
   renderAuctionsList();
 }
 
+// Delete an auction (and all its data) from the home auctions list.
+// Password-protected using the same Settings password (authenticateSettings).
+async function deleteAuctionFromList(id) {
+  const auctions = DB.getAuctions();
+  const auction = auctions.find(a => a.id === id);
+  if (!auction) return;
+  // Require the Settings password before deleting (the password is the gate —
+  // no separate confirm dialog).
+  if (!await authenticateSettings()) return;
+  // Remove the auction from the list
+  DB.saveAuctions(auctions.filter(a => a.id !== id));
+  // If this was the current auction, deselect it
+  if (DB.getCurrentAuctionId() === id) {
+    DB.setCurrentAuctionId('');
+    updateHomeAuctionPanel();
+  }
+  // Clear all per-auction data (sam_{id}_*)
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('sam_' + id + '_')) keysToRemove.push(key);
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  renderAuctionsList();
+  refreshHomeMetrics();
+  if (typeof refreshDeleteAuctionDropdown === 'function') refreshDeleteAuctionDropdown();
+}
+
 function renameAuction(id) {
   const auctions = DB.getAuctions();
   const a = auctions.find(x => x.id === id);
@@ -1832,10 +1860,17 @@ function renderAuctionsList() {
       : `<span style="background:var(--success);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">ACTIVE</span>`;
     const currentBadge = isCurrent
       ? ` <span style="background:var(--accent);color:#fff;padding:2px 6px;border-radius:10px;font-size:10px;">Current</span>` : '';
+    const archiveBtn = isArchived
+      ? `<button class="btn" onclick="unarchiveAuction('${a.id}')" style="font-size:11px;padding:3px 10px;">Unarchive</button>`
+      : `<button class="btn" onclick="archiveAuction('${a.id}')" style="font-size:11px;padding:3px 10px;">Archive</button>`;
     return `<tr>
       <td><a href="#" onclick="openAuction('${a.id}'); return false;" style="color:var(--accent);text-decoration:none;cursor:pointer;font-weight:500;">${a.name}</a>${currentBadge}</td>
       <td>${statusBadge}</td>
       <td style="color:var(--text-secondary);">${created}</td>
+      <td style="white-space:nowrap;text-align:right;">
+        <button class="btn" onclick="openAuction('${a.id}')" style="font-size:11px;padding:3px 10px;margin-right:4px;">View</button>${archiveBtn}
+        <button class="btn danger" onclick="deleteAuctionFromList('${a.id}')" style="font-size:11px;padding:3px 10px;margin-left:4px;">Delete</button>
+      </td>
     </tr>`;
   }).join('');
   el.innerHTML = `<div style="overflow-x:auto;">
@@ -1844,6 +1879,7 @@ function renderAuctionsList() {
         <th style="text-align:left;">Name</th>
         <th style="text-align:left;">Status</th>
         <th style="text-align:left;">Created</th>
+        <th style="text-align:right;">Actions</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
@@ -2302,6 +2338,13 @@ function renderEmailTable(emails) {
   const tbody = document.getElementById('email-tbody');
   tbody.innerHTML = '';
 
+  // Archived auctions are read-only — disable the select-all header checkbox
+  // (the row checkboxes below are disabled inline). Keep this in sync on every
+  // render since the header checkbox persists across navigations.
+  const ro = isReadOnly();
+  const checkAll = document.getElementById('email-check-all');
+  if (checkAll) { checkAll.disabled = ro; checkAll.style.cursor = ro ? 'not-allowed' : 'pointer'; }
+
   if (!emails.length) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">No emails found.</td></tr>';
     return;
@@ -2310,7 +2353,7 @@ function renderEmailTable(emails) {
   emails.forEach((email, idx) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="text-align:center;width:40px;"><input type="checkbox" class="email-row-checkbox" data-idx="${idx}" style="cursor:pointer;"></td>
+      <td style="text-align:center;width:40px;"><input type="checkbox" class="email-row-checkbox" data-idx="${idx}" style="cursor:${ro ? 'not-allowed' : 'pointer'};" ${ro ? 'disabled' : ''}></td>
       <td style="font-size:11px;white-space:nowrap;">${escHtml(email.date)}</td>
       <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(email.from)}</td>
       <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(email.subject)}</td>
@@ -4199,9 +4242,19 @@ async function navigate(screenId) {
   const navItem = document.querySelector(`.nav-item[data-screen="${screenId}"]`);
   if (navItem) navItem.classList.add('active');
 
+  // Keep the read-only (archived) class in sync on EVERY navigation, not just
+  // home. Otherwise reaching a workflow screen without passing through home
+  // (e.g. a reload on item-load) leaves the edit buttons visible/coloured.
+  document.body.classList.toggle('archived-mode', isReadOnly());
+
   if (screenId === 'home') { updateHomeAuctionPanel(); renderAuctionsList(); refreshHomeMetrics(); syncDeployDate(); }
   if (screenId === 'item-load') {
+    // Reload data for the current auction — scannedEmails is set at page load
+    // and the items table isn't otherwise re-rendered on nav, so switching
+    // auctions (e.g. opening/archiving one) would show stale/empty tables.
+    scannedEmails = DB.getEmails();
     renderEmailTable(scannedEmails);
+    refreshItemsTable();
     const emailEl = document.getElementById('gmail-login-email');
     if (emailEl) emailEl.textContent = DB.getSettings().inboxEmail || '(not set in Settings)';
     if (!isReadOnly()) {
@@ -5812,7 +5865,7 @@ function showCategoryItems(code, name) {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 21, 2026 6:35 AM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 21, 2026 7:54 AM</span></div>
 </div>
 </body>
 </html>

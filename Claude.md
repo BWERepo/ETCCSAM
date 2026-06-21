@@ -19,7 +19,7 @@ The app is accessed at: https://etccapps.com/apps/samtest
 
 ```
 index.html          — Entire application (single-page app, all JS inline)
-test.html           — Regression test suite (36 suites, ~150 tests)
+test.html           — Regression test suite (388 tests: logic + UI suites)
 css/table.css       — TableKit component (do not modify)
 css/toolbar.css     — PageToolbar component (do not modify)
 js/table.js         — TableKit component (do not modify)
@@ -208,10 +208,19 @@ Items are parsed from Gmail emails using a configurable field map (`sam_fieldmap
 ## Regression Tests
 
 - Test file: `test.html`
-- 36 test suites covering: email parsing, item numbering, bidder CRUD, bid calculations, Square fee math, payment logic, winner logic, sort indicators, home metrics, invoice calculations
+- **388 tests** in two phases:
+  - **Logic suites** (~179 tests): pure-function checks — email parsing, item numbering, bidder CRUD, bid calculations, Square fee math, payment logic, winner logic, sort indicators, home metrics, invoice calculations
+  - **UI suites**: run the real app inside an `<iframe src="index.html">` and exercise each screen (navigation, View All modals, checkboxes, buttons, etc.)
+- **Always run via the deployed URL:** https://etccapps.com/apps/samtest/test.html
+  - The UI suites require the app to be framable. The server CSP (`.htaccess`)
+    must include `frame-src 'self'` — without it the iframe is blocked and the
+    suite hangs at "Running UI tests… 179".
+  - Do not run the local headless runner against a plain static server for
+    sign-off; it doesn't reproduce the live CSP/server-sync environment.
 - Run from: Settings → Developer Tools → Run Regression Tests (opens in new tab)
 - **Always run regression tests before reporting any task complete**
-- Run by opening `http://localhost:3000/test.html` (or the deployed URL + `/test.html`)
+- When `test.html` changes, deploy it (`.\deploy.ps1 test.html`) before running,
+  so the deployed suite reflects the latest tests.
 
 ---
 
