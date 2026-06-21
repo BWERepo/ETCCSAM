@@ -1323,7 +1323,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 20, 2026 10:32 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 20, 2026 10:37 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -1820,7 +1820,7 @@ function renderAuctionsList() {
     const currentBadge = isCurrent
       ? ` <span style="background:var(--accent);color:#fff;padding:2px 6px;border-radius:10px;font-size:10px;">Current</span>` : '';
     return `<tr>
-      <td>${a.name}${currentBadge}</td>
+      <td><a href="#" onclick="openAuction('${a.id}'); return false;" style="color:var(--accent);text-decoration:none;cursor:pointer;font-weight:500;">${a.name}</a>${currentBadge}</td>
       <td>${statusBadge}</td>
       <td style="color:var(--text-secondary);">${created}</td>
     </tr>`;
@@ -4402,6 +4402,9 @@ async function navigate(screenId) {
 }
 
 function openEmailBiddersPage() {
+  alert('Email Bidders feature is temporarily unavailable. Please try again later.');
+  return;
+  // Disabled pending bug fix
   const bidders = Bidders.getAll();
   if (!bidders.length) { alert('No bidders registered yet.'); return; }
 
@@ -5737,7 +5740,7 @@ function showCategoryItems(code, name) {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 20, 2026 10:32 PM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 20, 2026 10:37 PM</span></div>
 </div>
 </body>
 </html>
