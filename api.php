@@ -11,7 +11,9 @@ $db   = 'u177039107_sam';
 $user = 'u177039107_sam';
 $pass = 'uemk$td*TjnAD9t4HXeYdsBQfqDDSZ4m';
 
-$ALLOWED_KEYS = ['sam_items','sam_bidders','sam_winners','sam_payments','sam_settings','sam_fieldmap','sam_emails'];
+// Allowed key suffixes (after sam_ prefix). Supports both static keys (sam_items)
+// and namespaced keys (sam_{auctionId}_items)
+$ALLOWED_SUFFIXES = ['items', 'bidders', 'winners', 'payments', 'settings', 'fieldmap', 'emails', 'members', 'regdb', 'auctions', 'current_auction'];
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
@@ -23,9 +25,9 @@ try {
     exit;
 }
 
-// Auto-create table
+// Auto-create table (increase VARCHAR size to handle longer namespaced keys)
 $pdo->exec("CREATE TABLE IF NOT EXISTS sam_store (
-    `key`        VARCHAR(50)  PRIMARY KEY,
+    `key`        VARCHAR(100) PRIMARY KEY,
     `value`      LONGTEXT     NOT NULL,
     `updated_at` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -40,7 +42,26 @@ if ($action === 'get_all') {
 } elseif ($action === 'set') {
     $key = $input['key']   ?? '';
     $val = $input['value'] ?? '';
-    if (!in_array($key, $ALLOWED_KEYS, true)) {
+
+    // Check if key is allowed. Supports static keys (sam_items) and
+    // namespaced keys (sam_{auctionId}_items, sam_{auctionId}_{suffix})
+    $isAllowed = false;
+    if (strpos($key, 'sam_') === 0) {
+        // Extract the part after 'sam_'
+        $rest = substr($key, 4);
+        // Find the last underscore to extract the suffix
+        $lastUnderscore = strrpos($rest, '_');
+        if ($lastUnderscore === false) {
+            // No underscore: static key like 'sam_members', check exact match
+            $isAllowed = in_array($rest, $ALLOWED_SUFFIXES, true);
+        } else {
+            // Has underscore: namespaced key like 'sam_{id}_items'
+            // Extract suffix after last underscore
+            $suffix = substr($rest, $lastUnderscore + 1);
+            $isAllowed = in_array($suffix, $ALLOWED_SUFFIXES, true);
+        }
+    }
+    if (!$isAllowed) {
         echo json_encode(['error' => 'Invalid key']);
         exit;
     }

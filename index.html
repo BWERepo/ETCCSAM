@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://apis.google.com https://accounts.google.com;" />
   <title>ETCC Silent Auction Manager</title>
   <link rel="icon" id="favicon-link" type="image/png" href="Images/ETCClogoWhiteBackground.png" />
   <link rel="stylesheet" href="css/table.css" />
@@ -659,7 +660,7 @@
           <span class="dot"></span>
           <span id="gmail-status-text">Not connected to Gmail</span>
         </div>
-        <span id="gmail-login-note" style="font-size:12px;color:#633806;background:#faeeda;border:1px solid #fac775;border-radius:8px;padding:10px 14px;"><strong>Note:</strong> The first time emails are scanned, you will be required to log in to the auction email account <strong id="gmail-login-email"></strong>. Please obtain the credentials from your administrator.</span>
+        <span id="gmail-login-note" style="font-size:12px;color:#633806;background:#ffd54f;border:1px solid #fac775;border-radius:8px;padding:10px 14px;"><strong>Note:</strong> The first time emails are scanned, you will be required to log in to the auction email account <strong id="gmail-login-email"></strong>. Please obtain the credentials from your administrator.</span>
         <button class="btn primary workflow-edit-btn" id="btn-scan" style="display:none;">📧 Scan</button>
         <div class="spacer"></div>
         <span id="scan-note" style="font-size:11px; color:var(--text-tertiary);"></span>
@@ -988,7 +989,6 @@
               <col style="width:110px;">
               <col style="width:70px;">
               <col style="width:90px;">
-              <col style="width:78px;">
             </colgroup>
             <thead>
               <tr>
@@ -998,7 +998,6 @@
                 <th>First Name</th>
                 <th style="text-align:center;"># Items</th>
                 <th style="text-align:right;">Total Bid</th>
-                <th style="text-align:center;">Invoice</th>
               </tr>
             </thead>
             <tbody id="print-invoices-tbody"></tbody>
@@ -1324,7 +1323,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 20, 2026 6:14 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 20, 2026 9:25 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -1416,6 +1415,19 @@
       <button onclick="closeEmailModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);line-height:1;padding:0 4px;">✕</button>
     </div>
     <div id="email-modal-body" style="padding:20px;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap;flex:1;"></div>
+  </div>
+</div>
+
+<!-- Settings Password Authentication Modal -->
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:10px;width:400px;max-width:95vw;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+    <h3 style="margin:0 0 16px;color:var(--text);font-size:16px;">Settings Password</h3>
+    <p style="margin:0 0 16px;color:var(--text-secondary);font-size:13px;">Enter your Settings password to continue:</p>
+    <input type="password" id="auth-password" placeholder="Password" style="width:100%;box-sizing:border-box;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);margin-bottom:16px;" onkeypress="if(event.key==='Enter') submitAuthPassword();" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeAuthModal()" style="padding:8px 16px;background:var(--bg-section);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);font-size:13px;">Cancel</button>
+      <button onclick="submitAuthPassword()" style="padding:8px 16px;background:var(--accent);border:none;border-radius:6px;cursor:pointer;color:#fff;font-size:13px;font-weight:600;">Unlock</button>
+    </div>
   </div>
 </div>
 
@@ -1807,18 +1819,10 @@ function renderAuctionsList() {
       : `<span style="background:var(--success);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">ACTIVE</span>`;
     const currentBadge = isCurrent
       ? ` <span style="background:var(--accent);color:#fff;padding:2px 6px;border-radius:10px;font-size:10px;">Current</span>` : '';
-    const openBtn   = `<button class="btn primary" style="font-size:11px;padding:2px 8px;" onclick="openAuction('${a.id}')">Open</button>`;
-    const renameBtn = `<button class="btn" style="font-size:11px;padding:2px 8px;" onclick="renameAuction('${a.id}')">Rename</button>`;
-    const archBtn   = isArchived
-      ? `<button class="btn" style="font-size:11px;padding:2px 8px;" onclick="unarchiveAuction('${a.id}')">Unarchive</button>`
-      : `<button class="btn" style="font-size:11px;padding:2px 8px;" onclick="archiveAuction('${a.id}')">Archive</button>`;
     return `<tr>
       <td>${a.name}${currentBadge}</td>
       <td>${statusBadge}</td>
       <td style="color:var(--text-secondary);">${created}</td>
-      <td style="text-align:right;white-space:nowrap;">
-        <div style="display:inline-flex;gap:4px;">${openBtn}${renameBtn}${archBtn}</div>
-      </td>
     </tr>`;
   }).join('');
   el.innerHTML = `<div style="overflow-x:auto;">
@@ -1827,7 +1831,6 @@ function renderAuctionsList() {
         <th style="text-align:left;">Name</th>
         <th style="text-align:left;">Status</th>
         <th style="text-align:left;">Created</th>
-        <th style="text-align:right;">Actions</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
@@ -1973,6 +1976,20 @@ function categoryFromValue(val) {
     if (name.toLowerCase().includes(String(val).toLowerCase())) return parseInt(code, 10);
   }
   return null;
+}
+
+// ══════════════════════════════════════
+//  SAFE POPUP / PRINT HELPER
+// ══════════════════════════════════════
+// On iPad and some mobile devices, window.open() may be blocked by the browser.
+// This helper detects the popup block and alerts the user.
+function openPrintWindow(features = '') {
+  const win = window.open('', '_blank', features);
+  if (!win) {
+    alert('Unable to open print window. Please check if popups are blocked in your browser settings, or try using your browser\'s "Request Desktop Site" option.');
+    return null;
+  }
+  return win;
 }
 
 // ══════════════════════════════════════
@@ -2388,7 +2405,8 @@ function printBiddingSheets() {
   `;
   }).join('');
 
-  const win = window.open('', '_blank', 'width=900,height=700');
+  const win = openPrintWindow('width=900,height=700');
+  if (!win) return;
   win.document.write(`<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Bid Sheets</title>
 <style>
@@ -2505,55 +2523,79 @@ function closeBidderEditModal() {
 }
 
 function showMemberDBModal() {
-  PageToolbar.init({ title: 'Member Database' });
-  const tb   = document.getElementById('page-toolbar');
-  const wrap = document.getElementById('member-db-toolbar-wrap');
-  if (tb && wrap) wrap.appendChild(tb);
-  // Remove non-essential toolbar buttons, keep Close
-  if (tb) tb.querySelectorAll('.tk-btn:not(.tk-btn-close)').forEach(b => b.remove());
-  const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
-  if (closeBtn) {
-    const fresh = closeBtn.cloneNode(true);
-    closeBtn.replaceWith(fresh);
-    fresh.addEventListener('click', () => {
-      document.getElementById('member-db-modal').style.display = 'none';
-      navigate('bidder-reg');
-    });
-  }
-  const members = DB.getMembers();
-  const tbody = document.getElementById('member-db-modal-tbody');
-  tbody.innerHTML = '';
-  const tdStyle = 'font-size:12px;padding:3px 8px;';
-  if (!members.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">No members loaded. Import a CSV in Settings.</td></tr>';
-  } else {
-    members.forEach((m, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="text-align:center;padding:3px 8px;"><input type="checkbox" data-idx="${i}" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"></td>
-        <td style="${tdStyle}">${escHtml(m.member_number || '')}</td>
-        <td style="${tdStyle}">${escHtml(m.last_name     || '')}</td>
-        <td style="${tdStyle}">${escHtml(m.first_name    || '')}</td>
-        <td style="${tdStyle}">${escHtml(m.primary_email || '')}</td>
-        <td style="${tdStyle}">${escHtml(m.cell_phone    || '')}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-  const searchEl = document.getElementById('member-search');
-  if (searchEl) searchEl.value = '';
+  try {
+    if (typeof PageToolbar === 'undefined' || !PageToolbar.init) {
+      console.error('PageToolbar not available');
+      alert('Error: Page toolbar not initialized. Please refresh the page.');
+      return;
+    }
+    PageToolbar.init({ title: 'Member Database' });
+    const tb   = document.getElementById('page-toolbar');
+    const wrap = document.getElementById('member-db-toolbar-wrap');
+    if (tb && wrap) wrap.appendChild(tb);
+    // Remove non-essential toolbar buttons, keep Close
+    if (tb) tb.querySelectorAll('.tk-btn:not(.tk-btn-close)').forEach(b => b.remove());
+    const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
+    if (closeBtn) {
+      const fresh = closeBtn.cloneNode(true);
+      closeBtn.replaceWith(fresh);
+      fresh.addEventListener('click', () => {
+        const modal = document.getElementById('member-db-modal');
+        if (modal) modal.style.display = 'none';
+        navigate('bidder-reg');
+      });
+    }
+    const members = DB.getMembers() || [];
+    const tbody = document.getElementById('member-db-modal-tbody');
+    if (!tbody) {
+      console.error('member-db-modal-tbody not found');
+      alert('Error: Modal table not found. Please refresh the page.');
+      return;
+    }
+    tbody.innerHTML = '';
+    const tdStyle = 'font-size:12px;padding:3px 8px;';
+    if (!members.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">No members loaded. Import a CSV in Settings.</td></tr>';
+    } else {
+      members.forEach((m, i) => {
+        if (!m) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center;padding:3px 8px;"><input type="checkbox" data-idx="${i}" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"></td>
+          <td style="${tdStyle}">${escHtml(m.member_number || '')}</td>
+          <td style="${tdStyle}">${escHtml(m.last_name     || '')}</td>
+          <td style="${tdStyle}">${escHtml(m.first_name    || '')}</td>
+          <td style="${tdStyle}">${escHtml(m.primary_email || '')}</td>
+          <td style="${tdStyle}">${escHtml(m.cell_phone    || '')}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    const searchEl = document.getElementById('member-search');
+    if (searchEl) searchEl.value = '';
 
-  document.getElementById('member-db-modal').style.display = 'flex';
+    const modal = document.getElementById('member-db-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+    } else {
+      console.error('member-db-modal not found');
+      alert('Error: Modal not found. Please refresh the page.');
+      return;
+    }
 
-  // Force sticky header: override tk-wrap overflow and set inline sticky on each th
-  const tkWrap = document.querySelector('#member-db-modal .tk-wrap');
-  if (tkWrap) tkWrap.style.cssText += ';overflow:visible!important';
-  document.querySelectorAll('#member-db-modal-table thead th').forEach(th => {
-    th.style.position = 'sticky';
-    th.style.top = '0';
-    th.style.zIndex = '10';
-    th.style.background = '#dbeafe';
-  });
+    // Force sticky header: override tk-wrap overflow and set inline sticky on each th
+    const tkWrap = document.querySelector('#member-db-modal .tk-wrap');
+    if (tkWrap) tkWrap.style.cssText += ';overflow:visible!important';
+    document.querySelectorAll('#member-db-modal-table thead th').forEach(th => {
+      th.style.position = 'sticky';
+      th.style.top = '0';
+      th.style.zIndex = '10';
+      th.style.background = '#dbeafe';
+    });
+  } catch(err) {
+    console.error('showMemberDBModal error:', err);
+    alert('Error opening member database: ' + (err.message || err));
+  }
 }
 
 function selectAllMembers(checked) {
@@ -2699,33 +2741,39 @@ function addBidder() {
 }
 
 function addRegisteredMembers() {
-  const regDB = DB.getRegDB();
-  if (!regDB.length) {
-    alert('No registered members in the database.');
-    return;
-  }
-  const existing = Bidders.getAll();
-  const existingEmails = new Set(existing.map(b => (b.email || '').toLowerCase().trim()).filter(Boolean));
-  const existingNames  = new Set(existing.map(b => (b.last_name + '|' + b.first_name).toLowerCase().trim()));
-  let added = 0;
-  regDB.forEach(r => {
-    const email = (r.email || '').toLowerCase().trim();
-    const name  = (r.last_name + '|' + r.first_name).toLowerCase().trim();
-    if ((email && existingEmails.has(email)) || existingNames.has(name)) return;
-    Bidders.add({
-      bidder_number: parseInt(r.member_number, 10) || Bidders.nextNumber(),
-      last_name:     r.last_name  || '',
-      first_name:    r.first_name || '',
-      email:         r.email      || '',
-      phone:         r.cell_phone || '',
-      bidder_type:   'pre-registration'
+  try {
+    const regDB = DB.getRegDB();
+    if (!regDB || !Array.isArray(regDB) || regDB.length === 0) {
+      alert('No registered members in the database.');
+      return;
+    }
+    const existing = Bidders.getAll() || [];
+    const existingEmails = new Set(existing.map(b => (b.email || '').toLowerCase().trim()).filter(Boolean));
+    const existingNames  = new Set(existing.map(b => (b.last_name + '|' + b.first_name).toLowerCase().trim()));
+    let added = 0;
+    regDB.forEach(r => {
+      if (!r) return;
+      const email = (r.email || '').toLowerCase().trim();
+      const name  = (r.last_name + '|' + r.first_name).toLowerCase().trim();
+      if ((email && existingEmails.has(email)) || existingNames.has(name)) return;
+      Bidders.add({
+        bidder_number: parseInt(r.member_number, 10) || Bidders.nextNumber(),
+        last_name:     r.last_name  || '',
+        first_name:    r.first_name || '',
+        email:         r.email      || '',
+        phone:         r.cell_phone || '',
+        bidder_type:   'pre-registration'
+      });
+      existingEmails.add(email);
+      existingNames.add(name);
+      added++;
     });
-    existingEmails.add(email);
-    existingNames.add(name);
-    added++;
-  });
-  refreshBiddersTable();
-  alert(added + ' registered member' + (added !== 1 ? 's' : '') + ' added.');
+    if (typeof refreshBiddersTable === 'function') refreshBiddersTable();
+    alert(added + ' registered member' + (added !== 1 ? 's' : '') + ' added.');
+  } catch(err) {
+    console.error('addRegisteredMembers error:', err);
+    alert('Error adding registered members: ' + (err.message || err));
+  }
 }
 
 // ══════════════════════════════════════
@@ -2812,7 +2860,8 @@ function printInvoice(bidderNum) {
   </div>
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -2854,7 +2903,8 @@ function printBiddersList() {
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -2927,7 +2977,8 @@ function printPaymentTable() {
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -2977,7 +3028,8 @@ function printAnnounceTable() {
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -3023,7 +3075,8 @@ function printWinnersTable() {
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -3065,16 +3118,8 @@ function refreshPrintInvoicesTable() {
       <td style="${tdStyle}">${escHtml(bidder.first_name || '')}</td>
       <td style="${tdStyle}text-align:center;">${group.items.length}</td>
       <td style="${tdStyle}text-align:right;">${fmtDollar(group.total)}</td>
-      <td style="${tdStyle}text-align:center;"><button class="btn pi-print-btn" style="font-size:11px;padding:2px 8px;">Print</button></td>
     `;
     tbody.appendChild(tr);
-  });
-
-  tbody.querySelectorAll('.pi-print-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const num = parseInt(btn.closest('tr').dataset.bidderNum, 10);
-      printInvoice(num);
-    });
   });
 }
 
@@ -3136,13 +3181,47 @@ function printCheckedInvoices() {
   const html = `<!DOCTYPE html><html><head><title>Invoices</title>
     <style>body{font-family:system-ui,sans-serif;margin:40px auto;max-width:600px;color:#1d1d1f;}@media print{button{display:none;}}</style>
   </head><body>
-    <div style="margin-bottom:12px;"><button onclick="window.print()" style="padding:8px 18px;background:#0071e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">🖨 Print All</button></div>
+    <div style="margin-bottom:12px;">
+      <button onclick="printCheckedInvoicesOnly()" style="padding:8px 18px;background:#0071e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;margin-right:10px;">🖨 Print</button>
+      <button onclick="window.close()" style="padding:8px 18px;background:#fff;color:#1d1d1f;border:1px solid #d2d2d7;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Cancel</button>
+    </div>
     ${pages.join('')}
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
+}
+
+function printCheckedInvoicesOnly() {
+  const tbody = document.getElementById('print-invoices-tbody');
+  if (!tbody) return;
+  const rows = tbody.querySelectorAll('tr');
+  const checkedRows = [];
+
+  // Hide unchecked rows
+  rows.forEach(row => {
+    const checkbox = row.querySelector('.pi-chk');
+    if (checkbox && !checkbox.checked) {
+      row.style.display = 'none';
+    } else {
+      checkedRows.push(row);
+    }
+  });
+
+  if (checkedRows.length === 0) {
+    alert('No invoices selected. Check at least one invoice to print.');
+    return;
+  }
+
+  // Show print dialog
+  window.print();
+
+  // Restore all rows after printing
+  rows.forEach(row => {
+    row.style.display = '';
+  });
 }
 
 function printAllInvoices() {
@@ -3229,14 +3308,15 @@ function printAllInvoices() {
     @media print { .no-print { display: none; } }
   </style>
   </head><body>
-  <div class="no-print" style="position:sticky;top:0;background:#1d1d1f;padding:10px 20px;display:flex;gap:10px;z-index:99;">
-    <button onclick="if(confirm('Print ${bidderNums.length} invoice${bidderNums.length !== 1 ? 's' : ''}?')) window.print();" style="padding:8px 18px;background:#0071e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">🖨 Print</button>
-    <button onclick="window.close()" style="padding:8px 18px;background:#e0e0e0;color:#1d1d1f;border:none;border-radius:6px;cursor:pointer;font-size:13px;">Close</button>
+  <div class="no-print" style="position:sticky;top:0;background:#1d1d1f;padding:10px 20px;z-index:99;">
+    <button onclick="if(confirm('Print ${bidderNums.length} invoice${bidderNums.length !== 1 ? 's' : ''}?')) window.print();" style="padding:8px 18px;background:#0071e3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-right:10px;">🖨 Print</button>
+    <button onclick="window.close()" style="padding:8px 18px;background:#fff;color:#1d1d1f;border:1px solid #d2d2d7;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Cancel</button>
   </div>
   ${invoicePages}
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -3326,9 +3406,6 @@ function refreshPaymentTable() {
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
             <input type="text" class="pay-other-reason" data-num="${num}" value="${escHtml(pay.otherReason || '')}" placeholder="—" style="width:105px;border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;" ${ro}>
             <div class="pay-other-err" data-num="${num}" style="display:none;color:var(--danger);font-size:11px;margin-top:3px;">Reason is required.</div>
-          </td>
-          <td style="padding:5px 8px;text-align:center;" rowspan="${group.items.length}">
-            <button class="btn" onclick="printInvoice(${num})" style="font-size:11px;padding:3px 8px;">🖨 Print Invoice</button>
           </td>
         `;
       } else {
@@ -3719,20 +3796,39 @@ function isSettingsAuthenticated() {
   return Date.now() - (window._settingsAuthAt || 0) < SETTINGS_AUTH_TIMEOUT;
 }
 
+let _authPasswordCallback = null;
+
 function authenticateSettings() {
+  return new Promise((resolve) => {
+    _authPasswordCallback = resolve;
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-password').focus();
+    document.getElementById('auth-modal').style.display = 'flex';
+  });
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-modal').style.display = 'none';
+  if (_authPasswordCallback) _authPasswordCallback(false);
+  _authPasswordCallback = null;
+}
+
+function submitAuthPassword() {
   const defaultPassword = 'Gladiator#1';
   const settings = DB.getSettings();
   const correctPassword = settings.settingsPassword || defaultPassword;
-
-  const password = prompt('Enter Settings password:');
-  if (password === null) return false;
+  const password = document.getElementById('auth-password').value;
 
   if (password === correctPassword) {
     window._settingsAuthAt = Date.now();
-    return true;
+    document.getElementById('auth-modal').style.display = 'none';
+    if (_authPasswordCallback) _authPasswordCallback(true);
+    _authPasswordCallback = null;
+  } else {
+    alert('Incorrect password.');
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-password').focus();
   }
-  alert('Incorrect password.');
-  return false;
 }
 
 const LOADED_ITEMS_COL = {
@@ -4044,13 +4140,13 @@ function addStepBtns(stepName, actions, closeBtn) {
   actions.insertBefore(uBtn, closeBtn);
 }
 
-function navigate(screenId) {
+async function navigate(screenId) {
   const workflowScreens = ['item-load','bidding-sheets','bidder-reg','auction-close','print-invoices','winner-announce','payment-pickup','post-auction'];
   if (workflowScreens.includes(screenId) && !DB.getCurrentAuctionId()) {
     screenId = 'home';
   }
   if (screenId === 'settings' && !isSettingsAuthenticated()) {
-    if (!authenticateSettings()) return;
+    if (!await authenticateSettings()) return;
   }
   navItems.forEach(n => n.classList.remove('active'));
   screens.forEach(s => s.classList.remove('active'));
@@ -4194,7 +4290,7 @@ function navigate(screenId) {
       [mkBtn('Check All', () => document.querySelectorAll('#print-invoices-tbody .pi-chk').forEach(c => c.checked = true)),
        mkBtn('Clear All', () => document.querySelectorAll('#print-invoices-tbody .pi-chk').forEach(c => c.checked = false))
       ].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
-      actions.insertBefore(mkBtn('Print All',  printCheckedInvoices), closeBtn);
+      actions.insertBefore(mkBtn('Print',  printCheckedInvoices), closeBtn);
       addStepBtns('invoices', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
@@ -4578,7 +4674,8 @@ function openEmailBiddersPage() {
   <\/script>
   </div></body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -4702,7 +4799,8 @@ function printAuctionSummary() {
 
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -4801,7 +4899,8 @@ function printWinningBidderReport() {
   ${groupHtml}
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -4913,7 +5012,8 @@ function printDonorReport() {
   ${donorHtml}
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -5084,7 +5184,8 @@ function printClubIncomeReport() {
   ${catSectionHtml}
   </body></html>`;
 
-  const win = window.open('', '_blank');
+  const win = openPrintWindow();
+  if (!win) return;
   win.document.write(html);
   win.document.close();
 }
@@ -5636,7 +5737,7 @@ function showCategoryItems(code, name) {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 20, 2026 6:14 PM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 20, 2026 9:25 PM</span></div>
 </div>
 </body>
 </html>

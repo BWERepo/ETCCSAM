@@ -1502,6 +1502,15 @@ function runUITests() {
         uiAssert('addRegisteredMembers is defined',      typeof w.addRegisteredMembers === 'function', 'addRegisteredMembers not on window'),
       ]);
 
+      // ── Print window helper (popup blocking safety) ────────────────────────
+      await suite('Print window helper — openPrintWindow', () => [
+        uiAssert('openPrintWindow is defined',         typeof w.openPrintWindow === 'function', 'openPrintWindow not on window'),
+        uiAssert('openPrintWindow accepts features',   typeof w.openPrintWindow('') !== 'undefined', 'openPrintWindow should return window or null'),
+        uiAssert('printBiddingSheets is defined',      typeof w.printBiddingSheets === 'function', 'printBiddingSheets not on window'),
+        uiAssert('printInvoice is defined',            typeof w.printInvoice === 'function', 'printInvoice not on window'),
+        uiAssert('printBiddersList is defined',        typeof w.printBiddersList === 'function', 'printBiddersList not on window'),
+      ]);
+
       // ── Home screen title ─────────────────────────────────────────────────
       await suite('Home screen title', () => [
         uiAssert('title includes (SAM)',
@@ -1561,6 +1570,22 @@ function runUITests() {
             uiAssert('Step Uncomplete has onclick',  !!d.getElementById('step1-uncomplete-btn')?.getAttribute('onclick'),  'no onclick on step1-uncomplete-btn'),
             uiAssert('Scan button present',          !!(d.getElementById('btn-scan-inline') || d.getElementById('btn-scan')), 'no #btn-scan-inline / #btn-scan'),
             uiAssert('Update Items button present',  !!d.getElementById('btn-load-items'), 'no #btn-load-items'),
+          ];
+        });
+
+        // ── Scan button functionality ──────────────────────────────────────────
+        await suite('Scan button functionality', () => {
+          const scanBtn = d.getElementById('btn-scan');
+          const scanInlineBtn = d.getElementById('btn-scan-inline');
+          const gmailStatusText = d.getElementById('gmail-status-text');
+          return [
+            uiCheck(d,  'Scan button present in Load Items',   '#btn-scan'),
+            uiCheck(d,  'Scan inline button present',          '#btn-scan-inline'),
+            uiCheck(d,  'Gmail status text present',           '#gmail-status-text'),
+            uiAssert('Gmail status text visible initially',   !!(gmailStatusText?.textContent),   'gmail-status-text is empty'),
+            uiAssert('Scan button is enabled',                !scanBtn?.disabled,  'main Scan button is disabled'),
+            uiAssert('Scan inline button is enabled',         !scanInlineBtn?.disabled, 'inline Scan button is disabled'),
+            uiAssert('Button styling has primary class',      scanBtn?.classList.contains('primary'), 'Scan button missing primary class'),
           ];
         });
 
@@ -1641,7 +1666,7 @@ function runUITests() {
         await suite('Button wiring — Print Invoices', () => {
           const btns = [...d.querySelectorAll('#print-invoices-toolbar-wrap button')];
           return [
-            uiAssert('Print All present',      btns.some(b => b.textContent.trim() === 'Print All'),      'no Print All'),
+            uiAssert('Print present',          btns.some(b => b.textContent.trim() === 'Print'),          'no Print'),
             uiAssert('Check All present',      btns.some(b => b.textContent.trim() === 'Check All'),      'no Check All'),
             uiAssert('Clear All present',      btns.some(b => b.textContent.trim() === 'Clear All'),      'no Clear All'),
             uiAssert('Step Complete present',  btns.some(b => b.textContent.trim() === 'Step Complete'),  'no Step Complete'),
