@@ -1104,6 +1104,31 @@ function runUITests() {
         updateSummary();
       }
 
+      // ── Load Items — Gmail status and Note cards hidden for archived ────────
+      try {
+        const savedAuctions = w.localStorage.getItem('sam_auctions');
+        const curId = w.localStorage.getItem('sam_current_auction') || '';
+        w.localStorage.setItem('sam_auctions', JSON.stringify([
+          { id: curId, name:'IL Archived', status:'archived', created:new Date().toISOString() },
+        ]));
+        nav('item-load');
+        await delay(40);
+        const gmailStatus = d.getElementById('gmail-status');
+        const gmailNote = d.getElementById('gmail-login-note');
+        const bodyArchived = d.body.classList.contains('archived-mode');
+        const statusHidden = gmailStatus ? w.getComputedStyle(gmailStatus).display === 'none' : false;
+        const noteHidden = gmailNote ? w.getComputedStyle(gmailNote).display === 'none' : false;
+        await suite('Load Items — Gmail cards hidden for archived', () => [
+          uiAssert('archived-mode class set', bodyArchived, 'body not in archived-mode'),
+          uiAssert('Gmail status hidden', statusHidden, 'Gmail status not hidden'),
+          uiAssert('Gmail Note card hidden', noteHidden, 'Gmail Note card not hidden'),
+        ]);
+        if (savedAuctions === null) w.localStorage.removeItem('sam_auctions'); else w.localStorage.setItem('sam_auctions', savedAuctions);
+      } catch(e) {
+        renderSuite('UI — Load Items — Gmail cards hidden for archived', [{ name: 'load items cards test', pass: false, detail: e.message }]);
+        updateSummary();
+      }
+
       // ── Load Items — Clear Filter button ──────────────────────────────────
       try {
         const savedAuctions = w.localStorage.getItem('sam_auctions');
