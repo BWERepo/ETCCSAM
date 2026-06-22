@@ -35,7 +35,9 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS sam_store (
 // Logging helper
 function logQuery($action, $query, $status, $details = '') {
     $logFile = __DIR__ . '/debug_log.txt';
-    $timestamp = date('Y-m-d H:i:s');
+    // Use EDT timezone for consistency with UI
+    date_default_timezone_set('America/New_York');
+    $timestamp = date('m/d/Y, g:i:s A');
     $logEntry = "[$timestamp] [API:$action] [$status] $query";
     if ($details) $logEntry .= " | $details";
     $logEntry .= "\n";
@@ -107,24 +109,6 @@ if ($action === 'get_all') {
         echo json_encode($rows);
     } catch (Exception $e) {
         echo json_encode(['error' => 'Failed to read auctions: ' . $e->getMessage()]);
-    }
-
-} elseif ($action === 'get_items') {
-    // Read items from MySQL table
-    try {
-        $rows = $pdo->query("SELECT * FROM items")->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($rows);
-    } catch (Exception $e) {
-        echo json_encode(['error' => 'Failed to read items: ' . $e->getMessage()]);
-    }
-
-} elseif ($action === 'get_bidders') {
-    // Read bidders from MySQL table
-    try {
-        $rows = $pdo->query("SELECT * FROM bidders")->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($rows);
-    } catch (Exception $e) {
-        echo json_encode(['error' => 'Failed to read bidders: ' . $e->getMessage()]);
     }
 
 } elseif ($action === 'get_all_data') {
@@ -400,15 +384,64 @@ if ($action === 'get_all') {
 
 } elseif ($action === 'save_items') {
     $data = $input['data'] ?? [];
+    $count = 0;
+    $totalItems = count($data);
+
+    // Log detailed info about what's being received
+    error_log("[save_items] Received $totalItems items");
+    if ($totalItems === 0) {
+        error_log("[save_items] WARNING: Empty items array!");
+    } else if ($totalItems > 0 && isset($data[0])) {
+        error_log("[save_items] First item: " . json_encode($data[0]));
+    }
+
+    logQuery($action, 'START', 'INFO', "Received $totalItems items to save");
+
     try {
-        $query = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute(['sam_items', json_encode($data)]);
-        $count = count($data);
-        logQuery($action, $query, 'SUCCESS', "Saved $count items");
-        echo json_encode(['ok' => true]);
+        // Upsert items (insert or update if exists)
+        $insertQuery = "INSERT INTO items (item_number, category_code, category_name, email_message_id, description, value, reserve_amount, donor_name, donor_email, donor_phone, loaded_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE category_code=VALUES(category_code), category_name=VALUES(category_name), description=VALUES(description), value=VALUES(value), reserve_amount=VALUES(reserve_amount), donor_name=VALUES(donor_name), donor_email=VALUES(donor_email), donor_phone=VALUES(donor_phone)";
+        $stmt = $pdo->prepare($insertQuery);
+
+        foreach ($data as $idx => $item) {
+            try {
+                $itemNum = $item['item_number'] ?? null;
+                $desc = $item['description'] ?? null;
+
+                if (!$itemNum) {
+                    logQuery($action, $insertQuery, 'ERROR', "Item #$idx has no item_number. Data: " . json_encode($item));
+                    continue;
+                }
+
+                $execData = [
+                    $itemNum,
+                    $item['category_code'] ?? null,
+                    $item['category_name'] ?? null,
+                    $item['email_message_id'] ?? null,
+                    $desc,
+                    $item['value'] ?? $item['item_value'] ?? null,
+                    $item['reserve_amount'] ?? null,
+                    $item['donor_name'] ?? null,
+                    $item['donor_email'] ?? null,
+                    $item['donor_phone'] ?? null,
+                    $item['loaded_date'] ?? date('c')
+                ];
+
+                $stmt->execute($execData);
+                $count++;
+            } catch (Exception $itemErr) {
+                logQuery($action, $insertQuery, 'ERROR', "Failed to insert item {$item['item_number']}: " . $itemErr->getMessage());
+            }
+        }
+
+        // Also save to key-value store as backup
+        $kvQuery = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+        $kvStmt = $pdo->prepare($kvQuery);
+        $kvStmt->execute(['sam_items', json_encode($data)]);
+
+        logQuery($action, $insertQuery, 'SUCCESS', "Saved/updated $count of $totalItems items to SQL table");
+        echo json_encode(['ok' => true, 'count' => $count, 'total' => $totalItems]);
     } catch (Exception $e) {
-        logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
+        logQuery($action, $insertQuery ?? 'N/A', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to save items: ' . $e->getMessage()]);
     }
 
@@ -429,15 +462,36 @@ if ($action === 'get_all') {
 
 } elseif ($action === 'save_bidders') {
     $data = $input['data'] ?? [];
+    $count = 0;
     try {
-        $query = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute(['sam_bidders', json_encode($data)]);
-        $count = count($data);
-        logQuery($action, $query, 'SUCCESS', "Saved $count bidders");
-        echo json_encode(['ok' => true]);
+        // Upsert bidders (insert or update if exists)
+        $insertQuery = "INSERT INTO bidders (bidder_number, last_name, first_name, email, phone) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_name=VALUES(last_name), first_name=VALUES(first_name), email=VALUES(email), phone=VALUES(phone)";
+        $stmt = $pdo->prepare($insertQuery);
+
+        foreach ($data as $bidder) {
+            try {
+                $stmt->execute([
+                    $bidder['bidder_number'] ?? null,
+                    $bidder['last_name'] ?? null,
+                    $bidder['first_name'] ?? null,
+                    $bidder['email'] ?? null,
+                    $bidder['phone'] ?? null
+                ]);
+                $count++;
+            } catch (Exception $bidErr) {
+                logQuery($action, $insertQuery, 'ERROR', "Failed to insert bidder {$bidder['bidder_number']}: " . $bidErr->getMessage());
+            }
+        }
+
+        // Also save to key-value store as backup
+        $kvQuery = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+        $kvStmt = $pdo->prepare($kvQuery);
+        $kvStmt->execute(['sam_bidders', json_encode($data)]);
+
+        logQuery($action, $insertQuery, 'SUCCESS', "Saved/updated $count bidders to SQL table");
+        echo json_encode(['ok' => true, 'count' => $count]);
     } catch (Exception $e) {
-        logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
+        logQuery($action, $insertQuery ?? 'N/A', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to save bidders: ' . $e->getMessage()]);
     }
 
@@ -462,15 +516,35 @@ if ($action === 'get_all') {
 
 } elseif ($action === 'save_winners') {
     $data = $input['data'] ?? [];
+    $count = 0;
     try {
-        $query = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute(['sam_winners', json_encode($data)]);
-        $count = count($data);
-        logQuery($action, $query, 'SUCCESS', "Saved $count winners");
-        echo json_encode(['ok' => true]);
+        // Upsert winners (insert or update if exists)
+        $insertQuery = "INSERT INTO winners (item_number, bidder_number, bidder_name, winning_bid) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE bidder_number=VALUES(bidder_number), bidder_name=VALUES(bidder_name), winning_bid=VALUES(winning_bid)";
+        $stmt = $pdo->prepare($insertQuery);
+
+        foreach ($data as $itemNum => $winner) {
+            try {
+                $stmt->execute([
+                    $itemNum,
+                    $winner['bidder_number'] ?? null,
+                    $winner['bidder_name'] ?? null,
+                    $winner['winning_bid'] ?? null
+                ]);
+                $count++;
+            } catch (Exception $winErr) {
+                logQuery($action, $insertQuery, 'ERROR', "Failed to insert winner for item $itemNum: " . $winErr->getMessage());
+            }
+        }
+
+        // Also save to key-value store as backup
+        $kvQuery = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+        $kvStmt = $pdo->prepare($kvQuery);
+        $kvStmt->execute(['sam_winners', json_encode($data)]);
+
+        logQuery($action, $insertQuery, 'SUCCESS', "Saved/updated $count winners to SQL table");
+        echo json_encode(['ok' => true, 'count' => $count]);
     } catch (Exception $e) {
-        logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
+        logQuery($action, $insertQuery ?? 'N/A', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to save winners: ' . $e->getMessage()]);
     }
 
@@ -495,15 +569,37 @@ if ($action === 'get_all') {
 
 } elseif ($action === 'save_payments') {
     $data = $input['data'] ?? [];
+    $count = 0;
     try {
-        $query = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
-        $stmt = $pdo->prepare($query);
-        $stmt->execute(['sam_payments', json_encode($data)]);
-        $count = count($data);
-        logQuery($action, $query, 'SUCCESS', "Saved $count payments");
-        echo json_encode(['ok' => true]);
+        // Upsert payments (insert or update if exists)
+        $insertQuery = "INSERT INTO payments (bidder_number, checknum, method, paid, other, otherReason) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE checknum=VALUES(checknum), method=VALUES(method), paid=VALUES(paid), other=VALUES(other), otherReason=VALUES(otherReason)";
+        $stmt = $pdo->prepare($insertQuery);
+
+        foreach ($data as $bidderNum => $payment) {
+            try {
+                $stmt->execute([
+                    $bidderNum,
+                    $payment['checknum'] ?? null,
+                    $payment['method'] ?? null,
+                    $payment['paid'] ?? null,
+                    $payment['other'] ?? null,
+                    $payment['otherReason'] ?? null
+                ]);
+                $count++;
+            } catch (Exception $payErr) {
+                logQuery($action, $insertQuery, 'ERROR', "Failed to insert payment for bidder $bidderNum: " . $payErr->getMessage());
+            }
+        }
+
+        // Also save to key-value store as backup
+        $kvQuery = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
+        $kvStmt = $pdo->prepare($kvQuery);
+        $kvStmt->execute(['sam_payments', json_encode($data)]);
+
+        logQuery($action, $insertQuery, 'SUCCESS', "Saved/updated $count payments to SQL table");
+        echo json_encode(['ok' => true, 'count' => $count]);
     } catch (Exception $e) {
-        logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
+        logQuery($action, $insertQuery ?? 'N/A', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to save payments: ' . $e->getMessage()]);
     }
 
@@ -816,9 +912,10 @@ if ($action === 'get_all') {
         echo json_encode(['error' => 'No message provided']);
         exit;
     }
-    // Append to debug_log.txt
+    // Append to debug_log.txt with EDT timezone
     $logFile = __DIR__ . '/debug_log.txt';
-    $timestamp = date('Y-m-d H:i:s');
+    date_default_timezone_set('America/New_York');
+    $timestamp = date('m/d/Y, g:i:s A');
     $logEntry = "[$timestamp] [$level] $message\n";
     file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     echo json_encode(['ok' => true, 'message' => 'Logged']);

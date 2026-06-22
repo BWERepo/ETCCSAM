@@ -651,12 +651,12 @@
 
       <!-- Gmail connection -->
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
+        <span id="scan-note" style="font-size:14px; font-weight:600; color:var(--accent); background:rgba(0,113,227,0.08); padding:8px 14px; border-radius:6px; border:1px solid var(--accent); min-height:24px;"></span>
         <div id="gmail-status" class="disconnected">
           <span class="dot"></span>
           <span id="gmail-status-text">Not connected to Gmail</span>
         </div>
         <span id="gmail-login-note" style="font-size:12px;color:#633806;background:#ffd54f;border:1px solid #fac775;border-radius:8px;padding:10px 14px;"><strong>Note:</strong> The first time emails are scanned, you will be required to log in to the auction email account <strong id="gmail-login-email"></strong>. Please obtain the credentials from your administrator.</span>
-        <span id="scan-note" style="font-size:14px; font-weight:600; color:var(--accent); background:rgba(0,113,227,0.08); padding:8px 14px; border-radius:6px; border:1px solid var(--accent); min-height:24px;"></span>
         <button class="btn primary workflow-edit-btn" id="btn-scan" style="display:none;">📧 Scan</button>
         <div class="spacer"></div>
       </div>
@@ -1371,7 +1371,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 22, 2026 7:37 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 22, 2026 8:21 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -1748,7 +1748,6 @@ const DB = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save_auctions', data: v })
     }).catch(e => console.warn('Failed to save auctions to database:', e));
-    API.syncAuctionsToAPI(v); // async, fire and forget
   },
   getCurrentAuctionId()   { return localStorage.getItem('sam_current_auction') || ''; },
   setCurrentAuctionId(id) { if (id) localStorage.setItem('sam_current_auction', id); else localStorage.removeItem('sam_current_auction'); },
@@ -1763,13 +1762,27 @@ const DB = {
   getItems()      { return JSON.parse(localStorage.getItem(this._k('items'))    || '[]'); },
   saveItems(v)    {
     if (isReadOnly()) return;
+    const count = (Array.isArray(v) ? v.length : Object.keys(v).length);
+    console.log(`[DB.saveItems] START - Saving ${count} items...`);
+    if (count === 0) {
+      console.warn(`[DB.saveItems] WARNING: Empty items array!`);
+    } else {
+      console.log(`[DB.saveItems] First item:`, v[0]);
+    }
     localStorage.setItem(this._k('items'), JSON.stringify(v));
+    const payload = { action: 'save_items', data: v };
+    console.log(`[DB.saveItems] Sending payload with ${count} items to API...`);
     fetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save_items', data: v })
-    }).catch(e => console.warn('Failed to save items to database:', e));
-    API.syncItemsToAPI(this.getCurrentAuctionId(), v);
+      body: JSON.stringify(payload)
+    }).then(r => {
+      console.log(`[DB.saveItems] API response status: ${r.status}`);
+      return r.json();
+    }).then(data => {
+      console.log(`[DB.saveItems] API response data:`, data);
+    })
+      .catch(e => console.warn(`[DB.saveItems] FAILED:`, e));
   },
   getMembers()    { return JSON.parse(localStorage.getItem('sam_members')  || '[]'); },
   saveMembers(v)  {
@@ -1798,7 +1811,6 @@ const DB = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save_bidders', data: v })
     }).catch(e => console.warn('Failed to save bidders to database:', e));
-    API.syncBiddersToAPI(this.getCurrentAuctionId(), v);
   },
   getWinners()    { return JSON.parse(localStorage.getItem(this._k('winners'))  || '{}'); },
   saveWinners(v)  {
@@ -1809,7 +1821,6 @@ const DB = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save_winners', data: v })
     }).catch(e => console.warn('Failed to save winners to database:', e));
-    API.syncWinnersToAPI(this.getCurrentAuctionId(), v);
   },
   getPayments()   { return JSON.parse(localStorage.getItem(this._k('payments')) || '{}'); },
   savePayments(v) {
@@ -1820,7 +1831,6 @@ const DB = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save_payments', data: v })
     }).catch(e => console.warn('Failed to save payments to database:', e));
-    API.syncPaymentsToAPI(this.getCurrentAuctionId(), v);
   },
   getEmails()     { return JSON.parse(localStorage.getItem(this._k('emails'))   || '[]'); },
   saveEmails(v)   {
@@ -1842,8 +1852,6 @@ const DB = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save_settings', data: v })
     }).catch(e => console.warn('Failed to save settings to database:', e));
-    const auctionId = this.getCurrentAuctionId();
-    if (auctionId) API.syncSettingsToAPI(auctionId, v);
   },
   getFieldMap()   { return JSON.parse(localStorage.getItem('sam_fieldmap') || 'null') || DEFAULT_FIELD_MAP; },
   saveFieldMap(v) {
@@ -2479,11 +2487,12 @@ function extractBody(payload) {
 //  PROCESS EMAILS
 // ══════════════════════════════════════
 function processEmails(emails) {
+  console.log(`[processEmails] Starting with ${emails.length} emails`);
   debugLog(`Adding ${emails.length} items from scanned emails`);
   const fieldMap = DB.getFieldMap();
   let loaded = 0, skipped = 0, errors = 0;
 
-  emails.forEach(email => {
+  emails.forEach((email, idx) => {
     if (Items.existsByMsgId(email.id)) { email.status = 'loaded'; skipped++; return; }
     try {
       const fields   = parseEmailBody(email.body || '', fieldMap);
@@ -2515,6 +2524,7 @@ function processEmails(emails) {
         if (item[k]) item[k] = String(item[k]).replace(/[$,]/g, '').trim();
       });
 
+      console.log(`[processEmails] Adding item:`, item.item_number, item.description);
       Items.add(item);
       email.status = 'loaded';
       loaded++;
@@ -2532,6 +2542,26 @@ function processEmails(emails) {
   refreshItemsTable();
   document.getElementById('scan-note').textContent = `Update complete — ${loaded} new item${loaded !== 1 ? 's' : ''} added.`;
   refreshMetrics();
+  persistItemLoadScreenToDB();
+}
+
+function persistItemLoadScreenToDB() {
+  const items = Items.getAll();
+  const emails = DB.getEmails();
+
+  console.log(`[persistItemLoadScreenToDB] Starting persistence...`);
+  console.log(`[persistItemLoadScreenToDB] Items count: ${items.length}`);
+  console.log(`[persistItemLoadScreenToDB] Emails count: ${emails.length}`);
+  console.log(`[persistItemLoadScreenToDB] Items data:`, items);
+
+  // Save items to database
+  DB.saveItems(items);
+
+  // Save emails to database
+  DB.saveEmails(emails);
+
+  // Log the persistence
+  debugLog(`✓ Persisted entire Load Item Emails screen to database: ${items.length} items, ${emails.length} emails`);
 }
 
 // ══════════════════════════════════════
@@ -2615,6 +2645,7 @@ function deleteCheckedEmails() {
   scannedEmails = scannedEmails.filter((email, idx) => !checked.includes(idx));
   renderEmailTable(scannedEmails);
   document.getElementById('email-check-all').checked = false;
+  persistItemLoadScreenToDB();
 }
 
 // ══════════════════════════════════════
@@ -3895,7 +3926,7 @@ function refreshWinnersTable() {
 
   const inpStyle = 'width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--text);';
   const selStyle = inpStyle + 'cursor:pointer;';
-  const bidders  = Bidders.getAll();
+  const bidders  = Bidders.getAll().sort((a, b) => parseInt(a.bidder_number, 10) - parseInt(b.bidder_number, 10));
   const bidderOptions = bidders.map(b =>
     `<option value="${b.bidder_number}">${b.bidder_number} — ${escHtml(b.last_name)}, ${escHtml(b.first_name)}</option>`
   ).join('');
@@ -3924,10 +3955,26 @@ function refreshWinnersTable() {
 
   tbody.querySelectorAll('.win-bid').forEach(inp => {
     inp.addEventListener('change', () => {
-      // Clear error state only — do not auto-save; use Save button
+      const tr      = inp.closest('tr');
+      const key     = tr.dataset.itemKey;
+      const numEl   = tr.querySelector('.win-num');
+      const bidVal  = inp.value.trim();
+      const bidder  = Bidders.getAll().find(b => b.bidder_number === parseInt(numEl.value, 10));
+
+      // Clear error state
       inp.style.borderColor = '';
-      const numEl = inp.closest('tr').querySelector('.win-num');
       if (numEl) numEl.style.borderColor = '';
+
+      // Save winning bid amount
+      const winners = DB.getWinners();
+      if (!winners[key]) winners[key] = {};
+      if (bidVal) {
+        winners[key].winning_bid = bidVal;
+      } else {
+        delete winners[key].winning_bid;
+      }
+      DB.saveWinners(winners);
+      debugLog(`✓ Updated winning bid for item ${key}: $${bidVal}`);
     });
   });
 
@@ -4506,9 +4553,67 @@ function addStepBtns(stepName, actions, closeBtn) {
   actions.insertBefore(uBtn, closeBtn);
 }
 
+async function loadScreenDataFromDatabase(screenId) {
+  // Load screen-specific data from database
+  const dataToLoad = {
+    'home': ['auctions', 'items', 'bidders', 'winners', 'payments', 'settings'],
+    'item-load': ['items', 'emails'],
+    'bidding-sheets': ['items', 'settings'],
+    'bidder-reg': ['bidders'],
+    'auction-close': ['items', 'bidders', 'winners'],
+    'print-invoices': ['items', 'bidders', 'winners', 'settings'],
+    'winner-announce': ['items', 'winners', 'bidders'],
+    'payment-pickup': ['bidders', 'payments', 'winners', 'items'],
+    'post-auction': ['items', 'bidders', 'winners', 'payments', 'settings']
+  };
+
+  const fieldsToLoad = dataToLoad[screenId] || [];
+
+  for (const field of fieldsToLoad) {
+    try {
+      console.log(`[loadScreenDataFromDatabase] Loading ${field} from database...`);
+      const response = await fetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: `get_${field}` })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+        console.log(`[loadScreenDataFromDatabase] Loaded ${field}: ${count} rows`);
+        await debugLog(`✓ Loaded ${field} from database: ${count} rows`);
+      }
+    } catch (e) {
+      console.warn(`[loadScreenDataFromDatabase] Failed to load ${field}:`, e);
+    }
+  }
+}
+
 async function navigate(screenId) {
+  // Map screen IDs to human-readable names
+  const screenNames = {
+    'home': 'Home',
+    'item-load': 'Step 1 — Load Item Emails',
+    'bidding-sheets': 'Step 2 — Create Bid Sheets',
+    'bidder-reg': 'Step 3 — Register Bidders',
+    'auction-close': 'Step 4 — Record Winning Bidders',
+    'print-invoices': 'Step 4.5 — Print Invoices',
+    'winner-announce': 'Step 5 — Announce Winners',
+    'payment-pickup': 'Step 6 — Pay & Pickup',
+    'post-auction': 'Step 7 — Post Auction',
+    'settings': 'Settings'
+  };
+
+  const screenName = screenNames[screenId] || screenId;
+  const currentAuction = DB.getCurrentAuctionId() ? ` [${DB.getCurrentAuctionId()}]` : '';
+
+  // Load data from database for this screen before displaying
+  console.log(`[navigate] Loading data from database for screen: ${screenId}`);
+  await loadScreenDataFromDatabase(screenId);
+
   // Log page display to debug log
-  await debugLog(`Displaying page: ${screenId}`);
+  await debugLog(`📍 Navigated to: ${screenName}${currentAuction}`);
 
   const workflowScreens = ['item-load','bidding-sheets','bidder-reg','auction-close','print-invoices','winner-announce','payment-pickup','post-auction'];
   if (workflowScreens.includes(screenId) && !DB.getCurrentAuctionId()) {
@@ -4654,7 +4759,6 @@ async function navigate(screenId) {
       [mkBtn('Check All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = true)),
        mkBtn('Clear All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = false))
       ].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
-      const saveBtn = mkBtn('Save', saveAllWinners); saveBtn.classList.add('workflow-edit-btn'); actions.insertBefore(saveBtn, closeBtn);
       addStepBtns('winners', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
@@ -5639,14 +5743,13 @@ async function debugLog(message, level = 'INFO') {
   // Ensure device is detected
   if (!currentDevice) currentDevice = detectDevice();
 
-  // Format: "Prod/Test [User] [Device] date time: message"
+  // Format: "Prod/Test [User] [Device] date time: message" (using EDT timezone)
   const env = settings.environment || 'Prod';
   const user = currentUser || 'Anonymous';
   const device = currentDevice || 'Unknown';
   const now = new Date();
-  const date = now.toLocaleDateString('en-US');
-  const time = now.toLocaleTimeString('en-US');
-  const formattedMessage = `${env} [${user}] [${device}] ${date} ${time}: ${message}`;
+  const edtTime = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  const formattedMessage = `${env} [${user}] [${device}] ${edtTime}: ${message}`;
 
   console.log(`[${level}] ${formattedMessage}`);
   try {
@@ -5675,6 +5778,19 @@ window.addEventListener('unhandledrejection', (event) => {
   debugLog(message, 'ERROR');
   console.error(message, event.reason);
 });
+
+// Global button click logging
+document.addEventListener('click', (event) => {
+  const target = event.target.closest('button');
+  if (target) {
+    const buttonId = target.id || 'unnamed';
+    const buttonText = target.textContent?.trim() || '';
+    const buttonClass = target.className || '';
+    const logMessage = `🔘 Button clicked: ${buttonId}${buttonText ? ` (${buttonText})` : ''}`;
+    console.log(`[Button Click] ${logMessage}`);
+    debugLog(logMessage);
+  }
+}, true);
 
 // View debug log file
 async function viewDebugLog() {
@@ -6079,13 +6195,23 @@ document.getElementById('btn-scan').addEventListener('click', () => {
 
 
 document.getElementById('btn-load-items').addEventListener('click', () => {
-  const loadedIds = new Set(DB.getItems().map(i => i.email_message_id).filter(Boolean));
-  const newEmails = scannedEmails.filter(e => !loadedIds.has(e.id));
-  if (!newEmails.length) {
-    document.getElementById('scan-note').textContent = 'Update complete — 0 new items added.';
+  console.log(`[btn-load-items] Clicked - Processing emails and writing items table to database`);
+
+  // Process ALL scanned emails to create/update items
+  if (scannedEmails.length === 0) {
+    console.log(`[btn-load-items] No emails to process`);
+    document.getElementById('scan-note').textContent = 'Update complete — 0 items to process.';
     return;
   }
-  processEmails(newEmails);
+
+  console.log(`[btn-load-items] Processing ${scannedEmails.length} emails to update items table`);
+  debugLog(`🔄 Update Items: Processing ${scannedEmails.length} emails`);
+
+  // Process emails (creates/updates items in memory)
+  processEmails(scannedEmails);
+
+  // persistItemLoadScreenToDB() is called at the end of processEmails
+  // which saves entire items table to database
 });
 
 document.getElementById('btn-clear-items').addEventListener('click', () => {
@@ -6094,6 +6220,7 @@ document.getElementById('btn-clear-items').addEventListener('click', () => {
   sessionNewCount = 0;
   refreshItemsTable();
   refreshMetrics();
+  persistItemLoadScreenToDB();
 });
 
 document.getElementById('btn-clear-bidders').addEventListener('click', () => {
@@ -6760,7 +6887,7 @@ async function migrateCurrentAuctionToBackend() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 22, 2026 7:37 AM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 22, 2026 8:21 AM</span></div>
 </div>
 </body>
 </html>
