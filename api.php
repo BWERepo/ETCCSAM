@@ -3,6 +3,9 @@ session_start();
 
 header('Content-Type: application/json');
 
+// Include Phase 2 security helpers
+require_once __DIR__ . '/security-helpers.php';
+
 // ═════════════════════════════════════════════════════════════════════════════
 // SECURITY: Load environment variables
 // ═════════════════════════════════════════════════════════════════════════════
@@ -111,6 +114,10 @@ $allowedActions = [
     'show_keys',
     'init_tables',
     'log',
+    'get_debug_log',
+    'get_audit_log',
+    'create_backup',
+    'list_backups',
 ];
 
 // Actions that don't require authentication
@@ -130,6 +137,15 @@ if (!in_array($action, $publicActions, true)) {
     if (empty($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+
+    // Phase 2: Server-side session timeout validation
+    $sessionTimeout = (int)($env['SESSION_TIMEOUT'] ?? 1800); // Default 30 minutes
+    $sessionCheck = validateSessionTimeout($sessionTimeout);
+    if (!$sessionCheck['valid']) {
+        http_response_code(401);
+        echo json_encode(['error' => $sessionCheck['message']]);
         exit;
     }
 }
@@ -162,6 +178,25 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS sam_store (
     `value`      LONGTEXT     NOT NULL,
     `updated_at` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Phase 2: Rate Limiting Check
+// ═════════════════════════════════════════════════════════════════════════════
+$rateLimitingEnabled = $env['RATE_LIMITING_ENABLED'] ?? 'true';
+if ($rateLimitingEnabled === 'true' && !in_array($action, ['init_tables', 'log'], true)) {
+    $config = getRateLimitConfig($action);
+    $rateCheck = checkRateLimit($action, $config['maxRequests'], $config['windowSeconds']);
+
+    if (!$rateCheck['allowed']) {
+        http_response_code(429);
+        header('Retry-After: ' . $rateCheck['retry_after']);
+        echo json_encode([
+            'error' => $rateCheck['error'],
+            'retry_after' => $rateCheck['retry_after']
+        ]);
+        exit;
+    }
+}
 
 // Logging helper
 function logQuery($action, $query, $status, $details = '') {
@@ -520,6 +555,9 @@ if ($action === 'get_all') {
     $data = $input['data'] ?? [];
     $count = 0;
     $totalItems = count($data);
+    $userId = getAuthUserId();
+    $encKey = $env['ENCRYPTION_KEY'] ?? '';
+    $encryptionEnabled = !empty($encKey);
 
     // Log detailed info about what's being received
     error_log("[save_items] Received $totalItems items");
@@ -552,6 +590,20 @@ if ($action === 'get_all') {
                 $value = $item['item_value'] ?? $item['value'] ?? null;
                 $submissionDate = $item['submission_date'] ?? $item['loaded_date'] ?? date('Y-m-d H:i:s');
 
+                // Phase 2: Sanitize and optionally encrypt PII fields
+                $donorEmail = sanitizeEmail($item['donor_email'] ?? null);
+                $donorPhone = sanitizePhone($item['donor_phone'] ?? null);
+
+                // Encrypt PII if encryption is enabled
+                if ($encryptionEnabled) {
+                    if ($donorEmail) {
+                        $donorEmail = encryptData($donorEmail, $encKey);
+                    }
+                    if ($donorPhone) {
+                        $donorPhone = encryptData($donorPhone, $encKey);
+                    }
+                }
+
                 $execData = [
                     $itemNum,
                     $category,
@@ -560,15 +612,19 @@ if ($action === 'get_all') {
                     $value,
                     $item['reserve_amount'] ?? null,
                     $item['donor_name'] ?? null,
-                    $item['donor_email'] ?? null,
-                    $item['donor_phone'] ?? null,
+                    $donorEmail,
+                    $donorPhone,
                     $submissionDate
                 ];
 
                 $stmt->execute($execData);
                 $count++;
+
+                // Phase 2: Log successful item save
+                logAudit($pdo, $userId, 'save_items', 'items', $itemNum, null, ['item_number' => $itemNum, 'category' => $category], 'success', "Item saved");
             } catch (Exception $itemErr) {
                 logQuery($action, $insertQuery, 'ERROR', "Failed to insert item {$item['item_number']}: " . $itemErr->getMessage());
+                logAudit($pdo, $userId, 'save_items_error', 'items', $item['item_number'] ?? 'unknown', null, $item, 'failure', $itemErr->getMessage());
             }
         }
 
@@ -602,6 +658,10 @@ if ($action === 'get_all') {
 } elseif ($action === 'save_bidders') {
     $data = $input['data'] ?? [];
     $count = 0;
+    $userId = getAuthUserId();
+    $encKey = $env['ENCRYPTION_KEY'] ?? '';
+    $encryptionEnabled = !empty($encKey);
+
     try {
         // Upsert bidders (insert or update if exists)
         $insertQuery = "INSERT INTO bidders (bidder_number, last_name, first_name, email, phone) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_name=VALUES(last_name), first_name=VALUES(first_name), email=VALUES(email), phone=VALUES(phone)";
@@ -609,16 +669,36 @@ if ($action === 'get_all') {
 
         foreach ($data as $bidder) {
             try {
+                $bidNum = $bidder['bidder_number'] ?? null;
+
+                // Phase 2: Sanitize and optionally encrypt PII
+                $email = sanitizeEmail($bidder['email'] ?? null);
+                $phone = sanitizePhone($bidder['phone'] ?? null);
+
+                // Encrypt PII if encryption is enabled
+                if ($encryptionEnabled) {
+                    if ($email) {
+                        $email = encryptData($email, $encKey);
+                    }
+                    if ($phone) {
+                        $phone = encryptData($phone, $encKey);
+                    }
+                }
+
                 $stmt->execute([
-                    $bidder['bidder_number'] ?? null,
+                    $bidNum,
                     $bidder['last_name'] ?? null,
                     $bidder['first_name'] ?? null,
-                    $bidder['email'] ?? null,
-                    $bidder['phone'] ?? null
+                    $email,
+                    $phone
                 ]);
                 $count++;
+
+                // Phase 2: Log successful bidder save
+                logAudit($pdo, $userId, 'save_bidders', 'bidders', $bidNum, null, ['bidder_number' => $bidNum], 'success', "Bidder saved");
             } catch (Exception $bidErr) {
                 logQuery($action, $insertQuery, 'ERROR', "Failed to insert bidder {$bidder['bidder_number']}: " . $bidErr->getMessage());
+                logAudit($pdo, $userId, 'save_bidders_error', 'bidders', $bidder['bidder_number'] ?? 'unknown', null, $bidder, 'failure', $bidErr->getMessage());
             }
         }
 
@@ -656,6 +736,7 @@ if ($action === 'get_all') {
 } elseif ($action === 'save_winners') {
     $data = $input['data'] ?? [];
     $count = 0;
+    $userId = getAuthUserId();
 
     // Log detailed info about what's being received
     error_log("[save_winners] Received " . count($data) . " winners");
@@ -677,6 +758,14 @@ if ($action === 'get_all') {
                 $bidName = $winner['bidder_name'] ?? null;
                 $bid = $winner['winning_bid'] ?? null;
 
+                // Phase 2: Validate winning bid
+                $bidCheck = validateWinningBid($bid);
+                if (!$bidCheck['valid']) {
+                    logQuery($action, $insertQuery, 'ERROR', "Invalid bid for item $itemNum: " . $bidCheck['error']);
+                    logAudit($pdo, $userId, 'save_winners_validation_failed', 'winners', $itemNum, null, $winner, 'failure', $bidCheck['error']);
+                    continue;
+                }
+
                 error_log("[save_winners] Inserting: item=$itemNum, bidder_number=$bidNum, bidder_name=$bidName, winning_bid=$bid");
 
                 $stmt->execute([
@@ -686,8 +775,12 @@ if ($action === 'get_all') {
                     $bid
                 ]);
                 $count++;
+
+                // Phase 2: Log successful winner save
+                logAudit($pdo, $userId, 'save_winners', 'winners', $itemNum, null, $winner, 'success', "Winner recorded: bidder=$bidNum, bid=$bid");
             } catch (Exception $winErr) {
                 logQuery($action, $insertQuery, 'ERROR', "Failed to insert winner for item $itemNum: " . $winErr->getMessage());
+                logAudit($pdo, $userId, 'save_winners_error', 'winners', $itemNum, null, $winner, 'failure', $winErr->getMessage());
             }
         }
 
@@ -725,6 +818,8 @@ if ($action === 'get_all') {
 } elseif ($action === 'save_payments') {
     $data = $input['data'] ?? [];
     $count = 0;
+    $userId = getAuthUserId();
+    $encKey = $env['ENCRYPTION_KEY'] ?? '';
 
     // Log detailed info about what's being received
     error_log("[save_payments] Received " . count($data) . " payments");
@@ -750,6 +845,22 @@ if ($action === 'get_all') {
                 $other = $payment['other'] ?? null;
                 $otherReason = $payment['otherReason'] ?? null;
 
+                // Phase 2: Validate payment data
+                if ($method && !isValidPaymentMethod($method)) {
+                    logQuery($action, $insertQuery, 'ERROR', "Invalid payment method: $method for bidder $bidderNum");
+                    logAudit($pdo, $userId, 'save_payments_validation_failed', 'payments', $bidderNum, null, $payment, 'failure', "Invalid payment method: $method");
+                    continue;
+                }
+
+                if ($paid) {
+                    $amountCheck = validatePaymentAmount($paid);
+                    if (!$amountCheck['valid']) {
+                        logQuery($action, $insertQuery, 'ERROR', "Invalid amount $paid for bidder $bidderNum: " . $amountCheck['error']);
+                        logAudit($pdo, $userId, 'save_payments_validation_failed', 'payments', $bidderNum, null, $payment, 'failure', $amountCheck['error']);
+                        continue;
+                    }
+                }
+
                 error_log("[save_payments] Inserting: bidder=$bidderNum, checknum=$checknum, method=$method, paid=$paid");
 
                 $stmt->execute([
@@ -761,8 +872,12 @@ if ($action === 'get_all') {
                     $otherReason
                 ]);
                 $count++;
+
+                // Phase 2: Log successful payment save
+                logAudit($pdo, $userId, 'save_payments', 'payments', $bidderNum, null, $payment, 'success', "Payment saved: method=$method, amount=$paid");
             } catch (Exception $payErr) {
                 logQuery($action, $insertQuery, 'ERROR', "Failed to insert payment for bidder $bidderNum: " . $payErr->getMessage());
+                logAudit($pdo, $userId, 'save_payments_error', 'payments', $bidderNum, null, $payment, 'failure', $payErr->getMessage());
             }
         }
 
@@ -1094,6 +1209,163 @@ if ($action === 'get_all') {
     $logEntry = "[$timestamp] [$level] $message\n";
     file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     echo json_encode(['ok' => true, 'message' => 'Logged']);
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Phase 2 Security: Authenticated Debug Log Access
+// ═════════════════════════════════════════════════════════════════════════════
+
+} elseif ($action === 'get_debug_log') {
+    // Requires authentication - already verified above
+    $logFile = __DIR__ . '/debug_log.txt';
+    $limit = (int)($input['limit'] ?? 100); // Last N lines
+    $limit = min($limit, 1000); // Cap at 1000 lines
+
+    try {
+        if (!file_exists($logFile)) {
+            echo json_encode(['logs' => [], 'count' => 0, 'message' => 'No debug log file']);
+            exit;
+        }
+
+        // Read file
+        $content = file_get_contents($logFile);
+        $lines = explode("\n", trim($content));
+
+        // Get last N lines
+        if (count($lines) > $limit) {
+            $lines = array_slice($lines, -$limit);
+        }
+
+        logQuery($action, 'Read debug log', 'SUCCESS', 'Lines: ' . count($lines));
+        echo json_encode([
+            'logs' => $lines,
+            'count' => count($lines),
+            'file_size' => filesize($logFile),
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } catch (Exception $e) {
+        logQuery($action, 'Read debug log', 'ERROR', $e->getMessage());
+        echo json_encode(['error' => 'Failed to read debug log: ' . $e->getMessage()]);
+    }
+
+} elseif ($action === 'get_audit_log') {
+    // Requires authentication - already verified above
+    $limit = (int)($input['limit'] ?? 100);
+    $limit = min($limit, 1000);
+    $offset = (int)($input['offset'] ?? 0);
+    $filter = $input['filter'] ?? null; // Filter by user_id, action, or table_affected
+
+    try {
+        // Ensure audit_log table exists
+        $pdo->exec("CREATE TABLE IF NOT EXISTS audit_log (
+            audit_id INT AUTO_INCREMENT PRIMARY KEY,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            user_id VARCHAR(255),
+            action VARCHAR(100),
+            table_affected VARCHAR(100),
+            record_id VARCHAR(255),
+            old_value LONGTEXT,
+            new_value LONGTEXT,
+            ip_address VARCHAR(45),
+            status VARCHAR(20),
+            details LONGTEXT,
+            INDEX idx_timestamp (timestamp),
+            INDEX idx_user_action (user_id, action),
+            INDEX idx_record (table_affected, record_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $query = "SELECT * FROM audit_log";
+        $params = [];
+
+        if ($filter) {
+            if (isset($filter['user_id'])) {
+                $query .= " WHERE user_id = ?";
+                $params[] = $filter['user_id'];
+            } elseif (isset($filter['action'])) {
+                $query .= " WHERE action = ?";
+                $params[] = $filter['action'];
+            } elseif (isset($filter['table_affected'])) {
+                $query .= " WHERE table_affected = ?";
+                $params[] = $filter['table_affected'];
+            }
+        }
+
+        $query .= " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get total count
+        $countQuery = "SELECT COUNT(*) as total FROM audit_log";
+        if ($filter) {
+            // Add filter to count query
+            if (isset($filter['user_id'])) {
+                $countQuery .= " WHERE user_id = ?";
+                $countStmt = $pdo->prepare($countQuery);
+                $countStmt->execute([$filter['user_id']]);
+            } elseif (isset($filter['action'])) {
+                $countQuery .= " WHERE action = ?";
+                $countStmt = $pdo->prepare($countQuery);
+                $countStmt->execute([$filter['action']]);
+            } elseif (isset($filter['table_affected'])) {
+                $countQuery .= " WHERE table_affected = ?";
+                $countStmt = $pdo->prepare($countQuery);
+                $countStmt->execute([$filter['table_affected']]);
+            } else {
+                $countStmt = $pdo->query($countQuery);
+            }
+        } else {
+            $countStmt = $pdo->query($countQuery);
+        }
+        $total = $countStmt->fetch()['total'] ?? 0;
+
+        logQuery($action, 'Read audit log', 'SUCCESS', 'Rows: ' . count($rows));
+        echo json_encode([
+            'logs' => $rows,
+            'count' => count($rows),
+            'total' => (int)$total,
+            'offset' => $offset,
+            'limit' => $limit,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } catch (Exception $e) {
+        logQuery($action, 'Read audit log', 'ERROR', $e->getMessage());
+        echo json_encode(['error' => 'Failed to read audit log: ' . $e->getMessage()]);
+    }
+
+} elseif ($action === 'create_backup') {
+    // Requires authentication - already verified above
+    $userId = getAuthUserId();
+
+    try {
+        $backupDir = __DIR__ . '/backups';
+        $result = createDatabaseBackup($pdo, $backupDir, $env['DB_NAME']);
+
+        logAudit($pdo, $userId, 'create_backup', 'system', 'backup', null, $result, $result['success'] ? 'success' : 'failure', "Backup created: " . ($result['file'] ?? 'failed'));
+        echo json_encode($result);
+    } catch (Exception $e) {
+        logAudit($pdo, $userId, 'create_backup_error', 'system', 'backup', null, null, 'failure', $e->getMessage());
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+
+} elseif ($action === 'list_backups') {
+    // Requires authentication - already verified above
+    try {
+        $backupDir = __DIR__ . '/backups';
+        $backups = listBackups($backupDir);
+
+        logQuery($action, 'List backups', 'SUCCESS', 'Count: ' . count($backups));
+        echo json_encode([
+            'backups' => $backups,
+            'count' => count($backups),
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } catch (Exception $e) {
+        logQuery($action, 'List backups', 'ERROR', $e->getMessage());
+        echo json_encode(['error' => 'Failed to list backups: ' . $e->getMessage()]);
+    }
 
 } else {
     echo json_encode(['error' => 'Unknown action']);

@@ -1,3 +1,26 @@
 <IfModule mod_headers.c>
   Header set Content-Security-Policy "script-src 'self' 'unsafe-inline' https://apis.google.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://www.googleapis.com https://accounts.google.com https://gmail.googleapis.com https://etccapps.com; frame-src 'self' https://content-gmail.googleapis.com https://accounts.google.com; default-src 'self';"
 </IfModule>
+
+# Phase 2: Protect Debug Log
+<FilesMatch "^debug_log">
+  Require all denied
+</FilesMatch>
+
+# Protect Backups Directory
+<DirectoryMatch "^/.*backups">
+  Require all denied
+</DirectoryMatch>
+
+# Protect security helpers
+<FilesMatch "security-helpers\.php$">
+  Require all denied
+</FilesMatch>
+
+# Enable HSTS (HTTP Strict Transport Security)
+<IfModule mod_headers.c>
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
