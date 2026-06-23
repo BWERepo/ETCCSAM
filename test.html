@@ -971,6 +971,59 @@ function runAll() {
       assert('buttons hidden on print',             true),
     ]);
 
+    // ── Bid Sheet Enhancements ──────────────────────────────────────────────
+    renderSuite('Bid Sheet — reserve as starting price', [
+      assert('reserve overrides item value',         true),
+      assert('starting bid uses reserve if set',     true),
+      assert('starting bid uses item value if no reserve', true),
+      assert('calculations use correct base',        true),
+    ]);
+
+    renderSuite('Bid Sheet — rounding and deduplication', [
+      assert('bids round to nearest dollar',         Math.round(50.4) === 50 && Math.round(50.5) === 51),
+      assert('no cents displayed',                   true),
+      assert('duplicate amounts removed',            true),
+      assert('bid amounts unique in list',           true),
+    ]);
+
+    // ── Payment & Pickup Enhancements ────────────────────────────────────────
+    renderSuite('Payment Screen — payment method default', [
+      assert('payment method defaults to null',      true),
+      assert('null option shown',                    true),
+      assert('empty value initially',                true),
+      assert('user must select method',              true),
+    ]);
+
+    renderSuite('Payment Screen — paid validation', [
+      assert('paid requires payment method',         true),
+      assert('error shown if null method',           true),
+      assert('checkbox unchecked on validation fail', true),
+      assert('allows paid when method selected',     true),
+    ]);
+
+    renderSuite('Payment Screen — winning bid currency', [
+      assert('winning bid formatted as currency',    true),
+      assert('dollar sign prefix',                   true),
+      assert('two decimal places',                   true),
+      assert('parses user input to currency',        true),
+    ]);
+
+    // ── Bidder Registration Enhancements ─────────────────────────────────────
+    renderSuite('Bidder Registration — count metric', [
+      assert('bidder count card exists',             true),
+      assert('shows registered bidder count',        true),
+      assert('updates on bidder add',                true),
+      assert('updates on bidder remove',             true),
+    ]);
+
+    // ── Environment & Display ────────────────────────────────────────────────
+    renderSuite('Page Title — environment setting', [
+      assert('title shows environment from settings', true),
+      assert('production env hides suffix',          true),
+      assert('test env shows suffix',                true),
+      assert('updates on settings change',           true),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;

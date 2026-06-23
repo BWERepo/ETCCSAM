@@ -924,6 +924,12 @@
     <!-- ══ Step 3: Register Bidders ══ -->
     <section class="screen" id="screen-bidder-reg">
       <div class="page-header"><h2>Step 3 — Register Bidders</h2><p>Add and manage auction bidders.</p></div>
+
+      <!-- Metric summary -->
+      <div class="metric-row">
+        <div class="metric-card"><div class="m-label">Registered Bidders</div><div class="m-value" id="m-bidder-count">0</div></div>
+      </div>
+
       <!-- Member Database Modal -->
       <div id="member-db-modal" style="display:none;position:fixed;top:70px;left:220px;right:0;bottom:0;background:var(--bg-section);z-index:1000;flex-direction:column;">
         <div class="page-header" style="flex-shrink:0;background:var(--bg);"><h2>Member Database</h2><p>Club Express Additional Member Data</p></div>
@@ -1545,7 +1551,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 23, 2026 3:34 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 23, 2026 3:49 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2914,11 +2920,20 @@ function printBiddingSheets() {
     const firstBid  = reserveRaw ? reserveRaw : Math.round(itemVal * startPct * 100) / 100;
     const lastBid   = Math.round(itemVal * finalPct  * 100) / 100;
     const increment = bidCount > 1 ? (lastBid - firstBid) / (bidCount - 1) : 0;
-    const bidRows   = Array.from({length: bidCount}, (_, i) => {
-      const amt  = Math.round((firstBid + increment * i) * 100) / 100;
-      const bold = (i + 1) % 2 === 0 ? ' style="font-weight:700;"' : '';
-      const disp = '$' + amt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-      return `<tr><td>${i + 1}</td><td${bold}>${disp}</td><td></td><td></td><td${bold}>${disp}</td></tr>`;
+    const seenBids = new Set();
+    const bidAmounts = [];
+    for (let i = 0; i < bidCount; i++) {
+      const rawAmt = firstBid + increment * i;
+      const amt = Math.round(rawAmt);
+      if (!seenBids.has(amt)) {
+        seenBids.add(amt);
+        bidAmounts.push(amt);
+      }
+    }
+    const bidRows   = bidAmounts.map((amt, idx) => {
+      const bold = (idx + 1) % 2 === 0 ? ' style="font-weight:700;"' : '';
+      const disp = '$' + amt.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+      return `<tr><td>${idx + 1}</td><td${bold}>${disp}</td><td></td><td></td><td${bold}>${disp}</td></tr>`;
     }).join('');
     return `
     <div class="sheet">
@@ -3041,8 +3056,16 @@ function refreshBiddersTable() {
       refreshBiddersTable();
     });
   });
+
+  updateBidderCountMetric();
 }
 
+function updateBidderCountMetric() {
+  const countEl = document.getElementById('m-bidder-count');
+  if (countEl) {
+    countEl.textContent = Bidders.getAll().length;
+  }
+}
 
 function openBidderEditModal(num) {
   const b = Bidders.getAll().find(x => String(x.bidder_number) === String(num));
@@ -3947,9 +3970,10 @@ function refreshPaymentTable() {
           </td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
             <select class="pay-method" data-num="${num}" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;width:88px;" ${ro}>
-              <option value="Credit Card" ${(pay.method||'Credit Card')==='Credit Card'?'selected':''}>Credit Card</option>
-              <option value="Cash"        ${(pay.method||'Credit Card')==='Cash'       ?'selected':''}>Cash</option>
-              <option value="Check"       ${(pay.method||'Credit Card')==='Check'      ?'selected':''}>Check</option>
+              <option value="">— select —</option>
+              <option value="Credit Card" ${pay.method==='Credit Card'?'selected':''}>Credit Card</option>
+              <option value="Cash"        ${pay.method==='Cash'       ?'selected':''}>Cash</option>
+              <option value="Check"       ${pay.method==='Check'      ?'selected':''}>Check</option>
             </select>
           </td>
           <td style="padding:5px 8px;" rowspan="${group.items.length}">
@@ -3994,7 +4018,16 @@ function refreshPaymentTable() {
   };
   tbody.querySelectorAll('.pay-checknum').forEach(inp => inp.addEventListener('change', () => savePayField(inp, 'checknum', inp.value.trim())));
   tbody.querySelectorAll('.pay-method').forEach(sel  => sel.addEventListener('change', () => savePayField(sel, 'method', sel.value)));
-  tbody.querySelectorAll('.pay-paid').forEach(cb     => cb.addEventListener('change',  () => savePayField(cb,  'paid',   cb.checked)));
+  tbody.querySelectorAll('.pay-paid').forEach(cb => cb.addEventListener('change', () => {
+    const num = parseInt(cb.dataset.num, 10);
+    const methodSel = tbody.querySelector(`.pay-method[data-num="${num}"]`);
+    if (cb.checked && !methodSel?.value) {
+      alert('Please select a payment method before marking as paid.');
+      cb.checked = false;
+      return;
+    }
+    savePayField(cb, 'paid', cb.checked);
+  }));
   const validateOther = (num) => {
     const amtInp    = tbody.querySelector(`.pay-other[data-num="${num}"]`);
     const reasonInp = tbody.querySelector(`.pay-other-reason[data-num="${num}"]`);
@@ -4166,23 +4199,27 @@ function refreshWinnersTable() {
       const tr      = inp.closest('tr');
       const key     = tr.dataset.itemKey;
       const numEl   = tr.querySelector('.win-num');
-      const bidVal  = inp.value.trim();
+      const rawVal  = inp.value.trim();
       const bidder  = Bidders.getAll().find(b => b.bidder_number === parseInt(numEl.value, 10));
 
       // Clear error state
       inp.style.borderColor = '';
       if (numEl) numEl.style.borderColor = '';
 
-      // Save winning bid amount
+      // Save winning bid amount as currency
       const winners = DB.getWinners();
       if (!winners[key]) winners[key] = {};
-      if (bidVal) {
-        winners[key].winning_bid = bidVal;
+      if (rawVal) {
+        const num = parseFloat(String(rawVal).replace(/[^0-9.]/g, '')) || 0;
+        const formatted = '$' + num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        winners[key].winning_bid = formatted;
+        inp.value = formatted;
       } else {
         delete winners[key].winning_bid;
+        inp.value = '';
       }
       DB.saveWinners(winners);
-      debugLog(`✓ Updated winning bid for item ${key}: $${bidVal}`);
+      debugLog(`✓ Updated winning bid for item ${key}: ${winners[key]?.winning_bid || 'cleared'}`);
     });
   });
 
@@ -5098,8 +5135,18 @@ async function navigate(screenId) {
     if (actions) {
       const closeBtn = actions.querySelector('.tk-btn-close');
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
-      actions.insertBefore(mkBtn('Print', printPaymentTable), closeBtn);
+      const saveBtn = mkBtn('💾 Save', () => {
+        document.querySelectorAll('.pay-checknum, .pay-method, .pay-paid, .pay-other, .pay-other-reason').forEach(el => {
+          el.dispatchEvent(new Event('change'));
+        });
+        navigate._payDirty = false;
+        const origText = saveBtn.textContent;
+        saveBtn.textContent = 'Saved ✓';
+        setTimeout(() => { saveBtn.textContent = origText; }, 1500);
+      });
       addStepBtns('paid', actions, closeBtn);
+      actions.insertBefore(mkBtn('Print', printPaymentTable), closeBtn);
+      actions.insertBefore(saveBtn, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -5110,29 +5157,6 @@ async function navigate(screenId) {
         navigate._payDirty = false;
         navigate('home');
       });
-    }
-    // Add Save button action bar
-    const card = document.getElementById('payment-card');
-    if (card && !document.getElementById('pay-action-bar')) {
-      const bar = document.createElement('div');
-      bar.id = 'pay-action-bar';
-      bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--bg);';
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'btn primary workflow-edit-btn';
-      saveBtn.textContent = 'Save';
-      saveBtn.style.cssText = 'font-size:12px;padding:4px 16px;';
-      saveBtn.addEventListener('click', () => {
-        document.querySelectorAll('.pay-checknum, .pay-method, .pay-paid, .pay-other, .pay-other-reason').forEach(el => {
-          el.dispatchEvent(new Event('change'));
-        });
-        navigate._payDirty = false;
-        saveBtn.textContent = 'Saved ✓';
-        setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
-      });
-      bar.appendChild(saveBtn);
-      const tableWrap = card.querySelector('div[style*="overflow-x"]');
-      if (tableWrap) card.insertBefore(bar, tableWrap);
-      else card.appendChild(bar);
     }
     // Mark dirty on any field interaction
     const payCard = document.getElementById('payment-card');
@@ -7431,7 +7455,7 @@ async function migrateCurrentAuctionToBackend() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 23, 2026 3:34 AM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 23, 2026 3:49 AM</span></div>
 </div>
 </body>
 </html>
