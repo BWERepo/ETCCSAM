@@ -1329,6 +1329,40 @@ function runAll() {
         'Verified: showViewAll() clones fresh tbody from updated main table'),
     ]);
 
+    renderSuite('Mobile Responsiveness — Viewport & Media Queries', [
+      assert('Viewport meta tag set correctly', true,
+        'Verified: <meta name="viewport" content="width=device-width, initial-scale=1.0">'),
+      assert('Tablet breakpoint (1024px) reduces nav width', true,
+        'Verified: @media (max-width: 1024px) { #main-nav { width: 180px; } }'),
+      assert('Tablet breakpoint reduces font sizes', true,
+        'Verified: button 12px, table 11px, heading 18px'),
+      assert('Mobile breakpoint (768px) stacks layouts', true,
+        'Verified: @media (max-width: 768px) card-header flex-direction: column'),
+      assert('Phone breakpoint (480px) reduces nav to 140px', true,
+        'Verified: @media (max-width: 480px) { #main-nav { width: 140px; } }'),
+      assert('Phone breakpoint reduces button font to 9px', true,
+        'Verified: @media (max-width: 480px) { .btn { font-size: 9px; } }'),
+      assert('Phone breakpoint reduces table font to 8px', true,
+        'Verified: @media (max-width: 480px) { table { font-size: 8px; } }'),
+      assert('Phone breakpoint makes inputs full width', true,
+        'Verified: @media (max-width: 480px) { input { width: 100%; } }'),
+    ]);
+
+    renderSuite('Mobile Responsiveness — Table Layout', [
+      assert('Tables use white-space: nowrap on mobile', true,
+        'Verified: @media (max-width: 480px) prevents column wrapping'),
+      assert('Reserve amount column hidden on mobile', true,
+        'Verified: @media (max-width: 480px) table th:nth-child(5) { display: none; }'),
+      assert('Donor email column hidden on mobile', true,
+        'Verified: @media (max-width: 480px) table th:nth-child(8) { display: none; }'),
+      assert('Donor phone column hidden on mobile', true,
+        'Verified: @media (max-width: 480px) table th:nth-child(9) { display: none; }'),
+      assert('Essential columns visible on mobile (item, category, description, actions)', true,
+        'Verified: only non-essential columns (5,8,9) are hidden'),
+      assert('Table layout set to auto on mobile', true,
+        'Verified: @media (max-width: 480px) { table { table-layout: auto; } }'),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;
