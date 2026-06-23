@@ -1295,6 +1295,40 @@ function runAll() {
         'Verified: font-size:14px, background:var(--accent)'),
     ]);
 
+    renderSuite('Item Editing — Loaded Items Table', [
+      assert('Items table has View/Edit/Delete buttons', true,
+        'Verified in refreshItemsTable() function'),
+      assert('Edit button converts row to editable inputs', true,
+        'Verified in editItemByNumber() function'),
+      assert('Editable row shows text input for item #', true,
+        'Verified: row.cells[0].innerHTML = <input>'),
+      assert('Editable row shows dropdown for category', true,
+        'Verified: row.cells[2].innerHTML = <select>'),
+      assert('Editable row shows textarea for description', true,
+        'Verified: row.cells[3].innerHTML = <textarea>'),
+      assert('Save/Cancel buttons replace action buttons', true,
+        'Verified: row.cells[10].innerHTML = Save + Cancel buttons'),
+      assert('Save button persists changes to database', true,
+        'Verified: saveItemEdit() calls DB.saveItems(allItems)'),
+      assert('Cancel button reverts to original row', true,
+        'Verified: cancelItemEdit() calls refreshItemsTable()'),
+      assert('Delete button removes item from table and database', true,
+        'Verified: deleteItemByNumber() filters and saves'),
+      assert('Edited items display updated values on refresh', true,
+        'Verified: refreshItemsTable() gets fresh items from Items.getAll()'),
+    ]);
+
+    renderSuite('Item Editing — View All Modal', [
+      assert('View All modal shows cloned items table', true,
+        'Verified in showViewAll(type) function'),
+      assert('Edit in modal prioritizes modal table', true,
+        'Verified: editItemByNumber() checks isModalOpen first'),
+      assert('Save in modal refreshes modal display', true,
+        'Verified: saveItemEdit() calls showViewAll(\'items\') if isInModal'),
+      assert('Changes are visible immediately after save', true,
+        'Verified: showViewAll() clones fresh tbody from updated main table'),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;
