@@ -6829,7 +6829,16 @@ overlay.addEventListener('click', e => { if (e.target === overlay) overlay.class
 //  BUTTON WIRING
 // ══════════════════════════════════════
 document.getElementById('btn-scan-inline').addEventListener('click', () => document.getElementById('btn-scan').click());
-document.getElementById('btn-scan').addEventListener('click', () => {
+document.getElementById('btn-scan').addEventListener('click', async () => {
+  // Phase 3: Check email scan rate limit
+  const rateCheck = await EmailScanRateLimit.canScan();
+  if (!rateCheck.allowed) {
+    log(`⏳ Email scan cooldown active. Please wait ${rateCheck.secondsUntilNext} seconds.`);
+    EmailScanRateLimit.disableScanButtonForCooldown(rateCheck.secondsUntilNext);
+    await debugLog(`Email scan blocked: cooldown in effect (${rateCheck.secondsUntilNext}s remaining)`);
+    return;
+  }
+
   const settings = DB.getSettings();
   if (!settings.gmailClientId) {
     document.getElementById('no-client-id-alert').style.display = 'block';
@@ -7515,6 +7524,237 @@ async function migrateCurrentAuctionToBackend() {
 }
 
 // ══════════════════════════════════════
+// PHASE 3: SECURITY FEATURES
+// ══════════════════════════════════════
+
+/**
+ * Phase 3: Email scan rate limiting
+ * Tracks last scan time and prevents scans within cooldown period
+ */
+const EmailScanRateLimit = {
+  lastScanTime: null,
+  minCooldownSeconds: 300, // 5 minutes
+
+  async canScan() {
+    try {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'check_email_scan_cooldown',
+          min_cooldown: this.minCooldownSeconds
+        })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Rate limit check failed:', err);
+      // On error, allow scan (graceful degradation)
+      return { allowed: true, secondsUntilNext: 0 };
+    }
+  },
+
+  disableScanButtonForCooldown(secondsRemaining) {
+    const btnScan = document.getElementById('btn-scan');
+    const btnScanInline = document.getElementById('btn-scan-inline');
+    if (!btnScan && !btnScanInline) return;
+
+    const buttons = [btnScan, btnScanInline].filter(b => b);
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      const originalText = btn.textContent.split('(')[0].trim();
+      const updateCountdown = () => {
+        if (secondsRemaining > 0) {
+          btn.textContent = `${originalText} (${secondsRemaining}s)`;
+          secondsRemaining--;
+          setTimeout(updateCountdown, 1000);
+        } else {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      };
+      updateCountdown();
+    });
+  }
+};
+
+/**
+ * Phase 3: localStorage quota monitoring
+ * Checks usage and warns when approaching limits
+ */
+const StorageMonitor = {
+  warningThreshold: 0.80, // 80% of quota
+  quotaMB: 5, // Typical limit
+
+  async getUsageReport() {
+    try {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'get_storage_report' })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Storage report failed:', err);
+      return null;
+    }
+  },
+
+  async checkAndWarnIfNeeded() {
+    const report = await this.getUsageReport();
+    if (!report) return;
+
+    if (report.warning) {
+      const message = `⚠️ Storage Warning: Using ${report.estimatedMB}MB of ${report.quotaMB}MB (${report.percentageUsed}% full)`;
+      console.warn(message);
+      debugLog(message);
+
+      // Show notification to user
+      const notif = document.createElement('div');
+      notif.style.cssText = 'position:fixed;bottom:20px;left:20px;background:#ff9800;color:white;padding:16px 20px;border-radius:8px;font-size:13px;z-index:9999;max-width:300px;';
+      notif.textContent = message;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 8000);
+    }
+  }
+};
+
+/**
+ * Phase 3: Page visibility detection and auto-logout
+ * Logs out user if page is hidden for > 30 minutes
+ */
+const PageVisibilityManager = {
+  sessionTimeoutSeconds: 1800, // 30 minutes
+  hideTime: null,
+
+  init() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.hideTime = Date.now();
+        console.log('[PageVisibility] Page hidden, session timeout timer started');
+      } else {
+        if (this.hideTime) {
+          const elapsed = (Date.now() - this.hideTime) / 1000;
+          console.log(`[PageVisibility] Page visible again after ${elapsed}s`);
+          if (elapsed > this.sessionTimeoutSeconds) {
+            console.warn('[PageVisibility] Session expired due to inactivity');
+            SessionManager.clearSession();
+            alert('Your session expired due to inactivity. Please refresh the page.');
+            window.location.reload();
+          }
+        }
+        this.hideTime = null;
+      }
+    });
+  }
+};
+
+/**
+ * Phase 3: Payment validation helper
+ */
+const PaymentValidator = {
+  async validatePayment(payment, itemNumber, winningBid, itemValue, reserveAmount = 0) {
+    try {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'validate_payment',
+          payment,
+          item_number: itemNumber,
+          winning_bid: winningBid,
+          item_value: itemValue,
+          reserve_amount: reserveAmount
+        })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Payment validation failed:', err);
+      return { valid: true, bid_valid: true, payment_valid: true }; // Graceful degradation
+    }
+  }
+};
+
+/**
+ * Phase 3: Bidder validation helper
+ */
+const BidderValidator = {
+  // Email validation regex (RFC 5322 simplified)
+  emailRegex: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+
+  validateEmail(email) {
+    return this.emailRegex.test(email);
+  },
+
+  validatePhone(phone) {
+    const digits = phone.replace(/\D/g, '');
+    return digits.length === 10;
+  },
+
+  async validateBidderOnServer(bidder) {
+    try {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'validate_bidder',
+          bidder
+        })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Bidder validation failed:', err);
+      return { valid: true, errors: [] }; // Graceful degradation
+    }
+  }
+};
+
+/**
+ * Phase 3: Category validation helper
+ */
+const CategoryValidator = {
+  validCodes: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+
+  isValidCode(code) {
+    return this.validCodes.includes(parseInt(code, 10));
+  },
+
+  async validateOnServer(categoryCode) {
+    try {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'validate_category',
+          category_code: categoryCode
+        })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Category validation failed:', err);
+      return { valid: true }; // Graceful degradation
+    }
+  }
+};
+
+/**
+ * Phase 3: Duplicate email detection
+ */
+const DuplicateEmailChecker = {
+  async checkForDuplicates(description, donorName, hoursWindow = 24) {
+    try {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'check_duplicate_email',
+          description,
+          donor_name: donorName,
+          hours_window: hoursWindow
+        })
+      });
+      return res;
+    } catch (err) {
+      console.warn('Duplicate check failed:', err);
+      return { isDuplicate: false }; // Graceful degradation
+    }
+  }
+};
+
+// ══════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════
 (async function init() {
@@ -7541,6 +7781,13 @@ async function migrateCurrentAuctionToBackend() {
   // Initialize device detection and user tracking
   currentDevice = detectDevice();
   await debugLog(`App started on ${currentDevice} device`);
+
+  // Phase 3: Initialize security features
+  PageVisibilityManager.init();
+  await debugLog('✓ Page visibility logout monitoring enabled');
+
+  // Check storage quota on startup
+  await StorageMonitor.checkAndWarnIfNeeded();
 
   // Token client is initialized via onGapiScriptLoad + onGisScriptLoad callbacks
 })();

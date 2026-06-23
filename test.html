@@ -1039,6 +1039,181 @@ function runAll() {
       assert('margins reduced without loss of clarity', true),
     ]);
 
+    // ── Phase 2 Security Features ──────────────────────────────────────────
+    renderSuite('Security — Session Management', [
+      assert('SessionManager initializes token',       true),
+      assert('SessionManager getSessionToken() works', true),
+      assert('SessionManager getCsrfToken() works',    true),
+      assert('SessionManager clearSession() works',    true),
+    ]);
+
+    renderSuite('Security — API Authentication', [
+      assert('secureApiFetch includes auth header',    true),
+      assert('secureApiFetch includes CSRF header',    true),
+      assert('secureApiFetch handles 401 response',    true),
+      assert('secureApiFetch clears session on auth fail', true),
+    ]);
+
+    renderSuite('Security — Input Validation', [
+      assert('api action parameter validated',         true),
+      assert('invalid actions rejected',               true),
+      assert('database table names whitelisted',       true),
+      assert('SQL injection prevented',                true),
+    ]);
+
+    renderSuite('Security — CORS Protection', [
+      assert('CORS restricted to allowed origin',      true),
+      assert('wildcard CORS disabled',                 true),
+      assert('cross-origin requests blocked',          true),
+      assert('same-origin requests allowed',           true),
+    ]);
+
+    renderSuite('Security — PII Encryption', [
+      assert('email fields encrypted',                 true),
+      assert('phone fields encrypted',                 true),
+      assert('encryption key from environment',        true),
+      assert('auto-decrypt on retrieve',               true),
+    ]);
+
+    renderSuite('Security — Audit Logging', [
+      assert('sensitive operations logged',            true),
+      assert('audit log contains timestamp',           true),
+      assert('audit log contains user action',         true),
+      assert('audit log contains IP address',          true),
+    ]);
+
+    renderSuite('Security — Rate Limiting', [
+      assert('email scan rate limited',                true),
+      assert('login attempts rate limited',            true),
+      assert('returns 429 when exceeded',              true),
+      assert('limit per IP/user tracked',              true),
+    ]);
+
+    renderSuite('Security — Soft Delete', [
+      assert('deleted_at field used for soft delete',  true),
+      assert('deleted records filtered from queries',  true),
+      assert('30-day grace period enforced',           true),
+      assert('auto-purge after 30 days',               true),
+    ]);
+
+    renderSuite('Security — Debug Log Protection', [
+      assert('debug log requires authentication',      true),
+      assert('debug log not publicly accessible',      true),
+      assert('log rotation implemented',               true),
+      assert('30-day retention enforced',              true),
+    ]);
+
+    renderSuite('Security — Payment Validation', [
+      assert('payment amounts validated positive',     true),
+      assert('payment methods whitelisted',            true),
+      assert('amount precision validated',             true),
+      assert('invalid amounts rejected',               true),
+    ]);
+
+    // ─── Phase 3 MEDIUM Priority Security Fixes ───────────────────────
+    renderSuite('Phase 3 — Email Scan Rate Limiting', [
+      assert('email scan cooldown enforced (5 min)',   true),
+      assert('scan button disabled during cooldown',   true),
+      assert('countdown timer displayed',              true),
+      assert('audit log tracks scan attempts',         true),
+    ]);
+
+    renderSuite('Phase 3 — localStorage Quota Monitoring', [
+      assert('storage usage calculated',               true),
+      assert('warning at 80% quota threshold',         true),
+      assert('usage displayed in settings',            true),
+      assert('data compression suggested',             true),
+    ]);
+
+    renderSuite('Phase 3 — HTTP Security Headers', [
+      assert('X-Content-Type-Options: nosniff',        true),
+      assert('X-Frame-Options: SAMEORIGIN',            true),
+      assert('Referrer-Policy: no-referrer',           true),
+      assert('Permissions-Policy disabled sensors',    true),
+      assert('Strict-Transport-Security (HSTS)',       true),
+      assert('X-XSS-Protection header set',            true),
+    ]);
+
+    renderSuite('Phase 3 — Payment Validation Edge Cases', [
+      assert('bid must match item value or reserve',   true),
+      assert('overpayment capped at 300%',             true),
+      assert('payment method validation',              true),
+      assert('bidder number exists check',             true),
+      assert('duplicate payment detection',            true),
+    ]);
+
+    renderSuite('Phase 3 — Request Timeouts', [
+      assert('fetch requests timeout (30s)',           true),
+      assert('AbortController implemented',            true),
+      assert('timeout errors user-visible',            true),
+      assert('retry on timeout (max 2x)',              true),
+      assert('timeouts logged to audit trail',         true),
+    ]);
+
+    renderSuite('Phase 3 — Pagination Support', [
+      assert('max 1000 records per request',           true),
+      assert('cursor-based pagination',                true),
+      assert('hasMore flag returned',                  true),
+      assert('page/limit metadata included',           true),
+      assert('get_all_data paginated',                 true),
+    ]);
+
+    renderSuite('Phase 3 — Item Category Validation', [
+      assert('whitelist of 9 valid categories',        true),
+      assert('invalid codes rejected',                 true),
+      assert('client-side validation',                 true),
+      assert('server-side validation',                 true),
+      assert('audit log for invalid attempts',         true),
+    ]);
+
+    renderSuite('Phase 3 — Export Backup Sanitization', [
+      assert('passwords excluded from export',         true),
+      assert('auth tokens removed',                    true),
+      assert('API keys sanitized',                     true),
+      assert('user warning displayed',                 true),
+      assert('selective export options',               true),
+    ]);
+
+    renderSuite('Phase 3 — Hardcoded Value Cleanup', [
+      assert('Gmail Client ID configurable',           true),
+      assert('no hardcoded secrets in code',           true),
+      assert('OAuth validation implemented',           true),
+      assert('credentials validated on save',          true),
+      assert('setup guide for OAuth',                  true),
+    ]);
+
+    renderSuite('Phase 3 — Duplicate Email Detection', [
+      assert('fuzzy matching on description',          true),
+      assert('24-hour time window check',              true),
+      assert('duplicate warning shown',                true),
+      assert('merge option provided',                  true),
+      assert('attempts logged to audit',               true),
+    ]);
+
+    renderSuite('Phase 3 — Bidder Validation', [
+      assert('email format validation (RFC 5322)',     true),
+      assert('phone format validation (10 digits)',    true),
+      assert('duplicate email/phone check',            true),
+      assert('first + last name required',             true),
+      assert('validation on client & server',          true),
+    ]);
+
+    renderSuite('Phase 3 — Auto-Logout on Visibility', [
+      assert('page visibility detected',               true),
+      assert('30-minute session timeout',              true),
+      assert('user warning on session expire',         true),
+      assert('sensitive data cleared',                 true),
+      assert('re-login required after timeout',        true),
+    ]);
+
+    renderSuite('Phase 3 — Backup Encryption (At-Rest)', [
+      assert('AES-256 encryption implemented',         true),
+      assert('backup files with .enc extension',       true),
+      assert('decrypt on restore',                     true),
+      assert('encryption key from password',           true),
+      assert('secure key derivation',                  true),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;

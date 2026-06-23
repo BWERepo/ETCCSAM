@@ -6,6 +6,9 @@ header('Content-Type: application/json');
 // Include Phase 2 security helpers
 require_once __DIR__ . '/security-helpers.php';
 
+// Include Phase 3 security helpers
+require_once __DIR__ . '/phase3-helpers.php';
+
 // ═════════════════════════════════════════════════════════════════════════════
 // SECURITY: Load environment variables
 // ═════════════════════════════════════════════════════════════════════════════
@@ -118,6 +121,13 @@ $allowedActions = [
     'get_audit_log',
     'create_backup',
     'list_backups',
+    // Phase 3 validation actions
+    'validate_payment',
+    'validate_category',
+    'validate_bidder',
+    'check_email_scan_cooldown',
+    'check_duplicate_email',
+    'get_storage_report',
 ];
 
 // Actions that don't require authentication
@@ -181,7 +191,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS sam_store (
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Phase 2: Rate Limiting Check
-// ═════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════────────────────────────────────────────────────────
 $rateLimitingEnabled = $env['RATE_LIMITING_ENABLED'] ?? 'true';
 if ($rateLimitingEnabled === 'true' && !in_array($action, ['init_tables', 'log'], true)) {
     $config = getRateLimitConfig($action);
@@ -197,6 +207,11 @@ if ($rateLimitingEnabled === 'true' && !in_array($action, ['init_tables', 'log']
         exit;
     }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Phase 3: Set Request Timeout (prevent long-running requests)
+// ═════════════════════════════════════════════════════════════════════════════
+setSafeTimeout(30); // 30 second timeout for API requests
 
 // Logging helper
 function logQuery($action, $query, $status, $details = '') {
@@ -216,8 +231,28 @@ if ($action === 'get_all') {
     try {
         $query = "SELECT `key`, `value` FROM sam_store";
         $rows = $pdo->query($query)->fetchAll(PDO::FETCH_KEY_PAIR);
-        logQuery($action, $query, 'SUCCESS', 'Rows: ' . count($rows));
-        echo json_encode((object)$rows);
+
+        // Phase 3: Support pagination
+        $page = intval($input['page'] ?? 1);
+        $limit = intval($input['limit'] ?? 100);
+
+        // Convert to indexed array for pagination
+        $rowArray = [];
+        foreach ($rows as $k => $v) {
+            $rowArray[] = ['key' => $k, 'value' => $v];
+        }
+
+        $paginated = paginate($rowArray, $page, $limit);
+
+        logQuery($action, $query, 'SUCCESS', "Rows: " . count($rows) . " (Page $page, Limit $limit)");
+        echo json_encode([
+            'data' => $paginated['items'],
+            'page' => $paginated['page'],
+            'limit' => $paginated['limit'],
+            'total' => $paginated['total'],
+            'totalPages' => $paginated['totalPages'],
+            'hasMore' => $paginated['hasMore']
+        ]);
     } catch (Exception $e) {
         logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to get data']);
@@ -278,15 +313,58 @@ if ($action === 'get_all') {
 } elseif ($action === 'get_all_data') {
     // Read all data from MySQL tables
     try {
-        $data = [
-            'auctions' => $pdo->query("SELECT * FROM auctions")->fetchAll(PDO::FETCH_ASSOC),
-            'items' => $pdo->query("SELECT * FROM items")->fetchAll(PDO::FETCH_ASSOC),
-            'bidders' => $pdo->query("SELECT * FROM bidders")->fetchAll(PDO::FETCH_ASSOC),
-            'winners' => $pdo->query("SELECT * FROM winners")->fetchAll(PDO::FETCH_ASSOC),
-            'payments' => $pdo->query("SELECT * FROM payments")->fetchAll(PDO::FETCH_ASSOC),
-            'settings' => $pdo->query("SELECT * FROM settings")->fetchAll(PDO::FETCH_ASSOC),
-        ];
-        echo json_encode($data);
+        // Phase 3: Support pagination with per-table limits
+        $page = intval($input['page'] ?? 1);
+        $limit = intval($input['limit'] ?? 100);
+        $table = $input['table'] ?? null; // Optional: specific table
+
+        if ($table) {
+            // Get single table with pagination
+            $allowedTables = ['auctions', 'items', 'bidders', 'winners', 'payments', 'settings', 'emails', 'members', 'registrations'];
+            if (!in_array($table, $allowedTables, true)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid table']);
+                exit;
+            }
+
+            $rows = $pdo->query("SELECT * FROM `$table`")->fetchAll(PDO::FETCH_ASSOC);
+            $paginated = paginate($rows, $page, $limit);
+
+            echo json_encode([
+                'table' => $table,
+                'data' => $paginated['items'],
+                'page' => $paginated['page'],
+                'limit' => $paginated['limit'],
+                'total' => $paginated['total'],
+                'totalPages' => $paginated['totalPages'],
+                'hasMore' => $paginated['hasMore']
+            ]);
+        } else {
+            // Get all tables (items may be paginated)
+            $data = [
+                'auctions' => $pdo->query("SELECT * FROM auctions")->fetchAll(PDO::FETCH_ASSOC),
+                'items' => $pdo->query("SELECT * FROM items")->fetchAll(PDO::FETCH_ASSOC),
+                'bidders' => $pdo->query("SELECT * FROM bidders")->fetchAll(PDO::FETCH_ASSOC),
+                'winners' => $pdo->query("SELECT * FROM winners")->fetchAll(PDO::FETCH_ASSOC),
+                'payments' => $pdo->query("SELECT * FROM payments")->fetchAll(PDO::FETCH_ASSOC),
+                'settings' => $pdo->query("SELECT * FROM settings")->fetchAll(PDO::FETCH_ASSOC),
+            ];
+
+            // Apply pagination to items (typically the largest table)
+            if (!empty($data['items'])) {
+                $itemsPaginated = paginate($data['items'], $page, $limit);
+                $data['items'] = $itemsPaginated['items'];
+                $data['itemsPagination'] = [
+                    'page' => $itemsPaginated['page'],
+                    'limit' => $itemsPaginated['limit'],
+                    'total' => $itemsPaginated['total'],
+                    'totalPages' => $itemsPaginated['totalPages'],
+                    'hasMore' => $itemsPaginated['hasMore']
+                ];
+            }
+
+            echo json_encode($data);
+        }
     } catch (Exception $e) {
         echo json_encode(['error' => 'Failed to read data: ' . $e->getMessage()]);
     }
@@ -1365,6 +1443,111 @@ if ($action === 'get_all') {
     } catch (Exception $e) {
         logQuery($action, 'List backups', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to list backups: ' . $e->getMessage()]);
+    }
+
+} elseif ($action === 'validate_payment') {
+    // Phase 3: Payment validation endpoint
+    try {
+        $payment = $input['payment'] ?? [];
+        $itemNumber = $input['item_number'] ?? '';
+        $winningBid = floatval($input['winning_bid'] ?? 0);
+        $itemValue = floatval($input['item_value'] ?? 0);
+        $reserveAmount = floatval($input['reserve_amount'] ?? 0);
+
+        // Validate winning bid amount
+        $bidValidation = validateWinningBid($winningBid, $itemValue, $reserveAmount);
+
+        // Validate payment entry
+        $paymentValidation = validatePaymentEntry($payment, $itemNumber, $winningBid);
+
+        logQuery($action, 'validate_payment', 'SUCCESS', "Item: $itemNumber, Bid: $winningBid");
+        echo json_encode([
+            'bid_valid' => $bidValidation['valid'],
+            'bid_message' => $bidValidation['message'],
+            'payment_valid' => $paymentValidation['valid'],
+            'payment_message' => $paymentValidation['message'],
+            'valid' => $bidValidation['valid'] && $paymentValidation['valid']
+        ]);
+    } catch (Exception $e) {
+        logQuery($action, 'validate_payment', 'ERROR', $e->getMessage());
+        echo json_encode(['error' => 'Payment validation failed: ' . $e->getMessage()]);
+    }
+
+} elseif ($action === 'validate_category') {
+    // Phase 3: Item category validation endpoint
+    try {
+        $categoryCode = $input['category_code'] ?? '';
+
+        $validation = validateItemCategory($categoryCode);
+
+        logQuery($action, 'validate_category', 'SUCCESS', "Category: $categoryCode");
+        echo json_encode($validation);
+    } catch (Exception $e) {
+        logQuery($action, 'validate_category', 'ERROR', $e->getMessage());
+        echo json_encode(['valid' => false, 'message' => 'Category validation failed']);
+    }
+
+} elseif ($action === 'validate_bidder') {
+    // Phase 3: Bidder registration validation endpoint
+    try {
+        $bidder = $input['bidder'] ?? [];
+
+        $validation = validateBidderRegistration($bidder);
+
+        logQuery($action, 'validate_bidder', 'SUCCESS', "Bidder validation");
+        echo json_encode($validation);
+    } catch (Exception $e) {
+        logQuery($action, 'validate_bidder', 'ERROR', $e->getMessage());
+        echo json_encode(['valid' => false, 'errors' => ['Bidder validation failed']]);
+    }
+
+} elseif ($action === 'check_email_scan_cooldown') {
+    // Phase 3: Check if email scan is allowed
+    try {
+        $minCooldown = intval($input['min_cooldown'] ?? 300); // Default 5 minutes
+        $check = checkEmailScanCooldown($minCooldown);
+
+        logQuery($action, 'check_email_scan_cooldown', 'SUCCESS', "Allowed: " . ($check['allowed'] ? 'yes' : 'no'));
+        echo json_encode($check);
+    } catch (Exception $e) {
+        logQuery($action, 'check_email_scan_cooldown', 'ERROR', $e->getMessage());
+        echo json_encode(['allowed' => true, 'message' => 'Check failed, allowing scan']);
+    }
+
+} elseif ($action === 'check_duplicate_email') {
+    // Phase 3: Check for duplicate/similar email submissions
+    try {
+        $description = $input['description'] ?? '';
+        $donorName = $input['donor_name'] ?? '';
+        $hoursWindow = intval($input['hours_window'] ?? 24);
+
+        // Get existing emails from database or localStorage key
+        $emailsJson = $pdo->query("SELECT `value` FROM sam_store WHERE `key` = 'sam_emails' LIMIT 1")
+            ->fetch(PDO::FETCH_ASSOC);
+        $existingEmails = $emailsJson ? json_decode($emailsJson['value'], true) : [];
+
+        $duplicate = checkDuplicateEmail($description, $donorName, $existingEmails, $hoursWindow);
+
+        logQuery($action, 'check_duplicate_email', 'SUCCESS', "Duplicate: " . ($duplicate['isDuplicate'] ? 'yes' : 'no'));
+        echo json_encode($duplicate);
+    } catch (Exception $e) {
+        logQuery($action, 'check_duplicate_email', 'ERROR', $e->getMessage());
+        echo json_encode(['isDuplicate' => false, 'message' => 'Check failed']);
+    }
+
+} elseif ($action === 'get_storage_report') {
+    // Phase 3: Get localStorage usage report
+    try {
+        // Fetch all data from sam_store
+        $rows = $pdo->query("SELECT `key`, `value` FROM sam_store")->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        $report = getStorageUsageReport($rows);
+
+        logQuery($action, 'get_storage_report', 'SUCCESS', "Usage: " . $report['estimatedMB'] . "MB");
+        echo json_encode($report);
+    } catch (Exception $e) {
+        logQuery($action, 'get_storage_report', 'ERROR', $e->getMessage());
+        echo json_encode(['error' => 'Failed to generate storage report']);
     }
 
 } else {
