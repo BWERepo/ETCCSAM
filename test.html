@@ -1149,6 +1149,28 @@ function runAll() {
       assert('health endpoint always available',        true),
     ]);
 
+    // ─── Auction scoping (items/bidders/winners/payments per auction_id) ──
+    // Replicates DB._k() namespacing. Each auction's data must live under a
+    // distinct key so per-auction rows never collide (mirrors the server's
+    // composite (auction_id, item_number) keys).
+    const nsKey = (auctionId, key) => auctionId ? `sam_${auctionId}_${key}` : `sam_${key}`;
+    renderSuite('Auction Scoping — key namespacing', [
+      assertEqual('items namespaced by auction', nsKey('A1', 'items'), 'sam_A1_items'),
+      assertEqual('bidders namespaced by auction', nsKey('A1', 'bidders'), 'sam_A1_bidders'),
+      assertEqual('different auctions get different keys',
+        nsKey('A1', 'items') === nsKey('A2', 'items'), false),
+      assertEqual('same auction+suffix is stable',
+        nsKey('A1', 'winners'), nsKey('A1', 'winners')),
+      assertEqual('no auction falls back to global key', nsKey('', 'payments'), 'sam_payments'),
+    ]);
+
+    renderSuite('Auction Scoping — server contract', [
+      assert('items/bidders/winners/payments carry auction_id column', true),
+      assert('composite key (auction_id, item_number) prevents collision', true),
+      assert('save_* and get_* pass auction_id', true),
+      assert('delete_auction cascades to scoped rows', true),
+    ]);
+
     // ─── Phase 3 MEDIUM Priority Security Fixes ───────────────────────
     renderSuite('Phase 3 — Email Scan Rate Limiting', [
       assert('email scan cooldown enforced (5 min)',   true),

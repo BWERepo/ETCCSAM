@@ -675,6 +675,48 @@
     }
     #password-btn:hover { background: var(--accent-hover); }
     #password-btn:active { opacity: 0.9; }
+
+    /* ── Maintenance Screen ── */
+    #maintenance-screen {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 10001; padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+    #maintenance-screen.hidden { display: none; }
+    #maintenance-container {
+      background: #fff; border-radius: 16px; padding: 32px 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 440px; width: 100%; text-align: center;
+    }
+    #maintenance-title { font-size: 24px; font-weight: 700; color: #1d1d1f; margin: 8px 0 6px; }
+    #maintenance-message { font-size: 14px; color: #6e6e73; line-height: 1.6; margin: 0 0 18px; }
+    #maintenance-input {
+      width: 100%; padding: 12px 14px; font-size: 14px; border: 2px solid var(--border);
+      border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); background: var(--bg);
+    }
+    #maintenance-input:focus { outline: none; border-color: var(--accent); }
+    #maintenance-error { display: none; color: var(--danger); font-size: 13px; margin-top: 8px; }
+    #maintenance-error.show { display: block; }
+    #maintenance-btn {
+      width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 14px;
+    }
+    #maintenance-btn:hover { background: var(--accent-hover); }
+    #maintenance-staff-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 14px; }
+    /* Cute animated "video" (inline, CSP-safe) */
+    #maintenance-scene { width: 220px; height: 130px; margin: 0 auto 4px; position: relative; }
+    #maintenance-scene .m-gear { position: absolute; font-size: 40px; animation: m-spin 4s linear infinite; }
+    #maintenance-scene .m-gear.g2 { font-size: 28px; left: 132px; top: 16px; animation: m-spin-rev 3s linear infinite; }
+    #maintenance-scene .m-gear.g1 { left: 96px; top: 2px; }
+    #maintenance-scene .m-car { position: absolute; left: 8px; bottom: 6px; font-size: 52px; animation: m-bob 1.6s ease-in-out infinite; }
+    #maintenance-scene .m-wrench { position: absolute; left: 58px; bottom: 2px; font-size: 30px; transform-origin: 50% 80%; animation: m-wobble 1.2s ease-in-out infinite; }
+    #maintenance-scene .m-cone { position: absolute; right: 6px; bottom: 4px; font-size: 30px; }
+    @keyframes m-spin { to { transform: rotate(360deg); } }
+    @keyframes m-spin-rev { to { transform: rotate(-360deg); } }
+    @keyframes m-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes m-wobble { 0%,100% { transform: rotate(-18deg); } 50% { transform: rotate(18deg); } }
   </style>
 </head>
 <body>
@@ -686,8 +728,9 @@
   <div id="loading-text">Revving up the auction engine...</div>
 </div>
 
-<!-- Password Screen -->
-<div id="password-screen">
+<!-- Password Screen (hidden until the entry-gate decision, so it never flashes
+     before the maintenance screen when maintenance mode is enabled) -->
+<div id="password-screen" class="hidden">
   <div id="password-screen-container">
     <img src="Images/ETCClogoWhiteBackground.png" id="password-screen-logo" alt="ETCC Logo" />
     <h1 id="password-screen-title">Welcome!</h1>
@@ -695,6 +738,25 @@
     <input type="password" id="password-input" placeholder="Enter password" />
     <div id="password-error">Incorrect password</div>
     <button id="password-btn">Sign In</button>
+  </div>
+</div>
+
+<!-- Maintenance Screen -->
+<div id="maintenance-screen" class="hidden">
+  <div id="maintenance-container">
+    <div id="maintenance-scene" aria-hidden="true">
+      <span class="m-gear g1">⚙️</span>
+      <span class="m-gear g2">⚙️</span>
+      <span class="m-car">🏎️</span>
+      <span class="m-wrench">🔧</span>
+      <span class="m-cone">🚧</span>
+    </div>
+    <h1 id="maintenance-title">🛠️ We'll Be Right Back!</h1>
+    <p id="maintenance-message">We're tuning up the auction engine and performing some maintenance. Please check back a little later — thanks for your patience!</p>
+    <input type="password" id="maintenance-input" placeholder="Staff password" autocomplete="off" />
+    <div id="maintenance-error">Incorrect password</div>
+    <button id="maintenance-btn">Enter Site</button>
+    <div id="maintenance-staff-hint">Authorized staff can enter with the password above.</div>
   </div>
 </div>
 
@@ -1530,6 +1592,11 @@
             <span style="font-size:12px;color:var(--text-secondary);">Show the process log panel during scan and email loading operations.</span>
           </div>
           <div style="display:flex;align-items:center;gap:12px;">
+            <input type="checkbox" id="inp-maintenance-mode" style="width:18px;height:18px;margin:0;accent-color:var(--accent);cursor:pointer;" />
+            <label for="inp-maintenance-mode" style="margin:0;font-size:13px;font-weight:600;cursor:pointer;">Maintenance Mode</label>
+            <span style="font-size:12px;color:var(--text-secondary);">Show visitors a "we'll be right back" screen on first visit. Staff enter with the Settings password.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
             <label for="inp-environment" style="margin:0;font-size:13px;font-weight:600;cursor:pointer;min-width:80px;">Environment:</label>
             <select id="inp-environment" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
               <option value="Prod">Production</option>
@@ -1545,9 +1612,14 @@
             <button class="btn" onclick="viewDebugLog()">📋 View Debug Log</button>
             <span style="font-size:12px;color:var(--text-secondary);">View the debug log file (requires Debug Mode enabled).</span>
           </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+            <label for="sel-clear-scope" style="font-size:13px;font-weight:600;">Clear scope:</label>
+            <select id="sel-clear-scope" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;min-width:220px;"></select>
+            <span style="font-size:12px;color:var(--text-secondary);">Applies to the Emails / Items / Bidders / Winners / Pickup &amp; Pay clears below.</span>
+          </div>
           <div style="display:flex;align-items:center;gap:16px;">
-            <button class="btn danger" onclick="clearInboxEmails()">Clear Emails</button>
-            <span style="font-size:12px;color:var(--text-secondary);">Clear all scanned inbox emails from the current session.</span>
+            <button class="btn danger" id="btn-clear-emails">Clear Emails</button>
+            <span style="font-size:12px;color:var(--text-secondary);">Clear scanned inbox emails for the selected scope.</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px;">
             <button class="btn danger" id="btn-clear-items">Clear Items</button>
@@ -1556,6 +1628,22 @@
           <div style="display:flex;align-items:center;gap:16px;">
             <button class="btn danger" id="btn-clear-bidders">Clear Bidders</button>
             <span style="font-size:12px;color:var(--text-secondary);">Clear all registered bidders from the database.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <button class="btn danger" id="btn-clear-winners">Clear Winners</button>
+            <span style="font-size:12px;color:var(--text-secondary);">Clear all recorded winning bidders for this auction.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <button class="btn danger" id="btn-clear-payments">Clear Pickup &amp; Pay</button>
+            <span style="font-size:12px;color:var(--text-secondary);">Clear all pickup &amp; pay records for this auction.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <button class="btn danger" id="btn-clear-members">Clear Member Table</button>
+            <span style="font-size:12px;color:var(--text-secondary);">Clear the imported member database.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <button class="btn danger" id="btn-clear-registrations">Clear Registered Members</button>
+            <span style="font-size:12px;color:var(--text-secondary);">Clear the registered members list.</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px;">
             <button class="btn" onclick="showDatabaseStats()">Database Stats</button>
@@ -1608,7 +1696,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 23, 2026 6:54 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 23, 2026 9:15 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -1890,6 +1978,12 @@ const DEFAULT_SETTINGS = {
   walkInStart:        1000,
   memberImportDate:   '',
   regImportDate:      '',
+  // Default password gating Settings access and Delete Auction (both use
+  // authenticateSettings). Can be changed in Settings.
+  settingsPassword:   'Gladiator#1',
+  // When enabled, visitors see a maintenance screen first; staff bypass it with
+  // the settings password (default Gladiator#1).
+  maintenanceMode:    false,
 };
 
 // ══════════════════════════════════════
@@ -2077,7 +2171,7 @@ const DB = {
       console.log(`[DB.saveItems] First item:`, v[0]);
     }
     localStorage.setItem(this._k('items'), JSON.stringify(v));
-    const payload = { action: 'save_items', data: v };
+    const payload = { action: 'save_items', data: v, auction_id: this.getCurrentAuctionId() };
     console.log(`[DB.saveItems] Sending payload with ${count} items to API...`);
     secureApiFetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
@@ -2112,7 +2206,7 @@ const DB = {
     localStorage.setItem(this._k('bidders'), JSON.stringify(v));
     secureApiFetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
-      body: JSON.stringify({ action: 'save_bidders', data: v })
+      body: JSON.stringify({ action: 'save_bidders', data: v, auction_id: this.getCurrentAuctionId() })
     }).catch(e => console.warn('Failed to save bidders to database:', e));
   },
   getWinners()    { return JSON.parse(localStorage.getItem(this._k('winners'))  || '{}'); },
@@ -2126,7 +2220,7 @@ const DB = {
       console.log(`[DB.saveWinners] First winner (${firstKey}):`, v[firstKey]);
     }
     localStorage.setItem(this._k('winners'), JSON.stringify(v));
-    const payload = { action: 'save_winners', data: v };
+    const payload = { action: 'save_winners', data: v, auction_id: this.getCurrentAuctionId() };
     console.log(`[DB.saveWinners] Sending payload to API...`);
     secureApiFetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
@@ -2149,7 +2243,7 @@ const DB = {
       console.log(`[DB.savePayments] First payment (bidder ${firstKey}):`, v[firstKey]);
     }
     localStorage.setItem(this._k('payments'), JSON.stringify(v));
-    const payload = { action: 'save_payments', data: v };
+    const payload = { action: 'save_payments', data: v, auction_id: this.getCurrentAuctionId() };
     console.log(`[DB.savePayments] Sending payload to API...`);
     secureApiFetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
@@ -2167,7 +2261,7 @@ const DB = {
     localStorage.setItem(this._k('emails'), JSON.stringify(v));
     secureApiFetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
-      body: JSON.stringify({ action: 'save_emails', data: v })
+      body: JSON.stringify({ action: 'save_emails', data: v, auction_id: this.getCurrentAuctionId() })
     }).catch(e => console.warn('Failed to save emails to database:', e));
   },
 
@@ -4608,6 +4702,8 @@ function loadSettingsForm() {
   document.getElementById('inp-inbox-email').value     = s.inboxEmail     || '';
   document.getElementById('inp-email-folder').value    = s.emailFolder    || 'INBOX';
   document.getElementById('inp-debug-mode').checked    = !!s.debugMode;
+  document.getElementById('inp-maintenance-mode').checked = !!s.maintenanceMode;
+  if (typeof populateClearScope === 'function') populateClearScope();
   document.getElementById('inp-environment').value     = s.environment || 'Prod';
   document.getElementById('inp-starting-bid-pct').value = s.startingBidPct ?? 30;
   document.getElementById('inp-final-bid-pct').value    = s.finalBidPct    ?? 150;
@@ -4831,6 +4927,7 @@ function saveSettings() {
     inboxEmail:     document.getElementById('inp-inbox-email').value.trim(),
     emailFolder:    document.getElementById('inp-email-folder').value.trim() || 'INBOX',
     debugMode:      document.getElementById('inp-debug-mode').checked,
+    maintenanceMode: document.getElementById('inp-maintenance-mode').checked,
     environment:    document.getElementById('inp-environment').value || 'Prod',
     startingBidPct: parseInt(document.getElementById('inp-starting-bid-pct').value, 10) || 0,
     finalBidPct:    parseInt(document.getElementById('inp-final-bid-pct').value,    10) || 0,
@@ -6801,6 +6898,77 @@ function updatePageTitle() {
     : `Silent Auction Manager (SAM) - ${env}`;
 }
 
+// Decides which entry gate to show after settings have loaded. Runs while the
+// loading overlay still covers the screen, so exactly one of {maintenance,
+// login, none} is revealed — the login screen never flashes before maintenance.
+function initializeEntryGate() {
+  const screen   = document.getElementById('maintenance-screen');
+  const pwScreen = document.getElementById('password-screen');
+  const settings = DB.getSettings();
+  const bypassed = sessionStorage.getItem('sam_maint_ok') === '1';
+
+  // Already entered this session via maintenance bypass → no gates at all.
+  if (bypassed) {
+    passwordAuthenticated = true;
+    screen?.classList.add('hidden');
+    pwScreen?.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    return;
+  }
+
+  // Maintenance disabled → show the normal login screen (unless already in).
+  if (!settings.maintenanceMode) {
+    screen?.classList.add('hidden');
+    if (!passwordAuthenticated) pwScreen?.classList.remove('hidden');
+    return;
+  }
+
+  // Maintenance enabled → show maintenance, keep login hidden (no flash).
+  if (!screen) return;
+  pwScreen?.classList.add('hidden');
+  screen.classList.remove('hidden');
+  const input = document.getElementById('maintenance-input');
+  const errEl = document.getElementById('maintenance-error');
+  const btn   = document.getElementById('maintenance-btn');
+  const bypass = settings.settingsPassword || 'Gladiator#1';
+  const fail = () => {
+    errEl.classList.add('show');
+    input.value = '';
+    input.focus();
+    setTimeout(() => errEl.classList.remove('show'), 3000);
+  };
+  const grantAccess = () => {
+    // Maintenance password also serves as the login — no second prompt needed.
+    sessionStorage.setItem('sam_maint_ok', '1');
+    passwordAuthenticated = true;
+    screen.classList.add('hidden');
+    const pwScreen = document.getElementById('password-screen');
+    if (pwScreen) pwScreen.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+  };
+  const submit = async () => {
+    const entered = input.value;
+    if (entered !== bypass) { fail(); return; }
+    btn.disabled = true;
+    try {
+      // Establish the server session so writes are authorized, then enter directly.
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'login', password: entered })
+      });
+      await res.json().catch(() => ({}));
+    } catch (e) {
+      // Even if the session call fails, the local password matched — let them in.
+    } finally {
+      btn.disabled = false;
+    }
+    grantAccess();
+  };
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  input.focus();
+}
+
 // Load all data from API (database) on startup
 (async () => {
   // Initialize password screen first
@@ -6840,6 +7008,9 @@ function updatePageTitle() {
 
   // Update page title based on environment setting
   updatePageTitle();
+
+  // Decide entry gate now that settings are loaded (maintenance vs login).
+  initializeEntryGate();
 
   // Hide loading overlay once app is ready
   const loadingOverlay = document.getElementById('loading-overlay');
@@ -7124,19 +7295,76 @@ document.getElementById('btn-load-items').addEventListener('click', () => {
   // which saves entire items table to database
 });
 
-document.getElementById('btn-clear-items').addEventListener('click', () => {
-  if (!confirm('Clear all loaded items? This cannot be undone.')) return;
-  Items.clear();
-  sessionNewCount = 0;
-  refreshItemsTable();
-  refreshMetrics();
-  persistItemLoadScreenToDB();
+// Populate the "Clear scope" selector with All Auctions + each auction.
+function populateClearScope() {
+  const sel = document.getElementById('sel-clear-scope');
+  if (!sel) return;
+  const auctions = DB.getAuctions() || [];
+  const cur = DB.getCurrentAuctionId();
+  let html = '<option value="__all__">All Auctions</option>';
+  auctions.forEach(a => {
+    const isCur = a.id === cur;
+    html += `<option value="${escHtml(a.id)}"${isCur ? ' selected' : ''}>${escHtml(a.name || a.id)}${isCur ? ' (current)' : ''}</option>`;
+  });
+  sel.innerHTML = html;
+}
+
+// Shared scoped clear for per-auction data types (emails/items/bidders/winners/payments).
+async function clearScopedData(type, label) {
+  const sel = document.getElementById('sel-clear-scope');
+  const scopeVal = sel ? sel.value : '__all__';
+  const all = scopeVal === '__all__';
+  const scopeLabel = all ? 'ALL auctions' : (sel.options[sel.selectedIndex]?.text || scopeVal);
+  if (!confirm(`Clear ${label} for ${scopeLabel}? This cannot be undone.`)) return;
+
+  try {
+    await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'clear_data', type, scope: all ? 'all' : scopeVal })
+    });
+  } catch (e) { console.warn('clear_data failed:', e); }
+
+  // Update the local cache so open views reflect the cleared state.
+  const empty = (type === 'winners' || type === 'payments') ? '{}' : '[]';
+  if (all) {
+    Object.keys(localStorage).forEach(k => {
+      if (k === `sam_${type}` || (k.startsWith('sam_') && k.endsWith(`_${type}`))) {
+        try { localStorage.removeItem(k); } catch (e) {}
+      }
+    });
+  } else {
+    try { localStorage.removeItem(`sam_${scopeVal}_${type}`); } catch (e) {}
+  }
+  const cur = DB.getCurrentAuctionId();
+  if (all || scopeVal === cur) localStorage.setItem(DB._k(type), empty);
+
+  // Refresh affected views.
+  if (type === 'items')    { sessionNewCount = 0; if (typeof refreshItemsTable === 'function') refreshItemsTable(); if (typeof refreshMetrics === 'function') refreshMetrics(); }
+  if (type === 'bidders')  { if (typeof renderBiddersTable === 'function') renderBiddersTable(); }
+  if (type === 'winners')  { if (typeof refreshWinnersTable === 'function') refreshWinnersTable(); if (typeof refreshPaymentTable === 'function') refreshPaymentTable(); }
+  if (type === 'payments') { if (typeof refreshPaymentTable === 'function') refreshPaymentTable(); }
+  if (type === 'emails')   { scannedEmails = []; if (typeof renderEmailTable === 'function') renderEmailTable([]); }
+}
+
+document.getElementById('btn-clear-emails').addEventListener('click', () => clearScopedData('emails', 'scanned emails'));
+document.getElementById('btn-clear-items').addEventListener('click', () => clearScopedData('items', 'loaded items'));
+document.getElementById('btn-clear-bidders').addEventListener('click', () => clearScopedData('bidders', 'registered bidders'));
+document.getElementById('btn-clear-winners').addEventListener('click', () => clearScopedData('winners', 'winning bidders'));
+document.getElementById('btn-clear-payments').addEventListener('click', () => clearScopedData('payments', 'pickup & pay records'));
+
+document.getElementById('btn-clear-members').addEventListener('click', () => {
+  if (!confirm('Clear the imported member database? This cannot be undone.')) return;
+  DB.saveMembers([]);
+  const s = document.getElementById('member-import-status');
+  if (s) s.textContent = 'Member table cleared.';
+  if (typeof showMemberDBModal === 'function' && document.getElementById('member-db-modal')?.style.display !== 'none') showMemberDBModal();
 });
 
-document.getElementById('btn-clear-bidders').addEventListener('click', () => {
-  if (!confirm('Clear all registered bidders? This cannot be undone.')) return;
-  Bidders.clear();
-  renderBiddersTable();
+document.getElementById('btn-clear-registrations').addEventListener('click', () => {
+  if (!confirm('Clear the registered members list? This cannot be undone.')) return;
+  DB.saveRegDB([]);
+  const s = document.getElementById('reg-import-status');
+  if (s) s.textContent = 'Registered members cleared.';
 });
 
 
@@ -7248,22 +7476,22 @@ async function exportBackup() {
       fetch('https://etccapps.com/apps/sam/api.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save_items' })
+        body: JSON.stringify({ action: 'get_items', auction_id: DB.getCurrentAuctionId() })
       }),
       fetch('https://etccapps.com/apps/sam/api.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get_bidders' })
+        body: JSON.stringify({ action: 'get_bidders', auction_id: DB.getCurrentAuctionId() })
       }),
       fetch('https://etccapps.com/apps/sam/api.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get_winners' })
+        body: JSON.stringify({ action: 'get_winners', auction_id: DB.getCurrentAuctionId() })
       }),
       fetch('https://etccapps.com/apps/sam/api.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get_payments' })
+        body: JSON.stringify({ action: 'get_payments', auction_id: DB.getCurrentAuctionId() })
       }),
       fetch('https://etccapps.com/apps/sam/api.php', {
         method: 'POST',
@@ -7337,22 +7565,22 @@ function importBackup(input) {
         data.items && fetch('https://etccapps.com/apps/sam/api.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save_items', data: data.items })
+          body: JSON.stringify({ action: 'save_items', data: data.items, auction_id: DB.getCurrentAuctionId() })
         }),
         data.bidders && fetch('https://etccapps.com/apps/sam/api.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save_bidders', data: data.bidders })
+          body: JSON.stringify({ action: 'save_bidders', data: data.bidders, auction_id: DB.getCurrentAuctionId() })
         }),
         data.winners && fetch('https://etccapps.com/apps/sam/api.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save_winners', data: data.winners })
+          body: JSON.stringify({ action: 'save_winners', data: data.winners, auction_id: DB.getCurrentAuctionId() })
         }),
         data.payments && fetch('https://etccapps.com/apps/sam/api.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save_payments', data: data.payments })
+          body: JSON.stringify({ action: 'save_payments', data: data.payments, auction_id: DB.getCurrentAuctionId() })
         }),
         data.settings && fetch('https://etccapps.com/apps/sam/api.php', {
           method: 'POST',
@@ -7772,7 +8000,7 @@ async function migrateCurrentAuctionToBackend() {
  */
 const EmailScanRateLimit = {
   lastScanTime: null,
-  minCooldownSeconds: 300, // 5 minutes
+  minCooldownSeconds: 5, // light debounce against accidental double-clicks
 
   async canScan() {
     try {
@@ -7783,7 +8011,12 @@ const EmailScanRateLimit = {
           min_cooldown: this.minCooldownSeconds
         })
       });
-      return res;
+      // secureApiFetch returns a Response — parse the JSON body.
+      const data = await res.json().catch(() => null);
+      if (!data || typeof data.allowed === 'undefined') {
+        return { allowed: true, secondsUntilNext: 0 };
+      }
+      return data;
     } catch (err) {
       console.warn('Rate limit check failed:', err);
       // On error, allow scan (graceful degradation)
@@ -7829,7 +8062,7 @@ const StorageMonitor = {
         method: 'POST',
         body: JSON.stringify({ action: 'get_storage_report' })
       });
-      return res;
+      return await res.json().catch(() => null);
     } catch (err) {
       console.warn('Storage report failed:', err);
       return null;
@@ -8051,7 +8284,7 @@ const DuplicateEmailChecker = {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 23, 2026 6:54 AM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 23, 2026 9:15 AM</span></div>
 </div>
 </body>
 </html>
