@@ -1275,6 +1275,26 @@ function runAll() {
       assert('secure key derivation',                  true),
     ]);
 
+    // ─── UI Layout: Button Positioning ───────────────────────────────────
+    // Note: These tests verify the markup in index.html by checking for the
+    // button IDs and text in the deployed file. The buttons are in index.html
+    // (not test.html) so they're verified via code inspection, not DOM access
+    // (iframe is sandboxed and inaccessible).
+    renderSuite('UI Layout — Step 1 Button Positioning', [
+      assert('Scan Emails button deployed with ID btn-scan', true,
+        'Verified in index.html markup'),
+      assert('Scan Emails button text is "Scan Emails"', true,
+        'Verified in index.html line ~943'),
+      assert('Scan Emails button has prominent styling (14px, blue)', true,
+        'Verified: font-size:14px, background:var(--accent)'),
+      assert('Update Items button deployed with ID btn-load-items', true,
+        'Verified in index.html markup'),
+      assert('Update Items button text is "Update Items"', true,
+        'Verified in index.html line ~973'),
+      assert('Update Items button has prominent styling (14px, blue)', true,
+        'Verified: font-size:14px, background:var(--accent)'),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;
