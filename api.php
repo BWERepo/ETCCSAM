@@ -3,11 +3,17 @@ session_start();
 
 header('Content-Type: application/json');
 
-// Include Phase 2 security helpers
-require_once __DIR__ . '/security-helpers.php';
+// Include Phase 2 security helpers (optional - graceful degradation)
+$securityHelpersPath = __DIR__ . '/security-helpers.php';
+if (file_exists($securityHelpersPath)) {
+    require_once $securityHelpersPath;
+}
 
-// Include Phase 3 security helpers
-require_once __DIR__ . '/phase3-helpers.php';
+// Include Phase 3 security helpers (optional - graceful degradation)
+$phase3HelpersPath = __DIR__ . '/phase3-helpers.php';
+if (file_exists($phase3HelpersPath)) {
+    require_once $phase3HelpersPath;
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // SECURITY: Load environment variables
@@ -81,6 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // ═════════════════════════════════════════════════════════════════════════════
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $action = $input['action'] ?? '';
+
+// Health check endpoint (always available)
+if ($action === 'health') {
+    echo json_encode(['status' => 'ok', 'timestamp' => time()]);
+    exit;
+}
 
 $allowedActions = [
     'get_all',
