@@ -1019,13 +1019,13 @@
             </div>
           </div>
           <div style="overflow-x:auto;max-height:210px;overflow-y:auto;">
-            <table class="tablekit" id="email-table" data-tk-sort="false" style="table-layout:fixed;width:100%;min-width:1000px;">
+            <table class="tablekit" id="email-table" data-tk-sort="false" style="table-layout:fixed;width:100%;min-width:900px;">
               <colgroup>
+                <col style="width:150px;">
+                <col style="width:230px;">
+                <col style="width:330px;">
+                <col style="width:330px;">
                 <col style="width:110px;">
-                <col style="width:140px;">
-                <col style="width:180px;">
-                <col style="width:200px;">
-                <col style="width:170px;">
               </colgroup>
               <thead style="position:sticky;top:0;z-index:1;">
                 <tr>
@@ -1058,10 +1058,10 @@
         <div style="overflow:auto;max-height:230px;">
           <table class="tablekit" id="items-table" style="table-layout:fixed;width:100%;min-width:1490px;">
             <colgroup>
-              <col style="width:80px;"><col style="width:130px;"><col style="width:160px;">
-              <col style="width:200px;"><col style="width:80px;"><col style="width:80px;">
-              <col style="width:130px;"><col style="width:160px;"><col style="width:120px;">
-              <col style="width:130px;"><col style="width:140px;">
+              <col style="width:70px;"><col style="width:150px;"><col style="width:140px;">
+              <col style="width:260px;"><col style="width:90px;"><col style="width:90px;">
+              <col style="width:140px;"><col style="width:190px;"><col style="width:130px;">
+              <col style="width:150px;"><col style="width:150px;">
             </colgroup>
             <thead>
               <tr>
@@ -1779,7 +1779,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 23, 2026 7:49 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 25, 2026 7:01 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2124,6 +2124,66 @@ function secureApiFetch(url, options = {}) {
 
   return fetch(url, { ...options, headers, credentials: 'same-origin' });
 }
+
+// ══════════════════════════════════════
+//  AUTO RE-AUTH ON 401
+//  The PHP session can expire (idle timeout / gc) while the tab stays open,
+//  causing api.php to return 401 and silently dropping DB writes. We capture
+//  the login password and transparently re-authenticate + retry once on any
+//  401 from api.php, so no save is lost when a session lapses.
+// ══════════════════════════════════════
+function setApiPassword(pw) {
+  if (pw) { try { sessionStorage.setItem('sam_api_pw', pw); } catch (e) {} }
+}
+function getApiPassword() {
+  try { return sessionStorage.getItem('sam_api_pw') || ''; } catch (e) { return ''; }
+}
+
+(function installApiAutoReauth() {
+  const API_MARKER = 'api.php';
+  const LOGIN_URL  = 'https://etccapps.com/apps/sam/api.php';
+  const origFetch  = window.fetch.bind(window);
+  let reloginInFlight = null;
+
+  async function reLogin() {
+    const pw = getApiPassword();
+    if (!pw) return false;
+    try {
+      const res = await origFetch(LOGIN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action: 'login', password: pw })
+      });
+      const data = await res.json().catch(() => ({}));
+      return res.ok && data && data.success;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  window.fetch = async function (input, init) {
+    const url = (typeof input === 'string') ? input : (input && input.url) || '';
+    const isApi = url.indexOf(API_MARKER) !== -1;
+
+    init = init || {};
+    if (isApi && !init.credentials) init.credentials = 'same-origin';
+
+    let res = await origFetch(input, init);
+
+    // On a 401 from api.php, re-authenticate once and retry (but never retry the
+    // login request itself, to avoid an infinite loop).
+    if (isApi && res.status === 401) {
+      const body = (init && typeof init.body === 'string') ? init.body : '';
+      if (body.indexOf('"action":"login"') === -1) {
+        if (!reloginInFlight) reloginInFlight = reLogin().finally(() => { reloginInFlight = null; });
+        const ok = await reloginInFlight;
+        if (ok) res = await origFetch(input, init);
+      }
+    }
+    return res;
+  };
+})();
 
 // ══════════════════════════════════════
 //  API LAYER
@@ -3125,6 +3185,95 @@ function deleteEmailByIndex(idx) {
   document.getElementById('m-total').textContent = scannedEmails.length;
 }
 
+function toggleAllViewAllEmailCheckboxes() {
+  const checkboxes = document.querySelectorAll('.email-view-all-checkbox');
+  const checkAll = document.getElementById('email-view-all-check-all');
+
+  // Count checked checkboxes
+  const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+
+  // If any are unchecked, check all; otherwise uncheck all
+  const shouldCheck = checkedCount < checkboxes.length;
+  checkboxes.forEach(cb => cb.checked = shouldCheck);
+  if (checkAll) checkAll.checked = shouldCheck;
+}
+
+function deleteCheckedViewAllEmails() {
+  const checkboxes = document.querySelectorAll('.email-view-all-checkbox:checked');
+  if (checkboxes.length === 0) {
+    alert('No emails selected.');
+    return;
+  }
+  if (!confirm(`Delete ${checkboxes.length} email(s)?`)) return;
+
+  // Get the View All table and find row indices
+  const viewAllTable = document.getElementById('view-all-table');
+  const rows = viewAllTable.querySelectorAll('tbody tr');
+  const indicesToDelete = [];
+
+  rows.forEach((row, idx) => {
+    const checkbox = row.querySelector('.email-view-all-checkbox');
+    if (checkbox && checkbox.checked) {
+      indicesToDelete.push(idx);
+    }
+  });
+
+  // Delete in reverse order to maintain correct indices
+  for (let i = indicesToDelete.length - 1; i >= 0; i--) {
+    scannedEmails.splice(indicesToDelete[i], 1);
+  }
+
+  renderEmailTable(scannedEmails);
+  persistItemLoadScreenToDB();
+  document.getElementById('m-total').textContent = scannedEmails.length;
+
+  // Refresh the View All modal to show updated list
+  showViewAll('emails');
+}
+
+function toggleAllViewAllItemCheckboxes() {
+  const checkboxes = document.querySelectorAll('.item-view-all-checkbox');
+  const checkAll = document.getElementById('item-view-all-check-all');
+
+  // If any are unchecked, check all; otherwise uncheck all
+  const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+  const shouldCheck = checkedCount < checkboxes.length;
+  checkboxes.forEach(cb => cb.checked = shouldCheck);
+  if (checkAll) checkAll.checked = shouldCheck;
+}
+
+function deleteCheckedViewAllItems() {
+  // Collect item numbers of checked rows. Cell 0 is the checkbox, so the
+  // Item # is in cell 1.
+  const viewAllTable = document.getElementById('view-all-table');
+  const rows = viewAllTable.querySelectorAll('tbody tr');
+  const itemNumbers = [];
+
+  rows.forEach(row => {
+    const checkbox = row.querySelector('.item-view-all-checkbox');
+    if (checkbox && checkbox.checked) {
+      const numCell = row.cells[1];
+      if (numCell) itemNumbers.push(numCell.textContent.trim());
+    }
+  });
+
+  if (itemNumbers.length === 0) {
+    alert('No items selected.');
+    return;
+  }
+  if (!confirm(`Delete ${itemNumbers.length} item(s)?`)) return;
+
+  let items = Items.getAll();
+  items = items.filter(i => !itemNumbers.includes(String(i.item_number)));
+  DB.saveItems(items);
+  refreshItemsTable();
+  persistItemLoadScreenToDB();
+  refreshMetrics();
+
+  // Refresh the View All modal to show updated list
+  showViewAll('items');
+}
+
 function editItemByNumber(itemNumber) {
   console.log('[editItemByNumber] Called with itemNumber:', itemNumber);
 
@@ -3139,20 +3288,23 @@ function editItemByNumber(itemNumber) {
   const modal = document.getElementById('view-all-modal');
   const isModalOpen = modal && modal.style.display === 'flex';
 
+  // The View All modal may prepend a checkbox column, shifting all data cells
+  // by one. `off` keeps cell indices correct in either table.
+  const matchesItem = (tr) => {
+    const o = tr.querySelector('.item-view-all-checkbox') ? 1 : 0;
+    return tr.cells[o]?.textContent.trim() === itemNumber;
+  };
+
   let row;
   if (isModalOpen) {
     console.log('[editItemByNumber] Modal is open, searching modal table first');
-    row = [...document.querySelectorAll('#view-all-table tr')].find(tr =>
-      tr.cells[0]?.textContent.trim() === itemNumber
-    );
+    row = [...document.querySelectorAll('#view-all-table tbody tr')].find(matchesItem);
   }
 
   // Fall back to main table if not found in modal
   if (!row) {
     console.log('[editItemByNumber] Not found in modal, searching main table');
-    row = [...document.querySelectorAll('#items-tbody tr')].find(tr =>
-      tr.cells[0]?.textContent.trim() === itemNumber
-    );
+    row = [...document.querySelectorAll('#items-tbody tr')].find(matchesItem);
   }
 
   console.log('[editItemByNumber] Found row:', !!row, 'in', isModalOpen && row?.closest('#view-all-table') ? 'modal' : 'main');
@@ -3162,40 +3314,42 @@ function editItemByNumber(itemNumber) {
     return;
   }
 
+  const off = row.querySelector('.item-view-all-checkbox') ? 1 : 0;
+
   // Store original values for cancel
   const originalValues = {
-    date: row.cells[1]?.textContent || '',
-    description: row.cells[3]?.textContent || '',
-    value: row.cells[4]?.textContent || '',
-    reserve: row.cells[5]?.textContent || '',
-    donor_name: row.cells[6]?.textContent || '',
-    donor_email: row.cells[7]?.textContent || '',
-    donor_phone: row.cells[8]?.textContent || ''
+    date: row.cells[1 + off]?.textContent || '',
+    description: row.cells[3 + off]?.textContent || '',
+    value: row.cells[4 + off]?.textContent || '',
+    reserve: row.cells[5 + off]?.textContent || '',
+    donor_name: row.cells[6 + off]?.textContent || '',
+    donor_email: row.cells[7 + off]?.textContent || '',
+    donor_phone: row.cells[8 + off]?.textContent || ''
   };
   console.log('[editItemByNumber] Original values:', originalValues);
 
   // Make item # editable
   console.log('[editItemByNumber] Converting row cells to editable...');
-  row.cells[0].innerHTML = `<input type="text" value="${escHtml(itemNumber)}" style="width:100%;padding:4px;border:1px solid var(--border);font-weight:600;">`;
+  row.cells[0 + off].innerHTML = `<input type="text" value="${escHtml(itemNumber)}" style="width:100%;padding:4px;border:1px solid var(--border);font-weight:600;">`;
   console.log('[editItemByNumber] cell[0] converted');
 
   // Make category a dropdown
   const catOptions = Object.entries({100:'Auto',200:'Corvette',300:'Mens',400:'Womens',500:'Household',600:'Artwork',700:'Baskets',800:'Certs',900:'Misc'})
     .map(([code, name]) => `<option value="${code}" ${String(item.category_code) === code ? 'selected' : ''}>${code} - ${name}</option>`)
     .join('');
-  row.cells[2].innerHTML = `<select style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${catOptions}</select>`;
+  row.cells[2 + off].innerHTML = `<select style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${catOptions}</select>`;
 
   // Other editable fields
-  row.cells[1].innerHTML = `<input type="text" value="${escHtml(originalValues.date)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[3].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.description)}</textarea>`;
-  row.cells[4].innerHTML = `<input type="text" value="${escHtml(originalValues.value)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[5].innerHTML = `<input type="text" value="${escHtml(originalValues.reserve)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[6].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_name)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[7].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_email)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[8].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_phone)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[1 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.date)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[3 + off].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.description)}</textarea>`;
+  row.cells[4 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.value)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[5 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.reserve)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[6 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_name)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[7 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_email)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[8 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_phone)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
 
-  // Replace action buttons with Save/Cancel
-  row.cells[10].innerHTML = `
+  // Replace action buttons with Save/Cancel (actions cell is index 10 + offset)
+  row.cells[10 + off].innerHTML = `
     <button class="btn success" style="padding:3px 8px;margin-right:4px;font-size:10px;" onclick="saveItemEdit('${itemNumber}')">Save</button>
     <button class="btn" style="padding:3px 8px;font-size:10px;" onclick="cancelItemEdit('${itemNumber}')">Cancel</button>
   `;
@@ -3210,29 +3364,32 @@ function saveItemEdit(itemNumber) {
 
   // Find the row by looking for the one with the Save button (works in main table AND view-all modal)
   const row = [...document.querySelectorAll('tr')].find(tr =>
-    tr.cells[10]?.querySelector('button.success')
+    tr.querySelector('button.success')
   );
   if (!row) {
     debugLog(`✗ Could not find row for editing`);
     return;
   }
 
+  // The View All modal may prepend a checkbox column, shifting data cells by one.
+  const off = row.querySelector('.item-view-all-checkbox') ? 1 : 0;
+
   // Get edited values from inputs
-  const textarea = row.cells[3]?.querySelector('textarea');
+  const textarea = row.cells[3 + off]?.querySelector('textarea');
   const newDesc = textarea?.value;
 
   console.log('[saveItemEdit] Textarea found:', !!textarea);
   console.log('[saveItemEdit] Raw textarea value:', JSON.stringify(newDesc));
   console.log('[saveItemEdit] Value length:', newDesc?.length);
 
-  const newValue = row.cells[4]?.querySelector('input')?.value;
+  const newValue = row.cells[4 + off]?.querySelector('input')?.value;
 
   console.log('[saveItemEdit] Before update:', {desc: item.description, value: item.item_value});
   console.log('[saveItemEdit] Input values from form:', {newDesc, newValue});
 
-  item.item_number = row.cells[0]?.querySelector('input')?.value || item.item_number;
-  item.email_date = row.cells[1]?.querySelector('input')?.value || item.email_date;
-  item.category_code = row.cells[2]?.querySelector('select')?.value || item.category_code;
+  item.item_number = row.cells[0 + off]?.querySelector('input')?.value || item.item_number;
+  item.email_date = row.cells[1 + off]?.querySelector('input')?.value || item.email_date;
+  item.category_code = row.cells[2 + off]?.querySelector('select')?.value || item.category_code;
 
   // Always update with new value if it exists (not just || logic)
   if (newDesc !== undefined && newDesc !== null) {
@@ -3242,10 +3399,10 @@ function saveItemEdit(itemNumber) {
     item.item_value = newValue;
   }
 
-  item.reserve_amount = row.cells[5]?.querySelector('input')?.value || item.reserve_amount;
-  item.donor_name = row.cells[6]?.querySelector('input')?.value || item.donor_name;
-  item.donor_email = row.cells[7]?.querySelector('input')?.value || item.donor_email;
-  item.donor_phone = row.cells[8]?.querySelector('input')?.value || item.donor_phone;
+  item.reserve_amount = row.cells[5 + off]?.querySelector('input')?.value || item.reserve_amount;
+  item.donor_name = row.cells[6 + off]?.querySelector('input')?.value || item.donor_name;
+  item.donor_email = row.cells[7 + off]?.querySelector('input')?.value || item.donor_email;
+  item.donor_phone = row.cells[8 + off]?.querySelector('input')?.value || item.donor_phone;
 
   console.log('[saveItemEdit] After update:', {desc: item.description, value: item.item_value});
   console.log('[saveItemEdit] Full item object:', item);
@@ -3594,6 +3751,26 @@ function bsCheckAll() {
 
 function bsClearAll() {
   document.querySelectorAll('#bs-items-tbody .bs-chk').forEach(c => c.checked = false);
+}
+
+// Header "toggle all" checkbox: check all rows if any are unchecked, else uncheck all.
+function bsToggleAll() {
+  const checkboxes = document.querySelectorAll('#bs-items-tbody .bs-chk');
+  const checkedCount = [...checkboxes].filter(c => c.checked).length;
+  const shouldCheck = checkedCount < checkboxes.length;
+  checkboxes.forEach(c => c.checked = shouldCheck);
+  const headerCb = document.getElementById('bs-check-all');
+  if (headerCb) headerCb.checked = shouldCheck;
+}
+
+// Record Winning Bidders header "toggle all" checkbox (same model as bid sheets).
+function winToggleAll() {
+  const checkboxes = document.querySelectorAll('#winners-tbody .win-print-chk');
+  const checkedCount = [...checkboxes].filter(c => c.checked).length;
+  const shouldCheck = checkedCount < checkboxes.length;
+  checkboxes.forEach(c => c.checked = shouldCheck);
+  const headerCb = document.getElementById('win-check-all');
+  if (headerCb) headerCb.checked = shouldCheck;
 }
 
 // ══════════════════════════════════════
@@ -4857,6 +5034,17 @@ function refreshWinnersTable() {
       tr.querySelector('.win-num').style.borderColor = '';
     });
   });
+
+  // Inject the "toggle all" checkbox into header cell 0 (same model as the
+  // Create Bid Sheets page). TableKit has already processed the header, so
+  // overwriting cell 0's contents here is safe and persists across refreshes.
+  const winHeaderRow = document.querySelector('#winners-table thead tr');
+  const winCell0 = winHeaderRow ? winHeaderRow.cells[0] : null;
+  if (winCell0) {
+    winCell0.innerHTML = '<input type="checkbox" id="win-check-all" checked onchange="winToggleAll()" title="Check / uncheck all" style="width:18px;height:18px;cursor:pointer;margin:0;">';
+    winCell0.style.textAlign = 'center';
+    winCell0.style.verticalAlign = 'middle';
+  }
 }
 
 function refreshBsItemsTable() {
@@ -4890,6 +5078,16 @@ function refreshBsItemsTable() {
   });
 
   TableKit.init(document.getElementById('bs-items-table'));
+
+  // TableKit wipes <th> contents, so inject the "toggle all" checkbox into
+  // header cell 0 after init (same model as the View All pages).
+  const bsHeaderRow = document.querySelector('#bs-items-table thead tr');
+  const bsCell0 = bsHeaderRow ? bsHeaderRow.cells[0] : null;
+  if (bsCell0) {
+    bsCell0.innerHTML = '<input type="checkbox" id="bs-check-all" onchange="bsToggleAll()" title="Check / uncheck all" style="width:18px;height:18px;cursor:pointer;margin:0;">';
+    bsCell0.style.textAlign = 'center';
+    bsCell0.style.verticalAlign = 'middle';
+  }
 }
 
 // ══════════════════════════════════════
@@ -5570,7 +5768,7 @@ async function navigate(screenId) {
         b.addEventListener('click', fn);
         return b;
       };
-      [mkBtn('Check All', bsCheckAll), mkBtn('Clear All', bsClearAll)].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
+      // Check All / Clear All removed — use the toggle-all checkbox in the table header instead.
       const pbsBtn = mkBtn('Print Bid Sheets', printBiddingSheets);
       pbsBtn.classList.add('workflow-edit-btn');
       actions.insertBefore(pbsBtn, closeBtn);
@@ -5650,9 +5848,7 @@ async function navigate(screenId) {
       };
       actions.insertBefore(mkBtn('Print Invoices', printAllInvoices), closeBtn);
       actions.insertBefore(mkBtn('Print', printWinnersTable), closeBtn);
-      [mkBtn('Check All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = true)),
-       mkBtn('Clear All', () => document.querySelectorAll('#winners-tbody .win-print-chk').forEach(c => c.checked = false))
-      ].forEach(b => { b.classList.add('workflow-edit-btn'); actions.insertBefore(b, closeBtn); });
+      // Check All / Clear All removed — use the toggle-all checkbox in the table header instead.
       addStepBtns('winners', actions, closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
@@ -6937,6 +7133,7 @@ function initializePasswordScreen() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
+        setApiPassword(enteredPassword); // enable silent re-auth on later 401s
         passwordAuthenticated = true;
         console.log('[Password] ✓ Authenticated');
         passwordScreen.classList.add('hidden');
@@ -7184,6 +7381,7 @@ function initializeEntryGate() {
   const submit = async () => {
     const entered = input.value;
     if (entered !== bypass) { fail(); return; }
+    setApiPassword(entered); // enable silent re-auth on later 401s
     btn.disabled = true;
     try {
       // Establish the server session so writes are authorized, then enter directly.
@@ -7668,11 +7866,19 @@ document.getElementById('btn-add-field').addEventListener('click', () => {
 // title, or a toolbar button by editing one entry here — no scattered ternaries.
 const VIEW_ALL_CONFIG = {
   emails:     { table: 'email-table',    tbody: 'email-tbody',    title: 'Inbox Emails View All',
-                extraButtons: [{ label: '🗑 Delete Checked', onClick: () => deleteCheckedEmails() }] },
+                extraButtons: [{ label: '🗑 Delete Checked', onClick: () => deleteCheckedViewAllEmails() }] },
   'bs-items': { table: 'bs-items-table', tbody: 'bs-items-tbody', title: 'Auction Items',
                 extraButtons: [] },
   items:      { table: 'items-table',    tbody: 'items-tbody',    title: 'Loaded Items View All',
-                extraButtons: [] },
+                extraButtons: [{ label: '🗑 Delete Checked', onClick: () => deleteCheckedViewAllItems() }] },
+};
+
+// Per-type checkbox-selection settings for the View All modal. Types listed here
+// get a leading checkbox column (toggle-all header + per-row checkbox) and have
+// their per-row Delete button removed in favour of a single "Delete Checked".
+const VIEW_ALL_SELECTABLE = {
+  emails: { cbClass: 'email-view-all-checkbox', cbAllId: 'email-view-all-check-all', toggleFn: 'toggleAllViewAllEmailCheckboxes()' },
+  items:  { cbClass: 'item-view-all-checkbox',  cbAllId: 'item-view-all-check-all',  toggleFn: 'toggleAllViewAllItemCheckboxes()'  },
 };
 
 function showViewAll(type) {
@@ -7694,10 +7900,53 @@ function showViewAll(type) {
     });
     // Remove any leftover _tk markers so TableKit re-initialises cleanly
     theadClone.querySelectorAll('th').forEach(th => { th.removeAttribute('data-tk'); });
+
+    // For selectable types, add a placeholder checkbox-column header.
+    // The checkbox itself is injected AFTER TableKit.init (which wipes th
+    // contents), but the th must exist now so the column count matches the
+    // body rows and TableKit's sort/filter stay aligned.
+    if (VIEW_ALL_SELECTABLE[type]) {
+      const theadRow = theadClone.querySelector('tr');
+      if (theadRow && theadRow.children.length > 0) {
+        const checkboxTh = document.createElement('th');
+        checkboxTh.className = 'view-all-check-col';
+        checkboxTh.style.width = '46px';
+        checkboxTh.style.minWidth = '46px';
+        checkboxTh.style.textAlign = 'center';
+        theadRow.insertBefore(checkboxTh, theadRow.firstChild);
+      }
+    }
+
     destTable.appendChild(theadClone);
   }
   const tbody = document.getElementById(cfg.tbody);
-  if (tbody) destTable.appendChild(tbody.cloneNode(true));
+  if (tbody) {
+    const tbodyClone = tbody.cloneNode(true);
+    destTable.appendChild(tbodyClone);
+
+    // For selectable types, add checkboxes to rows and remove delete buttons
+    const sel = VIEW_ALL_SELECTABLE[type];
+    if (sel) {
+      const destTbody = destTable.querySelector('tbody');
+      if (destTbody) {
+        destTbody.querySelectorAll('tr').forEach((row) => {
+          // Add checkbox at beginning
+          const checkboxTd = document.createElement('td');
+          checkboxTd.style.textAlign = 'center';
+          checkboxTd.style.width = '40px';
+          checkboxTd.innerHTML = `<input type="checkbox" class="${sel.cbClass}" title="Select row">`;
+          row.insertBefore(checkboxTd, row.firstChild);
+
+          // Remove delete button from last cell (keep View / Edit)
+          const lastCell = row.lastElementChild;
+          if (lastCell) {
+            const deleteBtn = lastCell.querySelector('button.danger');
+            if (deleteBtn) deleteBtn.remove();
+          }
+        });
+      }
+    }
+  }
 
   modal.style.display = 'flex';
 
@@ -7715,6 +7964,19 @@ function showViewAll(type) {
 
   destTable._tk = false;
   TableKit.init(destTable);
+
+  // TableKit rebuilds every <th>'s contents (wiping our checkbox). Re-inject the
+  // "toggle all" checkbox into header cell 0 now that init has finished.
+  const selPost = VIEW_ALL_SELECTABLE[type];
+  if (selPost) {
+    const headerRow = destTable.querySelector('thead tr');
+    const cell0 = headerRow ? headerRow.cells[0] : null;
+    if (cell0) {
+      cell0.innerHTML = `<input type="checkbox" id="${selPost.cbAllId}" onchange="${selPost.toggleFn}" title="Check / uncheck all" style="width:18px;height:18px;cursor:pointer;margin:0;">`;
+      cell0.style.textAlign = 'center';
+      cell0.style.verticalAlign = 'middle';
+    }
+  }
 
   // Override the Close button to close the modal instead of navigating away
   const closeBtn = wrap.querySelector('.tk-btn-close');
@@ -8511,7 +8773,6 @@ const DuplicateEmailChecker = {
   refreshMetrics();
   TableKit.initAll();
   fixAllStickyHeaders();
-  restoreEmailCheckAll();
   applyBranding();
 
   const settings = DB.getSettings();
@@ -8553,7 +8814,7 @@ const DuplicateEmailChecker = {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 23, 2026 7:49 PM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 25, 2026 7:01 AM</span></div>
 </div>
 </body>
 </html>
