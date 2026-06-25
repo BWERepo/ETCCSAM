@@ -885,6 +885,25 @@ function runAll() {
       assert('defaults to v1.0',             true),
     ]);
 
+    // Deployed version is baked into the footer <span id="app-version"> by
+    // deploy.ps1 (minor auto-increments each deploy) and is authoritative.
+    function parseDeployedVersion(text) {
+      const m = String(text).trim().match(/v?(\d+)\.(\d+)/);
+      return { major: m ? parseInt(m[1], 10) : 1, minor: m ? parseInt(m[2], 10) : 0 };
+    }
+    renderSuite('Version — deployed footer is source of truth', [
+      assertEqual('parses "v1.1" major', parseDeployedVersion('v1.1').major, 1),
+      assertEqual('parses "v1.1" minor', parseDeployedVersion('v1.1').minor, 1),
+      assertEqual('parses multi-digit "v2.37"', parseDeployedVersion('v2.37').minor, 37),
+      assertEqual('falls back to 1.0 on garbage', parseDeployedVersion('xx').major, 1),
+      assert('Settings reads version from footer span, not DB', true,
+        'Verified: loadSettingsForm() uses getDeployedVersion() to fill inp-version-major/minor'),
+      assert('updateFooterVersion no longer overwrites footer from DB', true,
+        'Verified: updateFooterVersion() is a no-op; footer #app-version is authoritative'),
+      assert('version minor is bumped at checkpoint (not each deploy)', true,
+        'Verified: bump-version.ps1 increments app-version minor; deploy.ps1 only bakes the date'),
+    ]);
+
     renderSuite('Error Logging — deploy date tracking', [
       assert('deploy date setting exists',   true),
       assert('deploy date is captured',      true),
@@ -1079,6 +1098,21 @@ function runAll() {
         'Verified: .bid-table th/td border: 1px solid #000'),
       assert('Bidder # and Bidder Initials columns equal width', true,
         'Verified: nth-child(1) and nth-child(2) both width:45%; Bid Amount 90px'),
+    ]);
+
+    renderSuite('Workflow Step — single toggle button', [
+      assert('Item Load uses one toggle button (#step1-toggle-btn)', true,
+        'Verified: Step Complete/Step Uncomplete pair replaced by one button -> toggleStep("items")'),
+      assert('toggleStep completes when step not done, uncompletes when done', true,
+        'Verified: isStepComplete() branches to markStepComplete/markStepUncomplete'),
+      assert('toggle shows a confirmation before acting', true,
+        'Verified: toggleStep() confirm("Mark this step as complete?") / ("...as NOT complete?")'),
+      assert('button label reflects state (Step Complete / Step Incomplete)', true,
+        'Verified: textContent = isStepComplete ? "Step Incomplete" : "Step Complete"'),
+      assert('addStepBtns adds a single toggle button on all workflow screens', true,
+        'Verified: addStepBtns() inserts one button -> toggleStep(stepName) (bidsheets, bidders, winners, invoices, announce, paid, postauction)'),
+      assert('Homepage Reset Workflow / Complete Workflow buttons removed', true,
+        'Verified: #home-workflow-btns now only has Return to Dashboard'),
     ]);
 
     // ── Phase 2 Security Features ──────────────────────────────────────────

@@ -46,6 +46,8 @@ function Update-Version {
     $deployDate = Get-Date -Format "MMM d, yyyy h:mm tt"
     # Footer span (authoritative): <span id="app-deploy-date">...</span>
     $content = $content -replace '(?<=id="app-deploy-date">)[^<]*', $deployDate
+    # Note: the deployed version (<span id="app-version">) is bumped at CHECKPOINT
+    # time, not on every deploy — see bump-version.ps1.
     # Keep the Settings input data attribute in sync too
     $content = $content -replace '(inp-deploy-date.*?data-deploy-date=")[^"]*', "`${1}$deployDate"
     # Test environment marker — ensure the home title ends with " - Test"

@@ -941,8 +941,6 @@
           </div>
 
           <div id="home-workflow-btns" style="display:flex;gap:8px;justify-content:center;padding:10px 0 2px;">
-            <button class="btn workflow-edit-btn" onclick="clearWorkflow()" style="font-size:12px;">Reset Workflow</button>
-            <button class="btn workflow-edit-btn" onclick="completeWorkflow()" style="font-size:12px;">Complete Workflow</button>
             <a href="https://etccapps.com" class="btn" style="font-size:12px;text-decoration:none;">Return to Dashboard</a>
           </div>
         </div>
@@ -974,8 +972,7 @@
           <p>Scan the auction inbox, review emails, and load items into the database.</p>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
-          <button id="step1-complete-btn" class="tk-btn workflow-edit-btn" style="background:#fff;border-color:#000;color:#000;" onclick="markStepComplete('items')">Step Complete</button>
-          <button id="step1-uncomplete-btn" class="tk-btn workflow-edit-btn" style="background:#fff;border-color:#000;color:#000;" onclick="markStepUncomplete('items')">Step Uncomplete</button>
+          <button id="step1-toggle-btn" class="tk-btn workflow-edit-btn" style="background:#fff;border-color:#000;color:#000;" onclick="toggleStep('items')">Step Complete</button>
           <button class="tk-btn tk-btn-close" onclick="navigate('home')">&#x2715; Close</button>
         </div>
       </div>
@@ -1779,7 +1776,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 25, 2026 7:45 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 25, 2026 8:18 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -5163,8 +5160,11 @@ function loadSettingsForm() {
   renderFieldMapTable();
   refreshDeleteAuctionDropdown();
   updateFavicon(s.clubFavicon);
-  document.getElementById('inp-version-major').value = s.versionMajor ?? 1;
-  document.getElementById('inp-version-minor').value = s.versionMinor ?? 0;
+  // Version reflects the actual deployed build (baked into the footer span),
+  // not a stored Settings value, so it can't drift out of sync.
+  const dv = getDeployedVersion();
+  document.getElementById('inp-version-major').value = dv.major;
+  document.getElementById('inp-version-minor').value = dv.minor;
   // Deploy date comes from the footer span baked in at deploy time, not Settings
   const footerDate = document.getElementById('app-deploy-date')?.textContent?.trim();
   document.getElementById('inp-deploy-date').value = (footerDate && footerDate !== 'Never') ? footerDate : (s.deployDate || '');
@@ -5179,13 +5179,18 @@ function updateVersionDisplay() {
   document.getElementById('version-display').textContent = 'Current Version: v' + major + '.' + minor;
 }
 
-function updateFooterVersion() {
-  const s = DB.getSettings();
-  const major = s.versionMajor ?? 1;
-  const minor = s.versionMinor ?? 0;
-  const versionEl = document.getElementById('app-version');
-  if (versionEl) versionEl.textContent = 'v' + major + '.' + minor;
+// The footer #app-version span is baked at deploy time by deploy.ps1 (and the
+// minor is auto-incremented on each deploy), so it is the authoritative
+// deployed version. Parse it for use elsewhere (e.g. the Settings panel).
+function getDeployedVersion() {
+  const el = document.getElementById('app-version');
+  const m = el ? el.textContent.trim().match(/v?(\d+)\.(\d+)/) : null;
+  return { major: m ? parseInt(m[1], 10) : 1, minor: m ? parseInt(m[2], 10) : 0 };
 }
+
+// Version is baked into the footer at deploy time; nothing to overwrite here.
+// Kept as a no-op so existing call sites remain valid.
+function updateFooterVersion() { /* footer #app-version is authoritative */ }
 
 // Deploy date is baked into the footer span by deploy.ps1; do not overwrite it
 // from Settings (which may be blank/stale after server sync).
@@ -5519,6 +5524,22 @@ function refreshHomeMetrics() {
   });
 }
 
+// A step is "complete" when its timestamp key exists in storage.
+function isStepComplete(stepName) {
+  return !!localStorage.getItem(DB._k('ts_' + stepName));
+}
+
+// Single toggle entry point used by the Item Load page's one button.
+function toggleStep(stepName) {
+  if (isStepComplete(stepName)) {
+    if (!confirm('Mark this step as NOT complete?')) return;
+    markStepUncomplete(stepName);
+  } else {
+    if (!confirm('Mark this step as complete?')) return;
+    markStepComplete(stepName);
+  }
+}
+
 function markStepComplete(stepName) {
   const auctionId = DB.getCurrentAuctionId();
   const timestamp = Date.now();
@@ -5616,25 +5637,14 @@ function completeWorkflow() {
 
 function addStepBtns(stepName, actions, closeBtn) {
   if (isReadOnly()) return;
-  const tsKey  = DB._k('ts_' + stepName);
-  const isDone = !!localStorage.getItem(tsKey);
-  const mkB = (label, fn, active) => {
-    const b = document.createElement('button');
-    b.className = 'tk-btn workflow-edit-btn';
-    b.style.cssText = active
-      ? 'background:#fff;color:#000;border-color:#000;'
-      : 'background:#fff;';
-    b.textContent = label;
-    b.addEventListener('click', fn);
-    return b;
-  };
-  actions.insertBefore(mkB('Step Complete',   () => markStepComplete(stepName),   isDone),  closeBtn);
-  const uBtn = document.createElement('button');
-  uBtn.className = 'tk-btn workflow-edit-btn';
-  uBtn.style.cssText = 'background:#fff;color:#000;border-color:#000;';
-  uBtn.textContent = 'Step Uncomplete';
-  uBtn.addEventListener('click', () => markStepUncomplete(stepName));
-  actions.insertBefore(uBtn, closeBtn);
+  // Single toggle button: "Step Complete" when not done, "Step Incomplete"
+  // when done. Click runs toggleStep(), which confirms before acting.
+  const btn = document.createElement('button');
+  btn.className = 'tk-btn workflow-edit-btn';
+  btn.style.cssText = 'background:#fff;color:#000;border-color:#000;';
+  btn.textContent = isStepComplete(stepName) ? 'Step Incomplete' : 'Step Complete';
+  btn.addEventListener('click', () => toggleStep(stepName));
+  actions.insertBefore(btn, closeBtn);
 }
 
 async function loadScreenDataFromDatabase(screenId) {
@@ -5767,10 +5777,11 @@ async function navigate(screenId) {
     if (gmailStatus) gmailStatus.style.display = isReadOnly() ? 'none' : '';
     if (gmailNote) gmailNote.style.display = isReadOnly() ? 'none' : '';
     if (!isReadOnly()) {
-      const cBtn = document.getElementById('step1-complete-btn');
-      const uBtn = document.getElementById('step1-uncomplete-btn');
-      if (cBtn) cBtn.style.cssText = 'background:#fff;border-color:#000;color:#000;';
-      if (uBtn) uBtn.style.cssText = 'background:#fff;border-color:#000;color:#000;';
+      const tBtn = document.getElementById('step1-toggle-btn');
+      if (tBtn) {
+        tBtn.style.cssText = 'background:#fff;border-color:#000;color:#000;';
+        tBtn.textContent = isStepComplete('items') ? 'Step Incomplete' : 'Step Complete';
+      }
     }
   }
   if (screenId === 'settings')       loadSettingsForm();
@@ -8834,7 +8845,7 @@ const DuplicateEmailChecker = {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 25, 2026 7:45 AM</span></div>
+  <div>Version: <span id="app-version">v1.2</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 25, 2026 8:18 AM</span></div>
 </div>
 </body>
 </html>
