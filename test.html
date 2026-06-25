@@ -457,6 +457,31 @@ function runAll() {
     assert('bidCount=25 all ascending',                 bids25.every((v, i) => i === 0 || v >= bids25[i - 1])),
   ]);
 
+  // ── Bid sheet algorithm (current, "last year's" percentage-step model) ──────
+  // Base = reserve || value. Start = 30% of base. Step = 10% of base when
+  // base < 100, else 7% of base. 20 rows. amount[i] = round(base*(0.30 + i*step)).
+  function calcSheetBids(base) {
+    const incPct = base < 100 ? 0.10 : 0.07;
+    return Array.from({ length: 20 }, (_, i) => Math.round(base * (0.30 + i * incPct)));
+  }
+  const b100 = calcSheetBids(100);   // $100 → 7% steps
+  const b50  = calcSheetBids(50);    // $50  → 10% steps
+  const b99  = calcSheetBids(99);    // just under threshold → 10% steps
+  renderSuite('Bid sheet algorithm — percentage steps', [
+    assertEqual('always produces 20 rows',              b100.length, 20),
+    assertEqual('$100 start = 30% (=$30)',              b100[0], 30),
+    assertEqual('$100 step = 7% (row2 = $37)',          b100[1], 37),
+    assertEqual('$100 last row (i=19) = $163',          b100[19], 163),
+    assertEqual('$50 start = 30% (=$15)',               b50[0], 15),
+    assertEqual('$50 step = 10% (row2 = $20)',          b50[1], 20),
+    assertEqual('$50 last row (i=19) = $110',           b50[19], 110),
+    assert('base < $100 uses 10% step (99 step = 9.9→round)',
+      (b99[1] - b99[0]) === Math.round(99 * 0.10)),
+    assert('base >= $100 uses 7% step',
+      (b100[1] - b100[0]) === Math.round(100 * 0.07)),
+    assert('all rows ascending', b100.every((v, i) => i === 0 || v >= b100[i - 1])),
+  ]);
+
   // ── 18. fmtPhone ─────────────────────────────────────────────────────────
   renderSuite('fmtPhone', [
     assertEqual('10 digits',          fmtPhone('5551234567'),       '(555) 123-4567'),

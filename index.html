@@ -1779,7 +1779,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 25, 2026 7:30 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 25, 2026 7:45 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -3503,31 +3503,23 @@ function printBiddingSheets() {
   if (!checked.length) { alert('No items selected. Use Check All or select individual items first.'); return; }
   debugLog(`Printing bid sheets for ${checked.length} item${checked.length !== 1 ? 's' : ''}`);
 
-  const s = DB.getSettings();
   const bidCount     = 20; // fixed at 20 rows so each bid sheet fills exactly one page
-  const startPct     = (s.startingBidPct || 30) / 100;
-  const finalPct     = (s.finalBidPct    || 150) / 100;
 
   const items = Items.getAll();
   const selectedNums = new Set(checked.map(tr => tr.cells[1]?.textContent.trim()));
   const selected = items.filter(i => selectedNums.has(String(i.item_number)));
 
   const sheets = selected.map(item => {
+    // Base for the calculation: reserve amount if present, otherwise the value.
     const reserveRaw = parseFloat(String(item.reserve_amount || '0').replace(/[^0-9.]/g, '')) || 0;
     const valueRaw   = parseFloat(String(item.item_value || item.value || '0').replace(/[^0-9.]/g, '')) || 0;
-    const itemVal    = reserveRaw || valueRaw;
-    const firstBid  = reserveRaw ? reserveRaw : Math.round(itemVal * startPct * 100) / 100;
-    const lastBid   = Math.round(itemVal * finalPct  * 100) / 100;
-    const increment = bidCount > 1 ? (lastBid - firstBid) / (bidCount - 1) : 0;
-    const seenBids = new Set();
+    const base       = reserveRaw || valueRaw;
+    // Starting bid is 30% of the base. Each row steps up by a percent of the
+    // base: 10% for bases under $100, 7% for bases of $100 or more.
+    const incPct     = base < 100 ? 0.10 : 0.07;
     const bidAmounts = [];
     for (let i = 0; i < bidCount; i++) {
-      const rawAmt = firstBid + increment * i;
-      const amt = Math.round(rawAmt);
-      if (!seenBids.has(amt)) {
-        seenBids.add(amt);
-        bidAmounts.push(amt);
-      }
+      bidAmounts.push(Math.round(base * (0.30 + i * incPct)));
     }
     const bidRows   = bidAmounts.map((amt, idx) => {
       const bold = (idx + 1) % 2 === 0 ? ' style="font-weight:700;"' : '';
@@ -8842,7 +8834,7 @@ const DuplicateEmailChecker = {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
   <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 25, 2026 7:30 AM</span></div>
+  <div>Version: <span id="app-version">v1.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 25, 2026 7:45 AM</span></div>
 </div>
 </body>
 </html>
