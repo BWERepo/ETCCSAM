@@ -32,7 +32,7 @@
       --nav-bar:        #1d1d1f;
       --nav-width:      220px;
       --hero-height:    70px;
-      --footer-height:  58px;
+      --footer-height:  36px;
       --danger:         #c62828;
       --success:        #1a7f37;
     }
@@ -171,19 +171,24 @@
     .screen.active { display: block; }
 
     /* ── Page header ── */
-    .page-header { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .page-header h2 { font-size: 1.2rem; font-weight: 600; color: var(--text); }
-    .page-header p  { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    .page-header { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .page-header h2 { font-size: 1rem; font-weight: 600; color: var(--text); margin: 0; display: inline; }
+    .page-header h2::after { content: ": "; }
+    .page-header p  { font-size: 1rem; color: var(--text-secondary); margin: 0; display: inline; }
 
     /* ── Metric cards ── */
     .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
     .metric-card {
       background: var(--bg-section);
       border-radius: 8px;
-      padding: 8px 12px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
-    .metric-card .m-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 2px; }
-    .metric-card .m-value { font-size: 18px; font-weight: 500; color: var(--text); }
+    .metric-card .m-label { font-size: 11px; color: var(--text-secondary); margin: 0; }
+    .metric-card .m-label::after { content: ": "; }
+    .metric-card .m-value { font-size: 13px; font-weight: 600; color: var(--text); margin: 0; }
     .metric-card .m-value.accent { color: var(--accent); }
 
     /* ── Toolbar bar ── */
@@ -540,16 +545,18 @@
       height: var(--footer-height);
       background: #1d1d1f;
       color: #888;
-      font-size: 11px;
+      font-size: 10px;
       text-align: center;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
       border-top: 1px solid #333;
       z-index: 50;
-      line-height: 1.5;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 12px;
     }
     #app-footer a { color: #aaa; text-decoration: none; }
     #app-footer a:hover { color: #fff; }
@@ -977,12 +984,8 @@
 
     <!-- ══ Step 1: Item Load ══ -->
     <section class="screen" id="screen-item-load">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <h2>Step 1 — Item Load</h2>
-          <p>Scan the auction inbox, review emails, and load items into the database.</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-shrink:0;">
+      <div class="page-header"><h2>Step 1 — Item Load</h2><p>Scan the auction inbox, review emails, and load items into the database.</p>
+        <div style="display:flex;gap:8px;flex-shrink:0;margin-left:auto;">
           <button id="step1-toggle-btn" class="tk-btn workflow-edit-btn" style="background:#fff;border-color:#000;color:#000;" onclick="toggleStep('items')">Step Complete</button>
           <button class="tk-btn tk-btn-close" onclick="navigate('home')">&#x2715; Close</button>
         </div>
@@ -1026,7 +1029,7 @@
               <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showViewAll('emails')">View All</button>
             </div>
           </div>
-          <div style="overflow-x:auto;max-height:210px;overflow-y:auto;">
+          <div style="overflow-x:auto;max-height:238px;overflow-y:auto;">
             <table class="tablekit" id="email-table" data-tk-sort="false" style="table-layout:fixed;width:100%;min-width:900px;">
               <colgroup>
                 <col style="width:150px;">
@@ -1063,7 +1066,7 @@
             <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showViewAll('items')">View All</button>
           </div>
         </div>
-        <div style="overflow:auto;max-height:230px;">
+        <div style="overflow:auto;max-height:258px;">
           <table class="tablekit" id="items-table" style="table-layout:fixed;width:100%;min-width:1490px;">
             <colgroup>
               <col style="width:70px;"><col style="width:150px;"><col style="width:140px;">
@@ -1368,10 +1371,7 @@
     <!-- ══ Settings ══ -->
     <!-- ══ Step 7: Post Auction ══ -->
     <section class="screen" id="screen-post-auction">
-      <div class="page-header">
-        <h2>Step 7 — Post Auction</h2>
-        <p>Post-auction tasks and reporting.</p>
-      </div>
+      <div class="page-header"><h2>Step 7 — Post Auction</h2><p>Post-auction tasks and reporting.</p></div>
       <div class="card" id="post-auction-card" style="max-width:900px;">
         <div id="post-auction-toolbar-wrap"></div>
         <div style="padding:20px;">
@@ -1787,7 +1787,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 28, 2026 6:06 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 29, 2026 3:43 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -3554,16 +3554,15 @@ function printBiddingSheets() {
   const selected = items.filter(i => selectedNums.has(String(i.item_number)));
 
   const sheets = selected.map(item => {
-    // Base for the calculation: reserve amount if present, otherwise the value.
     const reserveRaw = parseFloat(String(item.reserve_amount || '0').replace(/[^0-9.]/g, '')) || 0;
     const valueRaw   = parseFloat(String(item.item_value || item.value || '0').replace(/[^0-9.]/g, '')) || 0;
-    const base       = reserveRaw || valueRaw;
-    // Starting bid is 30% of the base. Each row steps up by a percent of the
-    // base: 10% for bases under $100, 7% for bases of $100 or more.
-    const incPct     = base < 100 ? 0.10 : 0.07;
+    // Starting bid: reserve if present, otherwise 30% of value
+    const startingBid = reserveRaw || (valueRaw * 0.30);
+    // Increment percentage: 10% if item value < $100, 7% if >= $100
+    const incPct = valueRaw < 100 ? 0.10 : 0.07;
     const bidAmounts = [];
     for (let i = 0; i < bidCount; i++) {
-      bidAmounts.push(Math.round(base * (0.30 + i * incPct)));
+      bidAmounts.push(Math.round(startingBid * (1 + i * incPct)));
     }
     const bidRows   = bidAmounts.map((amt, idx) => {
       const bold = (idx + 1) % 2 === 0 ? ' style="font-weight:700;"' : '';
@@ -3596,7 +3595,7 @@ function printBiddingSheets() {
         </tr>
       </table>
       <table class="bid-table">
-        <thead><tr><th>Bidder #</th><th>Bidder Initials</th><th>Bid Amount</th></tr></thead>
+        <thead><tr><th>Bidder Initials</th><th>Bidder #</th><th>Bid Amount</th></tr></thead>
         <tbody>${bidRows}</tbody>
       </table>
     </div>
@@ -3631,10 +3630,10 @@ function printBiddingSheets() {
      table off the page. The full description still prints on the label page. */
   .sheet-desc .desc-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
   /* 20 fixed bid rows at 0.30in each fill one page without spilling over. */
-  .bid-table { width: 100%; border-collapse: collapse; font-size: 9px; }
-  .bid-table th { background: #dbeafe; font-weight: 600; padding: 1px 4px; border: 1px solid #000; text-align: left; font-size: 8px; }
+  .bid-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .bid-table th { background: #dbeafe; font-weight: 600; padding: 1px 4px; border: 1px solid #000; text-align: left; font-size: 11px; }
   .bid-table td { padding: 1px 4px; border: 1px solid #000; height: 0.30in; vertical-align: middle; }
-  /* Bidder # and Bidder Initials share equal width; Bid Amount is fixed. */
+  /* Bidder Initials and Bidder # share equal width; Bid Amount is fixed. */
   .bid-table th:nth-child(1), .bid-table td:nth-child(1),
   .bid-table th:nth-child(2), .bid-table td:nth-child(2) { width: 45%; }
   .bid-table th:nth-child(3), .bid-table td:nth-child(3) { width: 90px; }
@@ -3654,7 +3653,7 @@ function printBiddingSheets() {
     :root {
       --nav-width: 0;
       --hero-height: 56px;
-      --footer-height: 50px;
+      --footer-height: 36px;
     }
 
     body { font-size: 13px; }
@@ -8995,9 +8994,7 @@ async function loadChangelog() {
 </script>
 
 <div id="app-footer">
-  <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a></div>
-  <div>Version: <span id="app-version">v1.7</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 28, 2026 6:06 PM</span></div>
+  &copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN &nbsp;&middot;&nbsp; <a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a> &nbsp;&middot;&nbsp; Website by East Tennessee Web Services &nbsp;&middot;&nbsp; <a href="mailto:easttnwebservices@yahoo.com">easttnwebservices@yahoo.com</a> &nbsp;&middot;&nbsp; Version: <span id="app-version">v1.8</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 29, 2026 3:43 PM</span>
 </div>
 </body>
 </html>
