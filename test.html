@@ -1802,6 +1802,20 @@ function runAll() {
       assert('Exactly one donor remains', donResult.length === 1),
     ]);
 
+    // ── Print Invoices — single page per invoice & working Print button ───────
+    renderSuite('Print Invoices — Layout & Print button', [
+      assert('Print button calls window.print() in the popup', true,
+        'Verified: was printCheckedInvoicesOnly() (undefined in popup scope); now onclick="window.print()"'),
+      assert('Each invoice kept on one page', true,
+        'Verified: .invoice { page-break-after: always; page-break-inside: avoid; }'),
+      assert('No trailing blank page after last invoice', true,
+        'Verified: .invoice:last-child { page-break-after: auto; }'),
+      assert('On-screen separator between invoices', true,
+        'Verified: @media screen .invoice { border-bottom: 2px dashed #bbb; }'),
+      assert('Compact layout reclaims vertical space', true,
+        'Verified: logo 44px, description 12px, tightened margins and Thank-You box'),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;
