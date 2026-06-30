@@ -1565,6 +1565,111 @@
           </div>
         </div>
       </div>
+
+      <!-- Winning Bidder Email -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">Winning Bidder Email</div>
+        <div style="padding:16px;">
+          <div class="form-row">
+            <label for="inp-winbidder-subject">Subject</label>
+            <input type="text" id="inp-winbidder-subject" style="width:400px;" placeholder="e.g. Congratulations! You won an item in our Silent Auction" />
+          </div>
+          <div class="form-row">
+            <label for="inp-winbidder-body">Body</label>
+            <textarea id="inp-winbidder-body" style="width:560px;height:160px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Congratulations message for winning bidders."></textarea>
+          </div>
+          <div class="form-row">
+            <label>Footer (3 Columns)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div>
+                <label for="inp-winbidder-footer-left" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Left</label>
+                <textarea id="inp-winbidder-footer-left" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Left column"></textarea>
+              </div>
+              <div>
+                <label for="inp-winbidder-footer-center" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Center</label>
+                <textarea id="inp-winbidder-footer-center" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Center column"></textarea>
+              </div>
+              <div>
+                <label for="inp-winbidder-footer-right" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Right</label>
+                <textarea id="inp-winbidder-footer-right" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Right column"></textarea>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Winning Bidder Pickup -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">Winning Bidder Pickup</div>
+        <div style="padding:16px;">
+          <div class="form-row">
+            <label for="inp-winpickup-subject">Subject</label>
+            <input type="text" id="inp-winpickup-subject" style="width:400px;" placeholder="e.g. Item Pickup Instructions" />
+          </div>
+          <div class="form-row">
+            <label for="inp-winpickup-body">Body</label>
+            <textarea id="inp-winpickup-body" style="width:560px;height:160px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Pickup details and instructions for winning bidders."></textarea>
+          </div>
+          <div class="form-row">
+            <label>Footer (3 Columns)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div>
+                <label for="inp-winpickup-footer-left" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Left</label>
+                <textarea id="inp-winpickup-footer-left" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Left column"></textarea>
+              </div>
+              <div>
+                <label for="inp-winpickup-footer-center" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Center</label>
+                <textarea id="inp-winpickup-footer-center" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Center column"></textarea>
+              </div>
+              <div>
+                <label for="inp-winpickup-footer-right" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Right</label>
+                <textarea id="inp-winpickup-footer-right" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Right column"></textarea>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donor Item Not Bid On -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">Donor Item Not Bid On</div>
+        <div style="padding:16px;">
+          <div class="form-row">
+            <label for="inp-donor-notbid-subject">Subject</label>
+            <input type="text" id="inp-donor-notbid-subject" style="width:400px;" placeholder="e.g. Item Donation - No Bids Received" />
+          </div>
+          <div class="form-row">
+            <label for="inp-donor-notbid-body">Body</label>
+            <textarea id="inp-donor-notbid-body" style="width:560px;height:160px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Message to donors about items that did not receive bids."></textarea>
+          </div>
+          <div class="form-row">
+            <label>Footer (3 Columns)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+              <div>
+                <label for="inp-donor-notbid-footer-left" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Left</label>
+                <textarea id="inp-donor-notbid-footer-left" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Left column"></textarea>
+              </div>
+              <div>
+                <label for="inp-donor-notbid-footer-center" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Center</label>
+                <textarea id="inp-donor-notbid-footer-center" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Center column"></textarea>
+              </div>
+              <div>
+                <label for="inp-donor-notbid-footer-right" style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Right</label>
+                <textarea id="inp-donor-notbid-footer-right" style="width:100%;height:80px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" placeholder="Right column"></textarea>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="screen" id="screen-settings">
@@ -1888,7 +1993,7 @@
           <div id="version-display" style="font-size:12px;color:var(--text-secondary);padding:8px;background:var(--bg-section);border-radius:4px;"></div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 30, 2026 5:44 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 30, 2026 5:57 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2218,6 +2323,24 @@ const DEFAULT_SETTINGS = {
   thankYouFooterLeft:   'Warm regards,',
   thankYouFooterCenter: '',
   thankYouFooterRight:  '',
+  // Winning Bidder email content
+  winBidderSubject:    'Congratulations! You won an item in our Silent Auction',
+  winBidderBody:       'Congratulations! You have won an item in our Silent Auction. Please see the details below for payment and pickup information.',
+  winBidderFooterLeft:   'Warm regards,',
+  winBidderFooterCenter: '',
+  winBidderFooterRight:  '',
+  // Winning Bidder Pickup content
+  winPickupSubject:    'Item Pickup Instructions',
+  winPickupBody:       'Your auction item is ready for pickup. Please follow the instructions below for collection details and hours.',
+  winPickupFooterLeft:   'Warm regards,',
+  winPickupFooterCenter: '',
+  winPickupFooterRight:  '',
+  // Donor Item Not Bid On content
+  donorNotBidSubject:    'Item Donation - No Bids Received',
+  donorNotBidBody:       'Thank you for your generous donation to our Silent Auction. Unfortunately, your item did not receive any bids. Please let us know if you would like to pick it up.',
+  donorNotBidFooterLeft:   'Warm regards,',
+  donorNotBidFooterCenter: '',
+  donorNotBidFooterRight:  '',
 };
 
 // ══════════════════════════════════════
@@ -5466,6 +5589,21 @@ function loadSettingsForm() {
   document.getElementById('inp-thankyou-footer-left').value   = s.thankYouFooterLeft   ?? '';
   document.getElementById('inp-thankyou-footer-center').value = s.thankYouFooterCenter ?? '';
   document.getElementById('inp-thankyou-footer-right').value  = s.thankYouFooterRight  ?? '';
+  document.getElementById('inp-winbidder-subject').value = s.winBidderSubject ?? '';
+  document.getElementById('inp-winbidder-body').value    = s.winBidderBody    ?? '';
+  document.getElementById('inp-winbidder-footer-left').value   = s.winBidderFooterLeft   ?? '';
+  document.getElementById('inp-winbidder-footer-center').value = s.winBidderFooterCenter ?? '';
+  document.getElementById('inp-winbidder-footer-right').value  = s.winBidderFooterRight  ?? '';
+  document.getElementById('inp-winpickup-subject').value = s.winPickupSubject ?? '';
+  document.getElementById('inp-winpickup-body').value    = s.winPickupBody    ?? '';
+  document.getElementById('inp-winpickup-footer-left').value   = s.winPickupFooterLeft   ?? '';
+  document.getElementById('inp-winpickup-footer-center').value = s.winPickupFooterCenter ?? '';
+  document.getElementById('inp-winpickup-footer-right').value  = s.winPickupFooterRight  ?? '';
+  document.getElementById('inp-donor-notbid-subject').value = s.donorNotBidSubject ?? '';
+  document.getElementById('inp-donor-notbid-body').value    = s.donorNotBidBody    ?? '';
+  document.getElementById('inp-donor-notbid-footer-left').value   = s.donorNotBidFooterLeft   ?? '';
+  document.getElementById('inp-donor-notbid-footer-center').value = s.donorNotBidFooterCenter ?? '';
+  document.getElementById('inp-donor-notbid-footer-right').value  = s.donorNotBidFooterRight  ?? '';
   renderFieldMapTable();
   refreshDeleteAuctionDropdown();
   updateFavicon(s.clubFavicon);
@@ -5710,6 +5848,21 @@ function saveSettings() {
     thankYouFooterLeft:   document.getElementById('inp-thankyou-footer-left').value,
     thankYouFooterCenter: document.getElementById('inp-thankyou-footer-center').value,
     thankYouFooterRight:  document.getElementById('inp-thankyou-footer-right').value,
+    winBidderSubject: document.getElementById('inp-winbidder-subject').value.trim(),
+    winBidderBody:    document.getElementById('inp-winbidder-body').value,
+    winBidderFooterLeft:   document.getElementById('inp-winbidder-footer-left').value,
+    winBidderFooterCenter: document.getElementById('inp-winbidder-footer-center').value,
+    winBidderFooterRight:  document.getElementById('inp-winbidder-footer-right').value,
+    winPickupSubject: document.getElementById('inp-winpickup-subject').value.trim(),
+    winPickupBody:    document.getElementById('inp-winpickup-body').value,
+    winPickupFooterLeft:   document.getElementById('inp-winpickup-footer-left').value,
+    winPickupFooterCenter: document.getElementById('inp-winpickup-footer-center').value,
+    winPickupFooterRight:  document.getElementById('inp-winpickup-footer-right').value,
+    donorNotBidSubject: document.getElementById('inp-donor-notbid-subject').value.trim(),
+    donorNotBidBody:    document.getElementById('inp-donor-notbid-body').value,
+    donorNotBidFooterLeft:   document.getElementById('inp-donor-notbid-footer-left').value,
+    donorNotBidFooterCenter: document.getElementById('inp-donor-notbid-footer-center').value,
+    donorNotBidFooterRight:  document.getElementById('inp-donor-notbid-footer-right').value,
     versionMajor:   parseInt(document.getElementById('inp-version-major').value, 10) || 1,
     versionMinor:   parseInt(document.getElementById('inp-version-minor').value, 10) || 0,
     deployDate:     document.getElementById('inp-deploy-date').value.trim(),
@@ -9259,7 +9412,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v1.12</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 30, 2026 5:44 AM</span></div>
+  <div>Version: <span id="app-version">v1.13</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 30, 2026 5:57 AM</span></div>
 </div>
 
 </body>
