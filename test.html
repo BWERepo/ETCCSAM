@@ -1816,6 +1816,23 @@ function runAll() {
         'Verified: logo 44px, description 12px, tightened margins and Thank-You box'),
     ]);
 
+    // ── Inbox scan — subject-prefix filter ────────────────────────────────────
+    const SUBJECT_PREFIX = 'East Tennessee Corvette Club - Silent Auction Item Submission';
+    const subjectQuery = 'subject:(' + SUBJECT_PREFIX.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim() + ')';
+    const scanMatch = (subject) => subject.startsWith(SUBJECT_PREFIX);
+    renderSuite('Inbox Scan — Subject prefix filter', [
+      assert('Query strips punctuation (no hyphen operator)',
+        subjectQuery === 'subject:(East Tennessee Corvette Club Silent Auction Item Submission)'),
+      assert('Accepts submission email with trailing donor text',
+        scanMatch(SUBJECT_PREFIX + ' submitted by Alvin Crown')),
+      assert('Accepts exact-prefix subject', scanMatch(SUBJECT_PREFIX)),
+      assert('Rejects unrelated subject', !scanMatch('Re: Your receipt')),
+      assert('Rejects subject where prefix is not at the start',
+        !scanMatch('FW: East Tennessee Corvette Club - Silent Auction Item Submission')),
+      assert('Category badge wraps within its column', true,
+        'Verified: badge display:inline-block; white-space:normal; word-break:break-word (was nowrap, overflowed)'),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;

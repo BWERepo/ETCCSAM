@@ -2007,7 +2007,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 30, 2026 12:51 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 30, 2026 2:09 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -3470,6 +3470,13 @@ async function doScanInbox() {
   log('🔍 Scanning inbox...');
   scannedEmails = [];
 
+  // Only scan donation submission emails — subject must begin with this prefix.
+  const SUBJECT_PREFIX = 'East Tennessee Corvette Club - Silent Auction Item Submission';
+  // Server-side narrowing: subject must contain all these words (punctuation
+  // stripped so Gmail doesn't treat the hyphen as an operator). The exact
+  // "begins with" rule is enforced client-side below.
+  const subjectQuery = 'subject:(' + SUBJECT_PREFIX.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim() + ')';
+
   try {
     const folder = settings.emailFolder || 'INBOX';
     log(`🗂 Using folder/label: ${folder}`);
@@ -3483,6 +3490,7 @@ async function doScanInbox() {
       userId: 'me',
       maxResults: 500,
       labelIds: [folder],
+      q: subjectQuery,
     });
 
     log(`📡 API status: ${listResp.status}`);
@@ -3514,6 +3522,10 @@ async function doScanInbox() {
       const headers = r.payload.headers;
       const getH = name => (headers.find(h => h.name.toLowerCase() === name.toLowerCase()) || {}).value || '';
 
+      // Exact "begins with" check — skip anything the broad subject query let through.
+      const subject = getH('Subject');
+      if (!subject.startsWith(SUBJECT_PREFIX)) continue;
+
       const body = extractBody(r.payload);
       const bodyText = body.replace(/\s+/g, ' ').trim();
       const preview  = bodyText.slice(0, 120);
@@ -3521,7 +3533,7 @@ async function doScanInbox() {
         id:      r.id,
         date:    new Date(parseInt(r.internalDate)).toLocaleString(),
         from:    getH('From'),
-        subject: getH('Subject'),
+        subject,
         preview,
         body:    bodyText,
         body,
@@ -4106,7 +4118,7 @@ function refreshItemsTable() {
       <td style="white-space:nowrap;">${escHtml(item.email_date || '')}</td>
       <td style="white-space:nowrap;">${escHtml(item.loaded_date)}</td>
       <td>${escHtml(item.source || (item.email_message_id ? 'Email' : 'Added'))}</td>
-      <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
+      <td style="vertical-align:top;"><span class="badge ${catCode}" style="display:inline-block;white-space:normal;word-break:break-word;line-height:1.35;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
       <td style="white-space:normal;word-break:break-word;vertical-align:top;">${escHtml(item.description)}</td>
       <td>${fmtDollar(item.item_value)}</td>
       <td>${parseFloat(item.reserve_amount) > 0 ? fmtDollar(item.reserve_amount) : ''}</td>
@@ -5767,7 +5779,7 @@ function refreshBsItemsTable() {
       <td style="text-align:center;"><input type="checkbox" class="bs-chk" ${isReadOnly() ? 'disabled' : ''}/></td>
       <td><strong>${escHtml(String(item.item_number))}</strong></td>
       <td style="font-size:11px;white-space:nowrap;">${escHtml(item.email_date || '')}</td>
-      <td><span class="badge ${catCode}" style="white-space:nowrap;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
+      <td style="vertical-align:top;"><span class="badge ${catCode}" style="display:inline-block;white-space:normal;word-break:break-word;line-height:1.35;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
       <td style="white-space:normal;word-break:break-word;vertical-align:top;">${escHtml(item.description)}</td>
       <td>${fmtDollar(item.item_value)}</td>
       <td>${parseFloat(item.reserve_amount) > 0 ? fmtDollar(item.reserve_amount) : ''}</td>
@@ -10548,7 +10560,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v2.2</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 30, 2026 12:51 PM</span></div>
+  <div>Version: <span id="app-version">v2.3</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 30, 2026 2:09 PM</span></div>
 </div>
 
 </body>
