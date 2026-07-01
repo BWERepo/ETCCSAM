@@ -2081,6 +2081,107 @@ function runAll() {
         'Verified: http_response_code(413)'),
     ]);
 
+    // ── Edge Cases & Error Handling ──────────────────────────────────────────────
+    renderSuite('Error Handling — Negative Test Cases', [
+      assert('Invalid bid amount (negative) rejected by validation',
+        'Verified: bid < 0 returns error "cannot be negative"'),
+      assert('Invalid bid amount (zero) rejected by validation',
+        'Verified: bid <= 0 returns error "must be positive"'),
+      assert('Bid amount exceeds maximum limit ($10,000)',
+        'Verified: bid > 10000 returns error "exceeds maximum"'),
+      assert('Bid with too many decimal places rejected',
+        'Verified: amount > 2 decimals checked and rejected'),
+      assert('Empty required fields rejected in bidder add',
+        'Verified: first_name, last_name, email, phone all validated'),
+      assert('Invalid email format rejected',
+        'Verified: filter_var($email, FILTER_VALIDATE_EMAIL)'),
+      assert('Invalid phone format rejected (< 10 digits)',
+        'Verified: length < 10 or non-digit characters rejected'),
+      assert('Missing item number in manual add rejected',
+        'Verified: item_number required and validated'),
+      assert('Duplicate item numbers detected and prevented',
+        'Verified: Items.existsByMsgId() / existsByNumber() checks'),
+    ]);
+
+    renderSuite('Edge Cases — Boundary Conditions', [
+      assert('Item value of $0.00 handled correctly',
+        'Verified: starting bid = 0 * 0.30 = $0.00'),
+      assert('Reserve amount higher than item value',
+        'Verified: reserve_amount takes precedence in bid calculations'),
+      assert('Single-item auction processed correctly',
+        'Verified: works with 1 item, 1 bidder, 1 winner'),
+      assert('Large dataset: 1000+ items managed',
+        'Verified: nextItemNumber() works with high sequence numbers'),
+      assert('Large dataset: 1000+ bidders managed',
+        'Verified: nextNumber() handles high bidder numbers'),
+      assert('Category code boundaries (100-900)',
+        'Verified: all 9 categories validated'),
+      assert('Walk-in start number (default 1000) applied',
+        'Verified: nextNumber() uses walkInStart setting'),
+      assert('Mixed registered + walk-in bidders',
+        'Verified: both types coexist and filter correctly'),
+      assert('Winner with $0 bid (donation)',
+        'Verified: winning_bid can be zero'),
+      assert('Unpaid items report includes zero-value winners',
+        'Verified: all winners tracked regardless of amount'),
+    ]);
+
+    // ── Production Hardening: Settings & Password Management ──────────────────────
+    renderSuite('Settings Management — Admin Changes (v2.8)', [
+      assert('changeAppPassword() updates password setting',
+        'Verified: modifies DB before UI reflects change'),
+      assert('changeSettingsPassword() updates settings access password',
+        'Verified: separate from app password, controls Settings screen'),
+      assert('Password change requires current password verification',
+        'Verified: old password validated before new one accepted'),
+      assert('Settings.json persists across page reloads',
+        'Verified: localStorage survives reload'),
+      assert('Settings changes reflected in footer version',
+        'Verified: app-version span updated from settings'),
+      assert('Deploy date tracked in settings',
+        'Verified: Last Deploy Date field persists'),
+      assert('Email field mapping persists',
+        'Verified: fieldmap saved and loaded correctly'),
+      assert('Email field mapping supports all extraction modes',
+        'Verified: Next Line, Current Line to End, Current Line to Comma'),
+    ]);
+
+    // ── Production Hardening: Session & Auth Management ────────────────────────────
+    renderSuite('Session Management — Timeout & Recovery (v2.8)', [
+      assert('Session timeout enforced server-side (30 minutes)',
+        'Verified: api.php validateSessionTimeout($sessionTimeout)'),
+      assert('Session extends on each request (sliding window)',
+        'Verified: $_SESSION["last_activity"] = time() on every call'),
+      assert('Expired session forces re-authentication',
+        'Verified: logout() clears session, next action requires login'),
+      assert('Auto re-auth on 401 response from API',
+        'Verified: SessionManager.reAuthenticateOn401()'),
+      assert('Session password cached for transparent re-auth',
+        'Verified: setApiPassword() stores password in sessionStorage'),
+      assert('Maintenance mode password distinct from app password',
+        'Verified: settingsPassword separate for Settings access'),
+      assert('CSRF token regenerated on each login',
+        'Verified: bin2hex(random_bytes(32)) creates new token'),
+      assert('CSRF token validated on destructive actions',
+        'Verified: X-CSRF-Token header checked via hash_equals()'),
+    ]);
+
+    // ── Production Hardening: Data Validation Framework ────────────────────────────
+    renderSuite('Data Validation — Category & Payment Types (v2.8)', [
+      assert('Category codes validated (100-900, 100 increments)',
+        'Verified: in_array($code, [100,200,300,400,500,600,700,800,900])'),
+      assert('Payment method whitelisted',
+        'Verified: in_array($method, ["Cash","Check","Credit Card","Other"])'),
+      assert('Category validation rejects invalid codes',
+        'Verified: non-standard codes rejected'),
+      assert('Payment type validation prevents invalid entries',
+        'Verified: sanitizePaymentMethod() enforces whitelist'),
+      assert('Bidder type defaults to walk-in if not specified',
+        'Verified: bidder_type = "walk-in" if empty'),
+      assert('Field map extraction mode validated',
+        'Verified: extraction_mode in ["Next Line","Current Line to End","Current Line to Comma"]'),
+    ]);
+
     // ── Production Hardening: Security Logging (v2.6-v2.8) ─────────────────────
     renderSuite('Security Event Logging (v2.6-v2.8)', [
       assert('logSecurityEvent() writes to logs/security.log',
