@@ -2007,7 +2007,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jun 30, 2026 2:09 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 1, 2026 7:30 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -4196,10 +4196,12 @@ function printBiddingSheets() {
           </td>
         </tr>
       </table>
-      <table class="bid-table">
-        <thead><tr><th>Bidder Initials</th><th>Bidder #</th><th>Bid Amount</th></tr></thead>
-        <tbody>${bidRows}</tbody>
-      </table>
+      <div class="bid-wrap">
+        <table class="bid-table">
+          <thead><tr><th>Print Bidder Initials</th><th>Bidder #</th><th>Bid Amount</th></tr></thead>
+          <tbody>${bidRows}</tbody>
+        </table>
+      </div>
     </div>
     <div class="label-page">
       <div class="label-content">
@@ -4219,6 +4221,10 @@ function printBiddingSheets() {
   body { font-family: system-ui, sans-serif; margin: 0; color: #111; }
   /* Description text is truncated in JS so the content fits one page; a simple
      page break (no fixed height) then starts the text page. */
+  /* The sheet flows naturally (no fixed height/flex — those made the table's
+     height depend on the browser resolving table % heights in print, which is
+     unreliable). page-break-inside:avoid keeps it on one page; the fixed row
+     height below is sized so 20 rows + a 4-line description always fit. */
   .sheet { width: 7.5in; margin: 0 auto; padding: 0.12in 0.25in; page-break-after: always; page-break-inside: avoid; }
   .sheet:last-child { page-break-after: auto; }
   .sheet-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1d1d1f; padding-bottom: 2px; margin-bottom: 2px; }
@@ -4231,11 +4237,13 @@ function printBiddingSheets() {
   /* Clamp the bid-sheet description to 4 lines so it can never push the 20-row
      table off the page. The full description still prints on the label page. */
   .sheet-desc .desc-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
-  /* 20 fixed bid rows at 0.27in each (5.4in) leave headroom so the full 4-line
-     description + header still fit, keeping all 20 rows on the first page. */
+  /* 20 fixed-height bid rows. 0.28in each (5.6in) plus the header/info section
+     fills the page well while leaving room for a 4-line description, so all 20
+     rows stay on page 1 across typical print margins. */
+  .bid-wrap { width: 100%; }
   .bid-table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .bid-table th { background: #dbeafe; font-weight: 800; padding: 1px 4px; border: 1px solid #000; text-align: left; font-size: 14px; }
-  .bid-table td { padding: 1px 4px; border: 1px solid #000; height: 0.27in; vertical-align: middle; }
+  .bid-table td { padding: 1px 4px; border: 1px solid #000; height: 0.28in; vertical-align: middle; }
   /* Bidder Initials and Bidder # share equal width; Bid Amount is fixed. */
   .bid-table th:nth-child(1), .bid-table td:nth-child(1),
   .bid-table th:nth-child(2), .bid-table td:nth-child(2) { width: 45%; }
@@ -4859,7 +4867,6 @@ function printInvoice(bidderNum) {
   </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
     <div style="display:flex;align-items:center;gap:14px;">
-      <img src="${new URL(getClub().logo, window.location.href).href}" alt="${getClub().shortName} Logo" style="height:60px;">
       <div><h2>Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">${getClub().name}</div></div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -4868,15 +4875,16 @@ function printInvoice(bidderNum) {
     </div>
   </div>
   <div style="margin-bottom:20px;">
-    <div style="font-size:18px;font-weight:800;">${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Bidder #${bidderNum} &nbsp;|&nbsp; ${escHtml(method)}</div>
+    <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
   </div>
   <table>
     <thead><tr><th style="width:100px;">Item #</th><th>Description</th><th style="width:120px;text-align:right;">Amount</th></tr></thead>
     <tbody>${rows}</tbody>
     <tfoot>
-<tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;">Cash / Check Due</td><td style="padding:6px 10px;text-align:right;font-weight:700;">${fmtDollar(totalBid)}</td></tr>
-      <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;"><span style="font-weight:400;color:#888;font-size:11px;">(Transaction fee of ${settings.squarePct || 0}% + $${sqFee.toFixed(2)} = ${fmtDollar(ccTrans)})&nbsp;&nbsp;</span>Credit Card Due</td><td style="padding:6px 10px;text-align:right;font-weight:700;">${fmtDollar(ccTotal)}</td></tr>
-      <tr><td colspan="2" style="padding:8px 10px;text-align:right;font-weight:700;">Paid</td><td style="padding:8px 10px;text-align:center;"><input type="checkbox" style="width:20px;height:20px;cursor:pointer;accent-color:#1a7f37;"></td></tr>
+<tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;">Cash <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;">${fmtDollar(totalBid)}</td></tr>
+      <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;">Check <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;">${fmtDollar(totalBid)}</td></tr>
+      <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;"><span style="font-weight:400;color:#888;font-size:11px;">(Transaction fee of ${settings.squarePct || 0}% + $${sqFee.toFixed(2)} = ${fmtDollar(ccTrans)})&nbsp;&nbsp;</span>Credit Card <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;">${fmtDollar(ccTotal)}</td></tr>
+      <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;">Paid <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;"></td></tr>
     </tfoot>
   </table>
   <div style="margin-top:32px;padding:16px 20px;border:1px solid #000;border-radius:6px;text-align:center;">
@@ -5192,18 +5200,18 @@ function printCheckedInvoices() {
     return `<div class="invoice">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:44px;">
           <div><h2 style="margin:0 0 2px;">Silent Auction Invoice</h2><div style="font-size:12px;color:#555;">${getClub().name}</div></div>
         </div>
       </div>
-      <div style="margin-bottom:10px;font-size:16px;font-weight:800;">${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Bidder #${bidderNum} &nbsp;|&nbsp; ${escHtml(method)}</div>
+      <div style="margin-bottom:10px;font-size:16px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
         <thead><tr><th style="background:#dbeafe;padding:6px 10px;width:90px;border:1px solid #000;">Item #</th><th style="background:#dbeafe;padding:6px 10px;border:1px solid #000;">Description</th><th style="background:#dbeafe;padding:6px 10px;width:100px;text-align:right;border:1px solid #000;">Amount</th></tr></thead>
         <tbody>${rows}</tbody>
         <tfoot>
-          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">Cash / Check Due</td><td style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
-          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">${ccLabel}</td><td style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(ccTotal)}</td></tr>
-          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">Paid</td><td style="padding:5px 10px;text-align:center;border:1px solid #000;"><input type="checkbox" style="width:18px;height:18px;"></td></tr>
+          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">Cash <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;"></td><td style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
+          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">Check <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;"></td><td style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
+          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;"><span style="font-weight:400;font-size:11px;color:#666;">(${fmtDollar(ccTrans)} Transaction fee)&nbsp;&nbsp;</span>Credit Card <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;"></td><td style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(ccTotal)}</td></tr>
+          <tr><td colspan="2" style="padding:5px 10px;text-align:right;font-weight:700;border:1px solid #000;">Paid <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;accent-color:#1a7f37;"></td><td style="padding:5px 10px;border:1px solid #000;"></td></tr>
         </tfoot>
       </table>
       <div style="margin-top:16px;padding:10px 16px;border:1px solid #000;border-radius:6px;text-align:center;">
@@ -5319,21 +5327,20 @@ function printAllInvoices() {
     <div style="${pageBreak}max-width:520px;margin:40px auto;padding:0 20px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:14px;">
-          <img src="${logoUrl}" alt="${getClub().shortName} Logo" style="height:60px;">
           <div><h2 style="margin:0 0 4px;">Silent Auction Invoice</h2><div style="font-size:13px;color:#555;">${getClub().name}</div></div>
         </div>
       </div>
       <div style="margin-bottom:20px;">
-        <div style="font-size:18px;font-weight:800;">${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Bidder #${bidderNum} &nbsp;|&nbsp; ${escHtml(method)}</div>
+        <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
       </div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;">
         <thead><tr><th style="width:100px;background:#dbeafe;padding:8px 10px;text-align:left;border:1px solid #000;">Item #</th><th style="background:#dbeafe;padding:8px 10px;text-align:left;border:1px solid #000;">Description</th><th style="width:120px;background:#dbeafe;padding:8px 10px;text-align:right;border:1px solid #000;">Amount</th></tr></thead>
         <tbody>${rows}</tbody>
         <tfoot>
-          ${ccRow}
-          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Cash / Check Due</td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
-          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;"><span style="font-weight:400;color:#888;font-size:11px;">(Includes ${settings.squarePct || 0}% + $${sqFee.toFixed(2)})&nbsp;&nbsp;</span>Credit Card Due</td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(ccTotal)}</td></tr>
-          <tr><td colspan="2" style="padding:8px 10px;text-align:right;font-weight:700;border:1px solid #000;">Paid</td><td style="padding:8px 10px;text-align:center;border:1px solid #000;"><input type="checkbox" style="width:20px;height:20px;cursor:pointer;accent-color:#1a7f37;"></td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Cash <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Check <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;"><span style="font-weight:400;color:#888;font-size:11px;">(Transaction fee of ${settings.squarePct || 0}% + $${sqFee.toFixed(2)} = ${fmtDollar(ccTrans)})&nbsp;&nbsp;</span>Credit Card <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(ccTotal)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Paid <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;cursor:pointer;accent-color:#1a7f37;"></td><td style="padding:6px 10px;border:1px solid #000;"></td></tr>
         </tfoot>
       </table>
       <div style="margin-top:32px;padding:16px 20px;border:1px solid #000;border-radius:6px;text-align:center;">
@@ -7416,7 +7423,8 @@ function buildPickupInvoiceHtml(bidderNum) {
   const totalBid = wonItems.reduce((s, i) => s + i.bid, 0);
   const ccTrans  = Math.round((totalBid * sqPct + sqFee) * 100) / 100;
   const ccTotal  = Math.round((totalBid + ccTrans) * 100) / 100;
-  const method   = pay.method || 'Credit Card';
+  const bidder   = Bidders.getAll().find(b => b.bidder_number === bidderNum) || {};
+  const bidderName = ((bidder.first_name || '') + ' ' + (bidder.last_name || '')).trim();
 
   const rows = wonItems.map(i => `
     <tr>
@@ -7427,8 +7435,9 @@ function buildPickupInvoiceHtml(bidderNum) {
 
   return `
     <div style="margin:20px 0;">
-      <div style="font-weight:700;font-size:15px;margin-bottom:4px;">Silent Auction Invoice</div>
-      <div style="font-size:13px;color:#555;margin-bottom:10px;">Bidder #${bidderNum} &nbsp;|&nbsp; ${escHtml(method)}</div>
+      <div style="font-weight:700;font-size:16px;">Silent Auction Invoice</div>
+      <div style="font-size:12px;color:#555;margin-bottom:8px;">${escHtml(getClub().name)}</div>
+      <div style="font-weight:800;font-size:15px;margin-bottom:10px;">Winning Bidder: ${escHtml(bidderName)} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
         <thead>
           <tr style="background:#dbeafe;">
@@ -7439,8 +7448,10 @@ function buildPickupInvoiceHtml(bidderNum) {
         </thead>
         <tbody>${rows}</tbody>
         <tfoot>
-          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Cash / Check Due</td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
-          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;"><span style="font-weight:400;color:#888;font-size:11px;">(Transaction fee of ${settings.squarePct || 0}% + $${sqFee.toFixed(2)} = ${fmtDollar(ccTrans)})&nbsp;&nbsp;</span>Credit Card Due</td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(ccTotal)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Cash <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Check <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(totalBid)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;"><span style="font-weight:400;color:#888;font-size:11px;">(Transaction fee of ${settings.squarePct || 0}% + $${sqFee.toFixed(2)} = ${fmtDollar(ccTrans)})&nbsp;&nbsp;</span>Credit Card <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;accent-color:#1a7f37;"></td><td style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">${fmtDollar(ccTotal)}</td></tr>
+          <tr><td colspan="2" style="padding:6px 10px;text-align:right;font-weight:700;border:1px solid #000;">Paid <input type="checkbox" style="width:18px;height:18px;vertical-align:middle;margin-left:6px;accent-color:#1a7f37;"></td><td style="padding:6px 10px;border:1px solid #000;"></td></tr>
         </tfoot>
       </table>
     </div>`;
@@ -10560,7 +10571,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v2.3</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jun 30, 2026 2:09 PM</span></div>
+  <div>Version: <span id="app-version">v2.4</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 1, 2026 7:30 AM</span></div>
 </div>
 
 </body>
