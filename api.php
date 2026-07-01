@@ -1,7 +1,34 @@
 <?php
+// ═════════════════════════════════════════════════════════════════════════════
+// PRODUCTION HARDENING: Error Handling & Environment
+// ═════════════════════════════════════════════════════════════════════════════
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/logs/error.log');
+@mkdir(__DIR__ . '/logs', 0750, true); // Create logs dir if missing
+
+// Handle uncaught exceptions gracefully without exposing internals
+set_exception_handler(function($e) {
+    error_log("[EXCEPTION] " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    http_response_code(500);
+    echo json_encode(['error' => 'Internal server error']);
+    exit;
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Session Configuration: Security hardening
+// ═════════════════════════════════════════════════════════════════════════════
+ini_set('session.use_strict_mode', '1');
+ini_set('session.use_only_cookies', '1');
+ini_set('session.cookie_secure', '1');      // HTTPS only
+ini_set('session.cookie_httponly', '1');    // No JavaScript access
+ini_set('session.cookie_samesite', 'Strict'); // CSRF protection
+ini_set('session.gc_maxlifetime', '1800');  // 30 minutes
 session_start();
 
 header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
 
 // Include Phase 2 security helpers (optional - graceful degradation)
 $securityHelpersPath = __DIR__ . '/security-helpers.php';
@@ -64,6 +91,7 @@ $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
 // Allow same-site requests (no origin header) and whitelisted origins
 if (!empty($requestOrigin) && $requestOrigin !== $allowedOrigin) {
+    error_log("[CORS_VIOLATION] Blocked request from origin: " . sanitizeInput($requestOrigin, 255));
     header('Access-Control-Allow-Origin: ' . $allowedOrigin);
     http_response_code(403);
     echo json_encode(['error' => 'CORS error: Origin not allowed']);
@@ -80,10 +108,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// SECURITY: Request Validation
+// ═════════════════════════════════════════════════════════════════════════════
+// Enforce maximum payload size (prevent DoS via massive requests)
+$maxPayloadSize = 5 * 1024 * 1024; // 5 MB
+$contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+if ($contentLength > $maxPayloadSize) {
+    http_response_code(413);
+    echo json_encode(['error' => 'Payload too large']);
+    exit;
+}
+
+// Validate Content-Type for POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (strpos($contentType, 'application/json') === false) {
+        http_response_code(415);
+        echo json_encode(['error' => 'Content-Type must be application/json']);
+        exit;
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // SECURITY: Input validation - Whitelist allowed actions
 // ═════════════════════════════════════════════════════════════════════════════
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $action = $input['action'] ?? '';
+
+// Validate action is a string (not array/object injection)
+if (!is_string($action)) {
+    logSecurityEvent('INVALID_REQUEST', 'unknown', 'Action is not a string', 'WARN');
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid action format']);
+    exit;
+}
 
 // Health check endpoint (always available)
 if ($action === 'health') {
@@ -159,6 +217,7 @@ $publicActions = [
 
 // Validate action is in whitelist
 if (!in_array($action, $allowedActions, true)) {
+    logSecurityEvent('INVALID_ACTION', sanitizeInput($action, 100), 'Action not in whitelist', 'WARN');
     http_response_code(400);
     echo json_encode(['error' => 'Invalid action']);
     exit;
@@ -169,6 +228,7 @@ if (!in_array($action, $allowedActions, true)) {
 // ═════════════════════════════════════════════════════════════════════════════
 if (!in_array($action, $publicActions, true)) {
     if (empty($_SESSION['authenticated']) || $_SESSION['authenticated'] !== true) {
+        logSecurityEvent('UNAUTHORIZED_ACCESS', $action, 'Session not authenticated', 'WARN');
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized']);
         exit;
@@ -192,10 +252,31 @@ if (!in_array($action, $publicActions, true)) {
     if (in_array($action, $csrfProtectedActions, true)) {
         $sentToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
         if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $sentToken)) {
+            logSecurityEvent('CSRF_FAILURE', $action, 'CSRF token validation failed');
             http_response_code(403);
             echo json_encode(['error' => 'CSRF token missing or invalid']);
             exit;
         }
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PRODUCTION HARDENING: Security Event Logging
+// ═════════════════════════════════════════════════════════════════════════════
+function logSecurityEvent($eventType, $action, $details = '', $severity = 'INFO') {
+    $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $userId = $_SESSION['user_id'] ?? $_SESSION['authenticated_user'] ?? 'anonymous';
+    $timestamp = date('Y-m-d H:i:s');
+    $logEntry = "[{$timestamp}] [{$severity}] {$eventType} | action:{$action} | user:{$userId} | ip:{$ip} | {$details}";
+
+    // Log to security.log
+    $logFile = __DIR__ . '/logs/security.log';
+    @mkdir(__DIR__ . '/logs', 0750, true);
+    error_log($logEntry, 3, $logFile);
+
+    // Also to main error log for critical events
+    if ($severity === 'CRITICAL') {
+        error_log("[SECURITY_CRITICAL] {$logEntry}");
     }
 }
 
@@ -215,9 +296,14 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_TIMEOUT => 5,
+        PDO::ATTR_EMULATE_PREPARES => false, // Use real prepared statements
     ]);
+    // Enforce strict SQL mode for consistency
+    $pdo->exec("SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
 } catch (Exception $e) {
-    echo json_encode(['error' => 'DB connection failed']);
+    error_log("[DB_ERROR] Connection failed: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'Database connection error']);
     exit;
 }
 
@@ -237,6 +323,7 @@ if ($rateLimitingEnabled === 'true' && !in_array($action, ['init_tables', 'log']
     $rateCheck = checkRateLimit($action, $config['maxRequests'], $config['windowSeconds']);
 
     if (!$rateCheck['allowed']) {
+        logSecurityEvent('RATE_LIMIT_EXCEEDED', $action, "Retry after {$rateCheck['retry_after']}s", 'WARN');
         http_response_code(429);
         header('Retry-After: ' . $rateCheck['retry_after']);
         echo json_encode([
@@ -305,9 +392,11 @@ if ($action === 'login') {
         // that the server never checked — real protection, not just the header.
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         logQuery($action, 'LOGIN', 'SUCCESS', 'Authenticated');
+        logSecurityEvent('LOGIN_SUCCESS', 'login', 'User authenticated successfully', 'INFO');
         echo json_encode(['success' => true, 'csrf_token' => $_SESSION['csrf_token']]);
     } else {
         logQuery($action, 'LOGIN', 'FAIL', 'Bad password');
+        logSecurityEvent('LOGIN_FAILURE', 'login', 'Invalid password provided', 'WARN');
         http_response_code(401);
         echo json_encode(['success' => false, 'error' => 'Incorrect password']);
     }

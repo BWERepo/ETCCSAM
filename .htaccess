@@ -1,3 +1,12 @@
+<IfModule mod_rewrite.c>
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Block dangerous HTTP methods
+  # ─────────────────────────────────────────────────────────────────────────────
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK|DELETE|PUT)$ [NC]
+  RewriteRule ^(.*)$ - [F,L]
+</IfModule>
+
 <IfModule mod_headers.c>
   # ─────────────────────────────────────────────────────────────────────────────
   # Phase 2 & 3: Content Security Policy
@@ -59,3 +68,47 @@
 # Phase 2: Prevent directory listing
 # ─────────────────────────────────────────────────────────────────────────────
 Options -Indexes
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRODUCTION HARDENING: Block access to sensitive file patterns
+# ─────────────────────────────────────────────────────────────────────────────
+<FilesMatch "^\.(?!well-known)">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(bak|conf|sql|log|git)$">
+  Require all denied
+</FilesMatch>
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRODUCTION HARDENING: Prevent PHP execution in upload/cache directories
+# ─────────────────────────────────────────────────────────────────────────────
+<DirectoryMatch "^/.*(?:uploads?|cache|tmp|temp)">
+  <FilesMatch "\.(?:php|phtml|php3|php4|php5|php7|pht|shtml)$">
+    Require all denied
+  </FilesMatch>
+</DirectoryMatch>
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRODUCTION HARDENING: Additional Security Headers
+# ─────────────────────────────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+  # Prevent MIME type sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Clickjacking protection
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Disable browser XSS auditor (can be exploited)
+  Header always set X-XSS-Protection "0"
+
+  # Referrer policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Feature policy (restrictive defaults)
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+
+  # Remove Server header to avoid exposing software version
+  Header always unset Server
+  Header always unset X-Powered-By
+</IfModule>

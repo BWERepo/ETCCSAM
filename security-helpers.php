@@ -653,3 +653,79 @@ function containsHtmlOrScript($text) {
 
     return false;
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PRODUCTION HARDENING: Enhanced Input Validation & Sanitization
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Sanitize string input: remove control chars, validate encoding, enforce length
+ * @param mixed $input Input to sanitize
+ * @param int $maxLength Maximum allowed length
+ * @return string Sanitized string
+ */
+function sanitizeInput($input, $maxLength = 10000) {
+    if (!is_string($input)) {
+        $input = (string)$input;
+    }
+
+    // Enforce max length
+    if (strlen($input) > $maxLength) {
+        error_log("[INPUT_VIOLATION] Input exceeds max length ({$maxLength} chars)");
+        return substr($input, 0, $maxLength);
+    }
+
+    // Remove null bytes and control characters (except newlines/tabs)
+    $input = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $input);
+
+    // Validate UTF-8 encoding
+    if (!mb_check_encoding($input, 'UTF-8')) {
+        error_log("[INPUT_ERROR] Invalid UTF-8 encoding detected");
+        $input = mb_convert_encoding($input, 'UTF-8', 'UTF-8');
+    }
+
+    return trim($input);
+}
+
+/**
+ * Validate email format
+ * @param string $email Email to validate
+ * @return bool True if valid email format
+ */
+function isValidEmail($email) {
+    $email = sanitizeInput($email, 254);
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+/**
+ * Validate phone number format (basic check)
+ * @param string $phone Phone to validate
+ * @return bool True if looks like a phone number
+ */
+function isValidPhone($phone) {
+    $phone = sanitizeInput($phone, 20);
+    return preg_match('/^[\d\s\-\(\)\+]+$/', $phone) === 1 && strlen($phone) >= 10;
+}
+
+/**
+ * Validate numeric ID (positive integer)
+ * @param mixed $id ID to validate
+ * @return bool True if valid positive integer
+ */
+function isValidId($id) {
+    $id = (int)$id;
+    return $id > 0;
+}
+
+/**
+ * Validate array contains only whitelisted keys
+ * @param array $array Array to validate
+ * @param array $allowedKeys Whitelist of allowed keys
+ * @return array Filtered array with only allowed keys
+ */
+function filterByWhitelist($array, $allowedKeys) {
+    if (!is_array($array)) {
+        return [];
+    }
+    return array_intersect_key($array, array_flip($allowedKeys));
+}
