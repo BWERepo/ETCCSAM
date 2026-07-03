@@ -2008,7 +2008,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 1, 2026 6:47 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 3, 2026 4:42 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2784,18 +2784,16 @@ const DB = {
   getAuctions()           { return JSON.parse(localStorage.getItem('sam_auctions') || '[]'); },
   saveAuctions(v)         {
     localStorage.setItem('sam_auctions', JSON.stringify(v));
-    // Persist to MySQL via API (async, fire and forget)
-    const sessionToken = SessionManager.getSessionToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (sessionToken) {
-      headers['Authorization'] = `Bearer ${sessionToken}`;
-    }
-    headers['X-CSRF-Token'] = SessionManager.getCsrfToken();
-
-    fetch('https://etccapps.com/apps/sam/api.php', {
+    // Persist to MySQL via API (async, fire and forget). Uses secureApiFetch so
+    // the session cookie (credentials: same-origin) is actually sent — a plain
+    // fetch() here was silently failing auth (401) and dropping the write,
+    // which made auctions vanish after a cache clear even though the app
+    // showed no error (only network failures were caught, not HTTP status).
+    secureApiFetch('https://etccapps.com/apps/sam/api.php', {
       method: 'POST',
-      headers,
       body: JSON.stringify({ action: 'save_auctions', data: v })
+    }).then(r => {
+      if (!r.ok) console.warn('Failed to save auctions to database: HTTP', r.status);
     }).catch(e => console.warn('Failed to save auctions to database:', e));
   },
   getCurrentAuctionId()   { return localStorage.getItem('sam_current_auction') || ''; },
@@ -4187,9 +4185,8 @@ function printBiddingSheets() {
       bidAmounts.push(Math.round(startingBid * (1 + i * incPct)));
     }
     const bidRows   = bidAmounts.map((amt, idx) => {
-      const bold = (idx + 1) % 2 === 0 ? ' style="font-weight:700;"' : '';
       const disp = '$' + amt.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-      return `<tr><td></td><td></td><td${bold}>${disp}</td></tr>`;
+      return `<tr><td></td><td></td><td>${disp}</td></tr>`;
     }).join('');
     // Truncate the description so each page's content genuinely fits one page
     // (reliable across print engines, unlike CSS clamping/overflow). The bid
@@ -4213,10 +4210,10 @@ function printBiddingSheets() {
         <tr>
           <td colspan="2" style="padding:0;border:none;">
             <div style="display:grid;grid-template-columns:2fr 1.5fr 0.8fr ${parseFloat(item.reserve_amount || 0) > 0 ? '0.8fr' : ''};gap:0;height:100%;">
-              <div style="border:1px solid #d2d2d7;padding:3px 5px;"><span style="font-weight:600;font-size:9px;">Category: </span><span style="font-size:10px;">${escHtml(item.category_name || '')}</span></div>
-              <div style="border:1px solid #d2d2d7;padding:3px 5px;"><span style="font-weight:600;font-size:9px;">Donor: </span><span style="font-size:10px;">${escHtml(item.donor_name || '')}</span></div>
-              <div style="border:1px solid #d2d2d7;padding:3px 5px;"><span style="font-weight:600;font-size:9px;">Value: </span><span style="font-size:10px;">${fmtDollar(item.item_value || item.value)}</span></div>
-              ${parseFloat(item.reserve_amount || 0) > 0 ? `<div style="border:1px solid #d2d2d7;padding:3px 5px;"><span style="font-weight:600;font-size:9px;">Reserve: </span><span style="font-size:10px;">${fmtDollar(item.reserve_amount)}</span></div>` : ''}
+              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Category: </span><span style="font-weight:800;font-size:14px;">${escHtml(item.category_name || '')}</span></div>
+              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Donor: </span><span style="font-weight:800;font-size:14px;">${escHtml(item.donor_name || '')}</span></div>
+              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Value: </span><span style="font-weight:800;font-size:14px;">${fmtDollar(item.item_value || item.value)}</span></div>
+              ${parseFloat(item.reserve_amount || 0) > 0 ? `<div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Reserve: </span><span style="font-weight:800;font-size:14px;">${fmtDollar(item.reserve_amount)}</span></div>` : ''}
             </div>
           </td>
         </tr>
@@ -4273,6 +4270,7 @@ function printBiddingSheets() {
   .bid-table th:nth-child(1), .bid-table td:nth-child(1),
   .bid-table th:nth-child(2), .bid-table td:nth-child(2) { width: 45%; }
   .bid-table th:nth-child(3), .bid-table td:nth-child(3) { width: 90px; }
+  .bid-table td:nth-child(3) { background: #dbeafe; font-weight: 800; font-size: 14px; }
   /* Label/description page: top-aligned block. Description text is truncated in
      JS so it fits one page; page-break-inside:avoid keeps it together, no fixed
      height (fixed heights were causing each block to span two pages). */
@@ -10652,7 +10650,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v3.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 1, 2026 6:47 PM</span></div>
+  <div>Version: <span id="app-version">v3.1</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 3, 2026 4:42 AM</span></div>
 </div>
 
 </body>
