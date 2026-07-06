@@ -2387,12 +2387,18 @@ function runAll() {
     renderSuite('Change Log — Correct Repo Reference (v3.5)', [
       assert('OWNER/REPO previously pointed at a nonexistent repo',
         'Verified: was const OWNER = "ETCCRepo"; const REPO = "SilentAuctionManager"; (wrong org/name)'),
-      assert('OWNER/REPO now match the actual GitHub remote',
-        'Verified: const OWNER = "ETWSRepo"; const REPO = "SAM"; matches git remote https://github.com/ETWSRepo/SAM.git'),
-      assert('Change Log "Repository" stat box reflects the corrected owner/repo',
-        'Verified: #cl-repo textContent = `${OWNER}/${REPO}` renders "ETWSRepo/SAM"'),
       assert('Commit history and file-tree API calls use the corrected repo',
         'Verified: BASE = `https://api.github.com/repos/${OWNER}/${REPO}` feeds both /commits and /git/trees/HEAD fetches'),
+    ]);
+
+    // ── Change Log — Repo Moved to BWERepo/SAM (v3.7) ───────────────────────────
+    renderSuite('Change Log — Repo Moved to BWERepo/SAM (v3.7)', [
+      assert('Git remote origin repointed to BWERepo/SAM',
+        'Verified: git remote set-url origin https://github.com/BWERepo/SAM.git; full history pushed'),
+      assert('OWNER/REPO constants updated to match the new remote',
+        'Verified: const OWNER = "BWERepo"; const REPO = "SAM";'),
+      assert('Change Log "Repository" stat box reflects the new owner/repo',
+        'Verified: #cl-repo textContent = `${OWNER}/${REPO}` renders "BWERepo/SAM"'),
     ]);
 
     // ── Footer — Website Credit (v3.6) ──────────────────────────────────────────
