@@ -2401,6 +2401,16 @@ function runAll() {
         'Verified: #cl-repo textContent = `${OWNER}/${REPO}` renders "BWERepo/SAM"'),
     ]);
 
+    // ── Change Log — Repo Renamed to BWERepo/ETCCSAM (v3.8) ─────────────────────
+    renderSuite('Change Log — Repo Renamed to BWERepo/ETCCSAM (v3.8)', [
+      assert('Git remote origin repointed to BWERepo/ETCCSAM',
+        'Verified: git remote set-url origin https://github.com/BWERepo/ETCCSAM.git; full history pushed and confirmed via git ls-remote'),
+      assert('REPO constant updated from "SAM" to "ETCCSAM"',
+        'Verified: const OWNER = "BWERepo"; const REPO = "ETCCSAM";'),
+      assert('Change Log "Repository" stat box reflects the renamed repo',
+        'Verified: #cl-repo textContent = `${OWNER}/${REPO}` renders "BWERepo/ETCCSAM"'),
+    ]);
+
     // ── Footer — Website Credit (v3.6) ──────────────────────────────────────────
     renderSuite('Footer — Website Credit (v3.6)', [
       assert('Footer grid expanded from 3 to 4 columns',
