@@ -2425,6 +2425,48 @@ function runAll() {
         'Verified: updateFooterDeployDate() remains a no-op; #app-deploy-date is authoritative from deploy.ps1 Get-Date'),
     ]);
 
+    // ── Bid Sheet — Bid Amount Column Matches Value Width (v3.9) ────────────────
+    renderSuite('Bid Sheet — Bid Amount Column Matches Value Width (v3.9)', [
+      assert('Bid Amount column width computed from the Value grid column fraction',
+        'Verified: bidAmtColW = (0.8 / infoTotalFr * sheetContentInW).toFixed(3), matching Value\'s 0.8fr share of the info row'),
+      assert('infoTotalFr accounts for whether Reserve column is shown',
+        'Verified: infoTotalFr = hasReserve ? 5.1 : 4.3 (Category 2fr + Donor 1.5fr + Value 0.8fr [+ Reserve 0.8fr])'),
+      assert('Bid Amount and info row widths share the same 7in usable content width',
+        'Verified: sheetContentInW = 7 (7.5in sheet width - 0.25in left/right padding), same basis as .sheet-info'),
+      assert('Initials/Bidder # columns split the remaining width evenly',
+        'Verified: bidOtherColW = (sheetContentInW - bidAmtColW) / 2'),
+      assert('Column widths passed per-sheet via CSS custom properties',
+        'Verified: --bid-amt-w / --bid-other-w set inline on .sheet, consumed by .bid-table th/td nth-child width rules'),
+    ]);
+
+    // ── Bid Sheet — Fonts Increased 20% (v3.9) ──────────────────────────────────
+    renderSuite('Bid Sheet — Fonts Increased 20% Over Baseline (v3.9)', [
+      assert('Sheet title and item number increased 20% (9px→10.8px, 16px→19.2px)',
+        'Verified: .sheet-title font-size:10.8px; .sheet-item-num font-size:19.2px;'),
+      assert('Info row font size increased 20% (9px→10.8px)',
+        'Verified: .sheet-info font-size:10.8px;'),
+      assert('Description/Category/Donor/Value/Reserve labels increased 20% (14px→16.8px)',
+        'Verified: inline font-size:16.8px on all five info box label+value spans'),
+      assert('Bid table base font and header/amount font increased 20% (12px→14.4px, 14px→16.8px)',
+        'Verified: .bid-table font-size:14.4px; .bid-table th / td:nth-child(3) font-size:16.8px;'),
+      assert('Label page text increased 20% (30pt→36pt, 20pt→24pt)',
+        'Verified: .label-item-num font-size:36pt; .label-desc font-size:24pt;'),
+      assert('20% increase applied over original baseline, not stacked on the earlier 10% pass',
+        'Verified: all sizes replaced directly from original values (e.g. 14px * 1.2 = 16.8px), no compounding'),
+    ]);
+
+    // ── Bid Sheet — Header Row Background (v3.9) ────────────────────────────────
+    renderSuite('Bid Sheet — Header Row Background (v3.9)', [
+      assert('Bid table header cells changed from blue to gray background',
+        'Verified: .bid-table th background changed from #dbeafe to gray'),
+      assert('Header background darkened after initial gray felt too light',
+        'Verified: .bid-table th background: #d2d2d7 (app\'s standard border-gray, darker than #f5f5f7)'),
+      assert('print-color-adjust forces the header background to actually print',
+        'Verified: .bid-table th has -webkit-print-color-adjust:exact; print-color-adjust:exact; (browsers strip backgrounds from print by default)'),
+      assert('print-color-adjust scoped to header cells only, not applied globally',
+        'Verified: rule lives on .bid-table th selector, not on a universal * selector'),
+    ]);
+
     // Clear test data
     _store['sam_items'] = null;
     _store['sam_winners'] = null;

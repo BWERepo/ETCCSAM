@@ -2014,7 +2014,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 8, 2026 8:22 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 8, 2026 12:12 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -4272,8 +4272,17 @@ function printBiddingSheets() {
     // Once text is long enough to risk overflowing the page, switch back to
     // the browser's default page-break-inside:auto so it just flows normally.
     const sheetBreak = dDesc.length > 400 ? 'auto' : 'avoid';
+    // Bid Amount column is sized to match the Value box above it. Value's grid
+    // column is 0.8fr out of the info row's total fr (which gains a 4th 0.8fr
+    // column when Reserve is shown), applied against the sheet's 7in usable
+    // content width (7.5in sheet - 0.25in left/right padding).
+    const hasReserve       = parseFloat(item.reserve_amount || 0) > 0;
+    const infoTotalFr      = hasReserve ? 5.1 : 4.3;
+    const sheetContentInW  = 7;
+    const bidAmtColW       = (0.8 / infoTotalFr * sheetContentInW).toFixed(3);
+    const bidOtherColW     = ((sheetContentInW - bidAmtColW) / 2).toFixed(3);
     return `
-    <div class="sheet" style="--row-h:${itemRowH}in;page-break-inside:${sheetBreak};">
+    <div class="sheet" style="--row-h:${itemRowH}in;page-break-inside:${sheetBreak};--bid-amt-w:${bidAmtColW}in;--bid-other-w:${bidOtherColW}in;">
       <div class="sheet-header">
         <div class="sheet-title">${getClub().name} — Silent Auction</div>
         <div class="sheet-item-num">Item # ${escHtml(String(item.item_number))}</div>
@@ -4281,16 +4290,16 @@ function printBiddingSheets() {
       <table class="sheet-info">
         <tr>
           <td style="padding:0;border:none;">
-            <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Description: </span><span class="sheet-desc" style="font-weight:800;font-size:14px;"><span class="desc-clamp">${escHtml(descSheet)}</span></span></div>
+            <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:16.8px;">Description: </span><span class="sheet-desc" style="font-weight:800;font-size:16.8px;"><span class="desc-clamp">${escHtml(descSheet)}</span></span></div>
           </td>
         </tr>
         <tr>
           <td style="padding:0;border:none;">
-            <div style="display:grid;grid-template-columns:2fr 1.5fr 0.8fr ${parseFloat(item.reserve_amount || 0) > 0 ? '0.8fr' : ''};gap:0;height:100%;">
-              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Category: </span><span style="font-weight:800;font-size:14px;">${escHtml(item.category_name || '')}</span></div>
-              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Donor: </span><span style="font-weight:800;font-size:14px;">${escHtml(item.donor_name || '')}</span></div>
-              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Value: </span><span style="font-weight:800;font-size:14px;">${fmtDollar(item.item_value || item.value)}</span></div>
-              ${parseFloat(item.reserve_amount || 0) > 0 ? `<div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:14px;">Reserve: </span><span style="font-weight:800;font-size:14px;">${fmtDollar(item.reserve_amount)}</span></div>` : ''}
+            <div style="display:grid;grid-template-columns:2fr 1.5fr 0.8fr ${hasReserve ? '0.8fr' : ''};gap:0;height:100%;">
+              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:16.8px;">Category: </span><span style="font-weight:800;font-size:16.8px;">${escHtml(item.category_name || '')}</span></div>
+              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:16.8px;">Donor: </span><span style="font-weight:800;font-size:16.8px;">${escHtml(item.donor_name || '')}</span></div>
+              <div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:16.8px;">Value: </span><span style="font-weight:800;font-size:16.8px;">${fmtDollar(item.item_value || item.value)}</span></div>
+              ${hasReserve ? `<div style="border:1px solid #000;background:#dbeafe;padding:3px 5px;"><span style="font-weight:800;font-size:16.8px;">Reserve: </span><span style="font-weight:800;font-size:16.8px;">${fmtDollar(item.reserve_amount)}</span></div>` : ''}
             </div>
           </td>
         </tr>
@@ -4327,9 +4336,9 @@ function printBiddingSheets() {
   .sheet { width: 7.5in; margin: 0 auto; padding: 0.12in 0.25in; page-break-after: always; page-break-inside: avoid; }
   .sheet:last-child { page-break-after: auto; }
   .sheet-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #1d1d1f; padding-bottom: 2px; margin-bottom: 2px; }
-  .sheet-title { font-size: 9px; font-weight: 700; color: #1d1d1f; }
-  .sheet-item-num { font-size: 16px; font-weight: 800; color: #0071e3; }
-  .sheet-info { width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 9px; }
+  .sheet-title { font-size: 10.8px; font-weight: 700; color: #1d1d1f; }
+  .sheet-item-num { font-size: 19.2px; font-weight: 800; color: #0071e3; }
+  .sheet-info { width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 10.8px; }
   .sheet-info td { padding: 2px 4px; border: 1px solid #d2d2d7; vertical-align: top; }
   .sheet-info td.label { font-weight: 600; width: 75px; background: #f5f5f7; }
   .sheet-desc { word-wrap: break-word; white-space: normal; overflow-wrap: break-word; line-height: 1.2; max-width: 600px; }
@@ -4340,22 +4349,27 @@ function printBiddingSheets() {
      Sheets table (falls back to the screen's global Row Height field), passed
      in via the --row-h custom property on each .sheet. */
   .bid-wrap { width: 100%; }
-  .bid-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .bid-table th { background: #dbeafe; font-weight: 800; padding: 1px 4px; border: 1px solid #000; text-align: left; font-size: 14px; }
+  .bid-table { width: 100%; border-collapse: collapse; font-size: 14.4px; }
+  /* Browsers strip background colors from print output by default (to save
+     ink) unless explicitly told to keep them — without this, the header row
+     background prints as plain white. Scoped to just the header cells since
+     that's the only background these bid sheets need to force-print. */
+  .bid-table th { background: #d2d2d7; font-weight: 800; padding: 1px 4px; border: 1px solid #000; text-align: left; font-size: 16.8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bid-table td { padding: 1px 4px; border: 1px solid #000; height: var(--row-h, ${rowHeight}in); vertical-align: middle; }
-  /* Bidder Initials and Bidder # share equal width; Bid Amount is fixed. */
+  /* Bidder Initials and Bidder # share equal width; Bid Amount matches the
+     Value box width above it via --bid-amt-w (set per-sheet in JS). */
   .bid-table th:nth-child(1), .bid-table td:nth-child(1),
-  .bid-table th:nth-child(2), .bid-table td:nth-child(2) { width: 45%; }
-  .bid-table th:nth-child(3), .bid-table td:nth-child(3) { width: 90px; }
-  .bid-table td:nth-child(3) { background: #dbeafe; font-weight: 800; font-size: 14px; }
+  .bid-table th:nth-child(2), .bid-table td:nth-child(2) { width: var(--bid-other-w, 45%); }
+  .bid-table th:nth-child(3), .bid-table td:nth-child(3) { width: var(--bid-amt-w, 90px); }
+  .bid-table td:nth-child(3) { background: #dbeafe; font-weight: 800; font-size: 16.8px; }
   /* Label/description page: top-aligned block. Description text is truncated in
      JS so it fits one page; page-break-inside:avoid keeps it together, no fixed
      height (fixed heights were causing each block to span two pages). */
   .label-page { width: 7.5in; margin: 0 auto; page-break-after: always; page-break-inside: avoid; text-align: center; box-sizing: border-box; padding: 0.4in 0.5in 0; }
   .label-page:last-child { page-break-after: auto; }
   .label-content { width: 100%; }
-  .label-item-num { font-size: 30pt; font-weight: 800; color: #0071e3; line-height: 1.2; }
-  .label-desc { font-size: 20pt; font-weight: 600; color: #1d1d1f; line-height: 1.25; margin-top: 24px; }
+  .label-item-num { font-size: 36pt; font-weight: 800; color: #0071e3; line-height: 1.2; }
+  .label-desc { font-size: 24pt; font-weight: 600; color: #1d1d1f; line-height: 1.25; margin-top: 24px; }
   @page { size: letter portrait; margin: 0.3in; }
   @media print { body { margin: 0; } .sheet { width: 100%; padding: 0; } .label-page { width: 100%; } }
 
@@ -10793,7 +10807,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v3.8</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 8, 2026 8:22 AM</span></div>
+  <div>Version: <span id="app-version">v3.9</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 8, 2026 12:12 PM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 
