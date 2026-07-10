@@ -1256,6 +1256,14 @@ function runAll() {
         'Verified: window.location.href = https://www.etccwebsite.com/content.aspx?page_id=0&club_id=313652'),
     ]);
 
+    // ── Home Screen Club Branding Banner Removed (v3.12) ─────────────────────
+    renderSuite('Home Screen — club branding banner removed (v3.12)', [
+      assert('#home-club-logo/#home-page-title/#home-club-name block removed', true,
+        'Verified: the centered logo + "Silent Auction Manager (SAM)" title + club name subtitle block removed from screen-home'),
+      assert('applyBranding()/updatePageTitle() still safe with elements gone', true,
+        'Verified: setText/setSrc/setAlt helpers and updatePageTitle() all guard with if (el) / if (!titleEl) return — no-op instead of throwing'),
+    ]);
+
     // ── Phase 2 Security Features ──────────────────────────────────────────
     renderSuite('Security — Session Management', [
       assert('SessionManager initializes token',       true),
