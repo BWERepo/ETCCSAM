@@ -5,6 +5,85 @@
  */
 
 // ═════════════════════════════════════════════════════════════════════════════
+// PASSWORD RESET EMAIL - Minimal SMTP client (no external library/Composer)
+// ═════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Sends a plain-text email via authenticated SMTP using credentials from
+ * $env (SMTP_HOST/PORT/USER/PASS/FROM in .env). Ported from the Car Show
+ * app's carshow_send_mail() — PHP's raw mail() was tried there first and
+ * dropped: it returned success while silently failing to deliver to Gmail
+ * from a Hostinger account (no SPF/DKIM behind mail()'s sendmail path).
+ * @return bool True if the server accepted the message for delivery.
+ */
+function sam_send_mail($to, $subject, $body, $env) {
+    if (empty($env['SMTP_HOST']) || empty($env['SMTP_USER']) || empty($env['SMTP_PASS'])) return false;
+
+    $host = $env['SMTP_HOST'];
+    $port = !empty($env['SMTP_PORT']) ? (int)$env['SMTP_PORT'] : 465;
+    $user = $env['SMTP_USER'];
+    $pass = $env['SMTP_PASS'];
+    $from = !empty($env['SMTP_FROM']) ? $env['SMTP_FROM'] : $user;
+    $target = ($port === 465 ? 'ssl://' : '') . $host . ':' . $port;
+
+    $sock = @stream_socket_client($target, $errno, $errstr, 15);
+    if (!$sock) return false;
+    stream_set_timeout($sock, 15);
+
+    // Reads a full (possibly multi-line) reply: SMTP marks the final line of
+    // a multi-line response with a space in the 4th column (e.g. "250 OK"
+    // vs "250-continues"); anything else means keep reading.
+    $read = function () use ($sock) {
+        $data = '';
+        while (($line = fgets($sock, 515)) !== false) {
+            $data .= $line;
+            if (strlen($line) < 4 || $line[3] === ' ') break;
+        }
+        return $data;
+    };
+    $write = function ($cmd) use ($sock) { fwrite($sock, $cmd . "\r\n"); };
+    $expect = function ($code) use ($read) { return strpos($read(), (string)$code) === 0; };
+    $fail = function () use ($sock) { fclose($sock); return false; };
+
+    $read(); // server greeting
+    $write('EHLO etccapps.com');
+    $read();
+
+    if ($port !== 465) {
+        $write('STARTTLS');
+        if (!$expect(220)) return $fail();
+        if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) return $fail();
+        $write('EHLO etccapps.com');
+        $read();
+    }
+
+    $write('AUTH LOGIN');
+    if (!$expect(334)) return $fail();
+    $write(base64_encode($user));
+    if (!$expect(334)) return $fail();
+    $write(base64_encode($pass));
+    if (!$expect(235)) return $fail();
+
+    $write('MAIL FROM:<' . $from . '>');
+    if (!$expect(250)) return $fail();
+    $write('RCPT TO:<' . $to . '>');
+    if (!$expect(250)) return $fail();
+    $write('DATA');
+    if (!$expect(354)) return $fail();
+
+    $headers = "From: {$from}\r\nTo: {$to}\r\nSubject: {$subject}\r\n" .
+        "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n";
+    // Dot-stuffing: a line starting with "." in the body must be escaped to
+    // ".." or the SMTP server reads it as the end-of-DATA terminator.
+    $safeBody = preg_replace('/^\./m', '..', $body);
+    $write($headers . "\r\n" . $safeBody . "\r\n.");
+    $ok = $expect(250);
+    $write('QUIT');
+    fclose($sock);
+    return $ok;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // ENCRYPTION/DECRYPTION - AES-256-CBC
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -239,6 +318,8 @@ function checkRateLimit($endpoint, $maxRequests, $windowSeconds) {
 function getRateLimitConfig($action) {
     $limits = [
         'login' => ['maxRequests' => 8, 'windowSeconds' => 300],         // 8 per 5 minutes — brute-force guard
+        'forgot_password' => ['maxRequests' => 3, 'windowSeconds' => 3600], // 3 per hour — don't spam the admin inbox
+        'reset_password' => ['maxRequests' => 8, 'windowSeconds' => 300],  // 8 per 5 minutes — token brute-force guard
         'scan_inbox' => ['maxRequests' => 1, 'windowSeconds' => 300],     // 1 per 5 minutes
         'set_password' => ['maxRequests' => 5, 'windowSeconds' => 900],   // 5 per 15 minutes
         // Raised from 100 to 400 per minute — per-field inline auto-save (e.g. bid

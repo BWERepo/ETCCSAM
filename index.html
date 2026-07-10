@@ -700,6 +700,25 @@
     }
     #password-btn:hover { background: var(--accent-hover); }
     #password-btn:active { opacity: 0.9; }
+    #forgot-password-link {
+      display: block;
+      text-align: center;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    #forgot-password-link:hover { text-decoration: underline; }
+    #forgot-password-status {
+      font-size: 12px;
+      margin: 10px 0 0;
+      display: none;
+      text-align: center;
+    }
+    #forgot-password-status.show { display: block; }
+    #forgot-password-status.ok { color: var(--success); }
+    #forgot-password-status.err { color: var(--danger); }
 
     /* ── Maintenance Screen ── */
     #maintenance-screen {
@@ -834,6 +853,8 @@
     <input type="password" id="password-input" placeholder="Enter password" />
     <div id="password-error">Incorrect password</div>
     <button id="password-btn">Sign In</button>
+    <a id="forgot-password-link">Forgot password?</a>
+    <div id="forgot-password-status"></div>
   </div>
 </div>
 
@@ -890,9 +911,9 @@
       📖 User Manual
     </div>
     <hr class="nav-divider" />
-    <a href="https://etccapps.com" class="nav-item" style="text-decoration:none;display:block;margin-top:auto;">
-      🏠 Return to Dashboard
-    </a>
+    <div class="nav-item" id="nav-logout" onclick="logoutApp()" style="margin-top:auto;">
+      🚪 Logout
+    </div>
   </nav>
 
   <!-- Backdrop for off-canvas nav -->
@@ -972,7 +993,7 @@
           </div>
 
           <div id="home-workflow-btns" style="display:flex;gap:8px;justify-content:center;padding:10px 0 2px;">
-            <a href="https://etccapps.com" class="btn" style="font-size:12px;text-decoration:none;">Return to Dashboard</a>
+            <a onclick="logoutApp()" class="btn" style="font-size:12px;text-decoration:none;cursor:pointer;">Logout</a>
           </div>
         </div>
 
@@ -2014,7 +2035,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 8, 2026 12:12 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 10, 2026 6:02 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2665,6 +2686,24 @@ function setApiPassword(pw) {
 }
 function getApiPassword() {
   try { return sessionStorage.getItem('sam_api_pw') || ''; } catch (e) { return ''; }
+}
+
+// Destroys the server-side session, clears the cached login password (so
+// installApiAutoReauth below can't silently re-authenticate afterward), then
+// sends the user back to the club's main site — same destination the old
+// "Return to Dashboard" nav link used.
+async function logoutApp() {
+  try {
+    await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'logout' })
+    });
+  } catch (e) {
+    // Ignore — redirecting regardless; the PHP session will also expire on its own.
+  }
+  SessionManager.clearSession();
+  sessionStorage.removeItem('sam_api_pw');
+  window.location.href = 'https://www.etccwebsite.com/content.aspx?page_id=0&club_id=313652';
 }
 
 (function installApiAutoReauth() {
@@ -9019,6 +9058,37 @@ function initializePasswordScreen() {
     if (e.key === 'Enter') checkPassword();
   });
 
+  // "Forgot password?" — SAM has one shared password, no per-user accounts,
+  // so this emails a time-limited reset link to the club's fixed admin
+  // inbox (server-side ADMIN_EMAIL in api.php) rather than asking the
+  // visitor for an email address. Same pattern as the Car Show app.
+  const forgotLink = document.getElementById('forgot-password-link');
+  const forgotStatus = document.getElementById('forgot-password-status');
+  forgotLink.addEventListener('click', async () => {
+    forgotLink.style.pointerEvents = 'none';
+    forgotStatus.className = 'show';
+    forgotStatus.textContent = 'Sending reset link…';
+    try {
+      const res = await fetch('https://etccapps.com/apps/sam/api.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'forgot_password' })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        forgotStatus.className = 'show ok';
+        forgotStatus.textContent = 'Reset link emailed to the admin inbox — valid for 1 hour.';
+      } else {
+        forgotStatus.className = 'show err';
+        forgotStatus.textContent = data.error || 'Could not send reset email. Try again later.';
+      }
+    } catch (e) {
+      forgotStatus.className = 'show err';
+      forgotStatus.textContent = 'Could not send reset email. Try again later.';
+    } finally {
+      forgotLink.style.pointerEvents = '';
+    }
+  });
+
   // Focus on password input
   passwordInput.focus();
   document.body.style.overflow = 'hidden';
@@ -10807,7 +10877,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v3.9</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 8, 2026 12:12 PM</span></div>
+  <div>Version: <span id="app-version">v3.10</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 10, 2026 6:02 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

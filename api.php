@@ -188,6 +188,8 @@ if ($action === 'health') {
 $allowedActions = [
     'login',
     'logout',
+    'forgot_password',
+    'reset_password',
     'get_all',
     'get_all_data',
     'set',
@@ -249,6 +251,8 @@ $publicActions = [
     'logout', // Clears the session
     'health', // API health check
     'log',    // Debug logging — called throughout boot, before login resolves
+    'forgot_password', // Emails a reset link — must work while locked out
+    'reset_password',  // Consumes the token from that email — same reason
 ];
 
 // Validate action is in whitelist
@@ -494,6 +498,108 @@ if ($action === 'login') {
     $_SESSION = [];
     session_destroy();
     echo json_encode(['success' => true]);
+
+} elseif ($action === 'forgot_password') {
+    // SAM has one shared password (no per-user accounts), so a self-service
+    // reset with no identity check would just let anyone reset it. Instead
+    // this emails a time-limited reset link to the club's fixed admin
+    // address (RESET_ADMIN_EMAIL in .env) — whoever controls that inbox is
+    // the person who should be able to reset the app password. Same pattern
+    // as the Car Show app's forgot-password.php.
+    $adminEmail = $env['RESET_ADMIN_EMAIL'] ?? '';
+    if (empty($adminEmail)) {
+        logQuery($action, 'FORGOT_PASSWORD', 'ERROR', 'RESET_ADMIN_EMAIL not configured');
+        echo json_encode(['success' => false, 'error' => 'Password reset is not configured.']);
+        exit;
+    }
+
+    $token = bin2hex(random_bytes(32));
+    $expiresAt = time() + 3600; // 1 hour
+    try {
+        $stmt = $pdo->prepare(
+            "INSERT INTO sam_store (`key`, `value`) VALUES ('sam_password_reset', ?)
+             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"
+        );
+        $stmt->execute([json_encode(['token' => $token, 'expiresAt' => $expiresAt])]);
+    } catch (Exception $e) {
+        logQuery($action, 'FORGOT_PASSWORD', 'ERROR', $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Could not start a password reset right now — please try again in a moment.']);
+        exit;
+    }
+
+    $resetUrl = 'https://etccapps.com/apps/sam/reset-password.html?token=' . $token;
+    $subject = 'Silent Auction Manager — password reset requested';
+    $body = "A password reset was requested for Silent Auction Manager's login.\n\n" .
+        "Reset it here (link expires in 1 hour):\n" . $resetUrl . "\n\n" .
+        "If you didn't request this, you can ignore this email — the link " .
+        "expires on its own and nothing changes until someone opens it.";
+
+    if (sam_send_mail($adminEmail, $subject, $body, $env)) {
+        logQuery($action, 'FORGOT_PASSWORD', 'SUCCESS', 'Reset email sent');
+        logSecurityEvent('PASSWORD_RESET_REQUESTED', $action, 'Reset link emailed to admin', 'INFO');
+        echo json_encode(['success' => true]);
+    } else {
+        logQuery($action, 'FORGOT_PASSWORD', 'ERROR', 'SMTP send failed');
+        echo json_encode(['success' => false, 'error' => 'Could not send the reset email — please try again later or contact your administrator.']);
+    }
+
+} elseif ($action === 'reset_password') {
+    // Reached via the link forgot_password emails. Validates the one-time
+    // token from sam_store's sam_password_reset entry, then overwrites the
+    // password field in sam_settings — preserving every other settings key
+    // (a naive full overwrite would silently wipe unrelated settings, e.g.
+    // startingBidPct/emailFolder). Token is deleted after one use.
+    $token = (string)($input['token'] ?? '');
+    $pw1 = (string)($input['password'] ?? '');
+    $pw2 = (string)($input['password2'] ?? '');
+
+    $valid = false;
+    try {
+        $val = $pdo->query("SELECT `value` FROM sam_store WHERE `key` = 'sam_password_reset' LIMIT 1")->fetchColumn();
+        if ($val) {
+            $reset = json_decode($val, true);
+            $valid = isset($reset['token'], $reset['expiresAt']) &&
+                is_string($reset['token']) && $token !== '' &&
+                hash_equals($reset['token'], $token) && time() < (int)$reset['expiresAt'];
+        }
+    } catch (Exception $e) {
+        $valid = false;
+    }
+
+    if (!$valid) {
+        logSecurityEvent('PASSWORD_RESET_INVALID_TOKEN', $action, 'Invalid or expired reset token', 'WARN');
+        echo json_encode(['success' => false, 'error' => 'This reset link is invalid or has expired. Request a new one.']);
+        exit;
+    }
+    if (strlen($pw1) < 6) {
+        echo json_encode(['success' => false, 'error' => 'Password must be at least 6 characters.']);
+        exit;
+    }
+    if ($pw1 !== $pw2) {
+        echo json_encode(['success' => false, 'error' => 'Passwords do not match.']);
+        exit;
+    }
+
+    try {
+        $val = $pdo->query("SELECT `value` FROM sam_store WHERE `key` = 'sam_settings' LIMIT 1")->fetchColumn();
+        $settings = $val ? json_decode($val, true) : [];
+        if (!is_array($settings)) $settings = [];
+        $settings['password'] = $pw1;
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO sam_store (`key`, `value`) VALUES ('sam_settings', ?)
+             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"
+        );
+        $stmt->execute([json_encode($settings)]);
+        $pdo->exec("DELETE FROM sam_store WHERE `key` = 'sam_password_reset'"); // one-time use
+
+        logQuery($action, 'RESET_PASSWORD', 'SUCCESS', 'Password reset via emailed link');
+        logSecurityEvent('PASSWORD_RESET_SUCCESS', $action, 'Password changed via reset link', 'INFO');
+        echo json_encode(['success' => true]);
+    } catch (Exception $e) {
+        logQuery($action, 'RESET_PASSWORD', 'ERROR', $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Could not save the new password — please try again.']);
+    }
 
 } elseif ($action === 'clear_data') {
     // Clear a per-auction data type either for ALL auctions or one specific
