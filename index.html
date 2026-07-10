@@ -1271,9 +1271,9 @@
             <div>
               <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Bidder Type</label>
               <select id="edit-bidder-type" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);">
-                <option value="walk-in">walk-in</option>
-                <option value="member">member</option>
-                <option value="pre-registration">pre-registration</option>
+                <option value="walk-in">Walk-In NonMember</option>
+                <option value="member">Walk-In Member</option>
+                <option value="pre-registration">Pre-Registration</option>
               </select>
             </div>
             <div>
@@ -1867,8 +1867,8 @@
             <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">Select bidders to delete:</label>
             <select id="sel-clear-bidders" style="font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
               <option value="all">Entire Table</option>
-              <option value="walkins">Walk-ins</option>
-              <option value="members">Members</option>
+              <option value="walkins">Walk-In NonMember</option>
+              <option value="members">Walk-In Member</option>
               <option value="preregistration">Pre-registration</option>
             </select>
             <button class="btn danger" onclick="clearBiddersBySelection()">Delete Bidders</button>
@@ -2034,7 +2034,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 10, 2026 9:14 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 10, 2026 11:05 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -4600,6 +4600,13 @@ function piToggleAll() {
 // ══════════════════════════════════════
 //  RENDER — Bidders table
 // ══════════════════════════════════════
+// Display labels for bidder_type. Stored values stay 'walk-in'/'member'/
+// 'pre-registration' for data/filter compatibility; only the on-screen text changes.
+const BIDDER_TYPE_LABELS = { 'walk-in': 'Walk-In NonMember', 'member': 'Walk-In Member', 'pre-registration': 'Pre-Registration' };
+function bidderTypeLabel(type) {
+  return BIDDER_TYPE_LABELS[type || 'walk-in'] || (type || 'walk-in');
+}
+
 function refreshBiddersTable() {
   const list  = Bidders.getAll();
   const tbody = document.getElementById('bidders-tbody');
@@ -4621,7 +4628,7 @@ function refreshBiddersTable() {
     const optHtml = typeOpts.map(t => `<option value="${t}"${(b.bidder_type||'walk-in')===t?' selected':''}>${t}</option>`).join('');
     tr.innerHTML = `
       <td style="${tdStyle}font-weight:600;">${escHtml(String(b.bidder_number))}</td>
-      <td style="${tdStyle}">${escHtml(b.bidder_type || 'walk-in')}</td>
+      <td style="${tdStyle}">${escHtml(bidderTypeLabel(b.bidder_type))}</td>
       <td style="${tdStyle}">${escHtml(b.last_name  || '')}</td>
       <td style="${tdStyle}">${escHtml(b.first_name || '')}</td>
       <td style="${tdStyle}">${escHtml(b.email      || '')}</td>
@@ -4880,7 +4887,7 @@ function addBidder() {
   tr.style.background = '#fffbe6';
   tr.innerHTML = `
     <td style="font-weight:600;font-size:13px;padding:6px 8px;">${nextNum}</td>
-    <td style="font-size:12px;padding:4px 6px;color:var(--text-secondary);">walk-in</td>
+    <td style="font-size:12px;padding:4px 6px;color:var(--text-secondary);">${bidderTypeLabel('walk-in')}</td>
     <td style="padding:4px 6px;"><input class="nb-last"  style="${inp}" placeholder="Last Name"></td>
     <td style="padding:4px 6px;"><input class="nb-first" style="${inp}" placeholder="First Name"></td>
     <td style="padding:4px 6px;"><input class="nb-email" style="${inp}" placeholder="Email" type="email"></td>
@@ -5064,7 +5071,7 @@ function printBiddersList() {
   const rows = bidders.map(b => `
     <tr>
       <td>${escHtml(String(b.bidder_number))}</td>
-      <td>${escHtml(b.bidder_type || 'walk-in')}</td>
+      <td>${escHtml(bidderTypeLabel(b.bidder_type))}</td>
       <td>${escHtml(b.last_name || '')}</td>
       <td>${escHtml(b.first_name || '')}</td>
       <td>${escHtml(b.email || '')}</td>
@@ -6800,12 +6807,12 @@ async function navigate(screenId) {
         actionBar.style.cssText = 'display:flex;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg);';
         const addBtn = document.createElement('button');
         addBtn.className = 'btn primary workflow-edit-btn';
-        addBtn.textContent = '+ Add Bidder';
+        addBtn.textContent = '+ Add Walk-In NonMember Bidder';
         addBtn.addEventListener('click', addBidder);
         actionBar.appendChild(addBtn);
         const viewMembersBtn = document.createElement('button');
         viewMembersBtn.className = 'btn workflow-edit-btn';
-        viewMembersBtn.textContent = 'View Member Database';
+        viewMembersBtn.textContent = 'Add Walk-In Member Bidder';
         viewMembersBtn.style.marginLeft = '8px';
         viewMembersBtn.addEventListener('click', showMemberDBModal);
         actionBar.appendChild(viewMembersBtn);
@@ -8199,7 +8206,7 @@ function printAuctionSummary() {
         <td>${escHtml(String(b.bidder_number))}</td>
         <td>${escHtml(b.last_name || '')}, ${escHtml(b.first_name || '')}</td>
         <td>${escHtml(b.email || '')}</td>
-        <td>${escHtml(b.bidder_type || 'walk-in')}</td>
+        <td>${escHtml(bidderTypeLabel(b.bidder_type))}</td>
       </tr>`).join('')
     : '<tr><td colspan="4" style="text-align:center;color:#888;">No bidders registered.</td></tr>';
 
@@ -9492,7 +9499,7 @@ function parseCSVLine(line) {
 function clearBiddersBySelection() {
   const sel = document.getElementById('sel-clear-bidders').value;
   const walkInStart = DB.getSettings().walkInStart ?? 1000;
-  const labels = { all: 'all bidders', walkins: 'walk-in bidders', members: 'member bidders', preregistration: 'pre-registration bidders' };
+  const labels = { all: 'all bidders', walkins: 'walk-in nonmember bidders', members: 'walk-in member bidders', preregistration: 'pre-registration bidders' };
   if (!confirm('Clear ' + labels[sel] + '? This cannot be undone.')) return;
   const all = Bidders.getAll();
   let remaining, removed;
@@ -10898,7 +10905,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v3.12</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 10, 2026 9:14 AM</span></div>
+  <div>Version: <span id="app-version">v3.13</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 10, 2026 11:05 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

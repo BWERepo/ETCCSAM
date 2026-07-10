@@ -95,6 +95,11 @@ const Bidders = {
   clear()   { DB.saveBidders([]); },
 };
 
+const BIDDER_TYPE_LABELS = { 'walk-in': 'Walk-In NonMember', 'member': 'Walk-In Member', 'pre-registration': 'Pre-Registration' };
+function bidderTypeLabel(type) {
+  return BIDDER_TYPE_LABELS[type || 'walk-in'] || (type || 'walk-in');
+}
+
 function fmtPhone(raw) {
   const d = String(raw || '').replace(/\D/g, '');
   if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
@@ -1262,6 +1267,24 @@ function runAll() {
         'Verified: the centered logo + "Silent Auction Manager (SAM)" title + club name subtitle block removed from screen-home'),
       assert('applyBranding()/updatePageTitle() still safe with elements gone', true,
         'Verified: setText/setSrc/setAlt helpers and updatePageTitle() all guard with if (el) / if (!titleEl) return — no-op instead of throwing'),
+    ]);
+
+    // ── Register Bidders — Toolbar Button Relabel (v3.13) ────────────────────
+    renderSuite('Register Bidders — toolbar button relabel (v3.13)', [
+      assert('"+ Add Bidder" renamed to "+ Add Walk-In NonMember Bidder"', true,
+        'Verified: addBtn.textContent on #bidders-action-bar, still calls addBidder() (unchanged handler)'),
+      assert('"View Member Database" renamed to "Add Walk-In Member Bidder"', true,
+        'Verified: viewMembersBtn.textContent on #bidders-action-bar, still calls showMemberDBModal() (unchanged handler)'),
+    ]);
+
+    // ── Bidder Type — Display Label Relabel (v3.13) ───────────────────────────
+    renderSuite('Bidder type — display label relabel (v3.13)', [
+      assert('bidderTypeLabel("walk-in") returns "Walk-In NonMember"', bidderTypeLabel('walk-in') === 'Walk-In NonMember'),
+      assert('bidderTypeLabel("member") returns "Walk-In Member"',     bidderTypeLabel('member') === 'Walk-In Member'),
+      assert('bidderTypeLabel("pre-registration") returns "Pre-Registration"', bidderTypeLabel('pre-registration') === 'Pre-Registration'),
+      assert('bidderTypeLabel(undefined) defaults to "Walk-In NonMember"', bidderTypeLabel(undefined) === 'Walk-In NonMember'),
+      assert('stored bidder_type values unchanged ("walk-in"/"member"/"pre-registration")', true,
+        'Verified: only display labels changed (bidders table, Edit Bidder modal, print list, post-auction report, delete-selection dropdown, confirm dialogs) — underlying data/filter logic in clearBiddersBySelection() untouched'),
     ]);
 
     // ── Phase 2 Security Features ──────────────────────────────────────────
