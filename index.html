@@ -163,6 +163,14 @@
       flex-shrink: 0;
     }
     .nav-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 8px 14px; }
+    #nav-developer::after {
+      content: '\276F';
+      margin-left: auto;
+      font-size: 10px;
+      transition: transform 0.15s;
+    }
+    #nav-developer[aria-expanded="true"]::after { transform: rotate(90deg); }
+    .nav-subitem { padding-left: 34px; font-size: 11.5px; }
 
     /* ── Main ── */
     #main { flex: 1; overflow-y: auto; padding: 28px 32px calc(var(--footer-height) + 16px); }
@@ -894,25 +902,26 @@
 
   <!-- Left Nav -->
   <nav id="nav">
-    <div class="nav-item active" data-screen="home" style="font-size:13px;font-weight:600;color:#fff;padding:12px 16px 10px;">🏠 Home</div>
-    <hr class="nav-divider" />
-    <div class="nav-section-label">Management</div>
-<div class="nav-item" data-screen="changelog">
-      📋 Change Log
+    <div class="nav-item" id="nav-logout" onclick="logoutApp()">
+      🚪 Logout
     </div>
-    <div class="nav-item" data-screen="settings">
-      ✦ Settings
-    </div>
-    <div class="nav-item" data-screen="config">
-      ⚙ Configuration
-    </div>
-    <hr class="nav-divider" />
     <div class="nav-item" id="nav-manual">
       📖 User Manual
     </div>
     <hr class="nav-divider" />
-    <div class="nav-item" id="nav-logout" onclick="logoutApp()" style="margin-top:auto;">
-      🚪 Logout
+    <div class="nav-item" id="nav-developer" onclick="toggleDeveloperMenu()" aria-expanded="false">
+      🛠 Developer
+    </div>
+    <div id="nav-developer-submenu" style="display:none;">
+      <div class="nav-item nav-subitem" data-screen="config">
+        ⚙ Configuration
+      </div>
+      <div class="nav-item nav-subitem" data-screen="settings">
+        ✦ Settings
+      </div>
+      <div class="nav-item nav-subitem" data-screen="changelog">
+        📋 Change Log
+      </div>
     </div>
   </nav>
 
@@ -992,9 +1001,6 @@
             </div>
           </div>
 
-          <div id="home-workflow-btns" style="display:flex;gap:8px;justify-content:center;padding:10px 0 2px;">
-            <a onclick="logoutApp()" class="btn" style="font-size:12px;text-decoration:none;cursor:pointer;">Logout</a>
-          </div>
         </div>
 
         <!-- Welcome card (shown when no auction is selected, above auction picker) -->
@@ -2035,7 +2041,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 10, 2026 6:02 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 10, 2026 8:03 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -6130,6 +6136,27 @@ function closeAuthModal() {
   _authPasswordCallback = null;
 }
 
+// Hamburger's "Developer" row: expands in place to reveal Configuration/
+// Settings/Change Log once the settingsPassword is entered (same password/
+// 30-min session window as the Settings screen's own gate — see navigate()).
+async function toggleDeveloperMenu() {
+  const submenu = document.getElementById('nav-developer-submenu');
+  const devItem = document.getElementById('nav-developer');
+  const isOpen = submenu.style.display !== 'none';
+
+  if (isOpen) {
+    submenu.style.display = 'none';
+    devItem.setAttribute('aria-expanded', 'false');
+    return;
+  }
+
+  if (!isSettingsAuthenticated()) {
+    if (!await authenticateSettings()) return;
+  }
+  submenu.style.display = 'block';
+  devItem.setAttribute('aria-expanded', 'true');
+}
+
 function submitAuthPassword() {
   const settings = DB.getSettings();
   // Use settings password if available; otherwise require it to be set
@@ -6639,7 +6666,8 @@ async function navigate(screenId) {
   if (workflowScreens.includes(screenId) && !DB.getCurrentAuctionId()) {
     screenId = 'home';
   }
-  if (screenId === 'settings' && !isSettingsAuthenticated()) {
+  const developerScreens = ['settings', 'config', 'changelog'];
+  if (developerScreens.includes(screenId) && !isSettingsAuthenticated()) {
     if (!await authenticateSettings()) return;
   }
   navItems.forEach(n => n.classList.remove('active'));
@@ -10877,7 +10905,7 @@ async function loadChangelog() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v3.10</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 10, 2026 6:02 AM</span></div>
+  <div>Version: <span id="app-version">v3.11</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 10, 2026 8:03 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

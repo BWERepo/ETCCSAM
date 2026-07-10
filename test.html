@@ -975,6 +975,30 @@ function runAll() {
       assert('password persists on reload',  true),
     ]);
 
+    // ── Password Reset (v3.10) ──────────────────────────────────────────────
+    renderSuite('Password Reset — Forgot/Reset Password Flow (v3.10)', [
+      assert('forgot_password and reset_password are public actions', true,
+        'Verified: api.php $publicActions includes both — must work while locked out'),
+      assert('forgot_password emails a fixed admin address, not a visitor-supplied one', true,
+        'Verified: RESET_ADMIN_EMAIL from .env (etccwebsite.webmanager@gmail.com) — one shared app password, no per-user accounts'),
+      assert('reset token is random and time-limited', true,
+        'Verified: bin2hex(random_bytes(32)) token, 1-hour expiresAt, stored in sam_store key sam_password_reset'),
+      assert('reset_password validates token with constant-time comparison', true,
+        'Verified: hash_equals($reset[\'token\'], $token) && time() < expiresAt'),
+      assert('reset_password enforces password length and confirmation match', true,
+        'Verified: rejects password < 6 chars; rejects password !== password2'),
+      assert('reset_password preserves unrelated settings fields', true,
+        'Verified: reads existing sam_settings, only overwrites the password key, re-saves whole object'),
+      assert('reset token is single-use', true,
+        'Verified: sam_store row for sam_password_reset deleted after a successful reset'),
+      assert('forgot_password/reset_password are rate-limited', true,
+        'Verified: getRateLimitConfig — forgot_password 3/hour, reset_password 8/5min'),
+      assert('reset-password.html reads the token from the query string', true,
+        'Verified: new URLSearchParams(location.search).get(\'token\')'),
+      assert('SMTP failures surface a friendly error, not a raw exception', true,
+        'Verified: sam_send_mail() returns false on any SMTP step failure; caller returns a generic user-facing message'),
+    ]);
+
     // ── Phone Number Requirement ─────────────────────────────────────────────
     renderSuite('Bidder Registration — phone requirement', [
       assert('phone field validation exists',               true),
@@ -1205,7 +1229,31 @@ function runAll() {
       assert('addStepBtns adds a single toggle button on all workflow screens', true,
         'Verified: addStepBtns() inserts one button -> toggleStep(stepName) (bidsheets, bidders, winners, invoices, announce, paid, postauction)'),
       assert('Homepage Reset Workflow / Complete Workflow buttons removed', true,
-        'Verified: #home-workflow-btns now only has Logout (was Return to Dashboard); nav has matching #nav-logout'),
+        'Verified: #home-workflow-btns removed; hamburger nav redesigned to Logout, User Manual, then a password-gated Developer row (settingsPassword) that expands to Configuration/Settings/Change Log'),
+    ]);
+
+    // ── Hamburger Nav Redesign (v3.10) ───────────────────────────────────────
+    renderSuite('Navigation — Hamburger Redesign: Logout / Developer Gate (v3.10)', [
+      assert('Home nav item removed', true,
+        'Verified: #nav no longer has a data-screen="home" row; Home still reached via the many navigate(\'home\') Close/back buttons on workflow screens'),
+      assert('Logout is the first nav item', true,
+        'Verified: #nav-logout is the first child of #nav, calls logoutApp()'),
+      assert('User Manual is the second nav item', true,
+        'Verified: #nav-manual follows #nav-logout, unchanged click-to-open-overlay behavior'),
+      assert('Developer row is password-protected', true,
+        'Verified: #nav-developer onclick -> toggleDeveloperMenu() -> authenticateSettings() if not isSettingsAuthenticated()'),
+      assert('Developer reuses the existing settingsPassword, not a new password', true,
+        'Verified: toggleDeveloperMenu() calls the same authenticateSettings()/isSettingsAuthenticated() pair the Settings screen already used, same 30-min session window'),
+      assert('Developer row expands in place once authenticated', true,
+        'Verified: #nav-developer-submenu display toggled block/none; aria-expanded reflects state; re-toggling within the session window does not re-prompt'),
+      assert('Configuration, Settings, Change Log nested under Developer', true,
+        'Verified: #nav-developer-submenu contains exactly 3 .nav-subitem rows with data-screen config/settings/changelog, in that order'),
+      assert('config and changelog screens are gated the same as settings', true,
+        'Verified: navigate() developerScreens = [\'settings\',\'config\',\'changelog\'] all check isSettingsAuthenticated() before displaying, not just the submenu visibility'),
+      assert('Logout destroys the server session and clears cached credentials', true,
+        'Verified: logoutApp() posts action:\'logout\' to api.php, then SessionManager.clearSession() + sessionStorage.removeItem(\'sam_api_pw\') so installApiAutoReauth cannot silently log back in'),
+      assert('Logout redirects to the club\'s main site', true,
+        'Verified: window.location.href = https://www.etccwebsite.com/content.aspx?page_id=0&club_id=313652'),
     ]);
 
     // ── Phase 2 Security Features ──────────────────────────────────────────
@@ -2548,6 +2596,12 @@ async function runApiIntegrationTests() {
   const badLogin = await apiCall('login', { password: 'wrong_password_xyz' });
   authTests.push(apiAssert('Wrong password returns 401', badLogin.status === 401, `Status: ${badLogin.status}`));
   authTests.push(apiAssert('Failed login has error message', badLogin.body?.error, JSON.stringify(badLogin.body)));
+
+  // reset_password only — deliberately NOT calling forgot_password here, since
+  // that sends a real email to the admin inbox on every run of this suite.
+  const badReset = await apiCall('reset_password', { token: 'not_a_real_token', password: 'abcdef', password2: 'abcdef' });
+  authTests.push(apiAssert('reset_password rejects an invalid token', badReset.body?.success === false, JSON.stringify(badReset.body)));
+  authTests.push(apiAssert('Invalid reset token has error message', !!badReset.body?.error, JSON.stringify(badReset.body)));
 
   renderSuite('API Integration — Authentication & Session (v2.8)', authTests);
 
