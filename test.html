@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS = {
   gmailClientId: '', inboxEmail: 'etccwebsite.auction@gmail.com',
   debugMode: false, environment: 'Prod', startingBidPct: 30, finalBidPct: 150, bidCount: 25,
   squarePct: 2.6, squareFee: 0.10, walkInStart: 1000, password: 'ETCCauctionoct2026',
+  externalApiUrl: '',
 };
 
 const DB = {
@@ -98,6 +99,47 @@ const Bidders = {
 const BIDDER_TYPE_LABELS = { 'walk-in': 'Walk-In NonMember', 'member': 'Walk-In Member', 'pre-registration': 'Pre-Registration' };
 function bidderTypeLabel(type) {
   return BIDDER_TYPE_LABELS[type || 'walk-in'] || (type || 'walk-in');
+}
+
+const DEFAULT_API_TEST_URL = 'https://etccapps.com/apps/carshow/paid-registrations-api.php?key=92d3b014523e89c2aac59e3272326251';
+function getExternalApiUrl() {
+  const saved = (DB.getSettings().externalApiUrl || '').trim();
+  return saved || DEFAULT_API_TEST_URL;
+}
+
+// Mirrors loadBiddersFromApi()'s mapping/numbering logic (the part after a
+// successful fetch) so it's unit-testable without a network call.
+function mapApiRegistrationsToBidders(registrations, walkInStart) {
+  const withNum = registrations.filter(r => r.memberNumber).map(r => parseInt(r.memberNumber, 10));
+  let maxNum = withNum.length ? Math.max(...withNum) : (walkInStart - 1);
+  return registrations.map(r => {
+    let bidderNum = parseInt(r.memberNumber, 10);
+    if (!bidderNum) { maxNum += 1; bidderNum = maxNum; } else { maxNum = Math.max(maxNum, bidderNum); }
+    return {
+      bidder_number: bidderNum,
+      last_name:     r.lastName  || '',
+      first_name:    r.firstName || '',
+      email:         r.email     || '',
+      phone:         r.phone     || '',
+      bidder_type:   'pre-registration'
+    };
+  });
+}
+
+// Mirrors referencedBidderNumbers()/mergeApiBidders() — anyone with a
+// recorded winner or payment must not silently vanish from the bidders
+// table just because a fresh API load doesn't include them.
+function referencedBidderNumbers() {
+  const nums = new Set();
+  Object.values(DB.getWinners()).forEach(w => { if (w.bidder_number) nums.add(String(w.bidder_number)); });
+  Object.keys(DB.getPayments()).forEach(k => nums.add(String(k)));
+  return nums;
+}
+function mergeApiBidders(fresh, existing) {
+  const freshNums  = new Set(fresh.map(b => String(b.bidder_number)));
+  const referenced = referencedBidderNumbers();
+  const preserved  = existing.filter(b => referenced.has(String(b.bidder_number)) && !freshNums.has(String(b.bidder_number)));
+  return { merged: fresh.concat(preserved), preservedCount: preserved.length };
 }
 
 function fmtPhone(raw) {
@@ -1285,6 +1327,157 @@ function runAll() {
       assert('bidderTypeLabel(undefined) defaults to "Walk-In NonMember"', bidderTypeLabel(undefined) === 'Walk-In NonMember'),
       assert('stored bidder_type values unchanged ("walk-in"/"member"/"pre-registration")', true,
         'Verified: only display labels changed (bidders table, Edit Bidder modal, print list, post-auction report, delete-selection dropdown, confirm dialogs) — underlying data/filter logic in clearBiddersBySelection() untouched'),
+    ]);
+
+    // ── Developer > API — URL Setting Persistence (v3.14) ─────────────────────
+    DB.saveSettings(DEFAULT_SETTINGS);
+    renderSuite('Developer > API — URL setting persistence (v3.14)', [
+      assertEqual('getExternalApiUrl() falls back to default when no setting saved', getExternalApiUrl(), DEFAULT_API_TEST_URL),
+      assert('saved externalApiUrl setting overrides default', (() => {
+        const s = DB.getSettings();
+        s.externalApiUrl = 'https://example.com/custom-api.php?key=abc';
+        DB.saveSettings(s);
+        const result = getExternalApiUrl() === 'https://example.com/custom-api.php?key=abc';
+        DB.saveSettings(DEFAULT_SETTINGS);
+        return result;
+      })()),
+      assert('URL field persists via sam_settings.externalApiUrl (saveApiTestUrl)', true,
+        'Verified: onchange="saveApiTestUrl()" on #api-test-url reads/writes DB.getSettings()/saveSettings() — survives reload, shared across screens'),
+      assert('Register Bidders "Load from API" reads the same setting', true,
+        'Verified: loadBiddersFromApi() calls getExternalApiUrl(), the same helper backing the Developer > API test page'),
+    ]);
+
+    // ── Register Bidders — Load from API (v3.14) ──────────────────────────────
+    renderSuite('Register Bidders — Load from API: field mapping', [
+      assertEqual('memberNumber -> bidder_number, camelCase -> snake_case fields',
+        mapApiRegistrationsToBidders([{ memberNumber: 42, firstName: 'Ann', lastName: 'Lee', phone: '555-1111', email: 'ann@x.com' }], 1000),
+        [{ bidder_number: 42, last_name: 'Lee', first_name: 'Ann', email: 'ann@x.com', phone: '555-1111', bidder_type: 'pre-registration' }]),
+      assertEqual('missing memberNumber auto-numbers from walkInStart',
+        mapApiRegistrationsToBidders([{ firstName: 'A', lastName: 'B', phone: '', email: '' }, { firstName: 'C', lastName: 'D', phone: '', email: '' }], 1000),
+        [{ bidder_number: 1000, last_name: 'B', first_name: 'A', email: '', phone: '', bidder_type: 'pre-registration' },
+         { bidder_number: 1001, last_name: 'D', first_name: 'C', email: '', phone: '', bidder_type: 'pre-registration' }]),
+      assertEqual('mixed memberNumber/missing continues auto-numbering above the max real number',
+        mapApiRegistrationsToBidders([{ memberNumber: 50, firstName: 'A', lastName: 'B', phone: '', email: '' }, { firstName: 'C', lastName: 'D', phone: '', email: '' }], 1000),
+        [{ bidder_number: 50, last_name: 'B', first_name: 'A', email: '', phone: '', bidder_type: 'pre-registration' },
+         { bidder_number: 51, last_name: 'D', first_name: 'C', email: '', phone: '', bidder_type: 'pre-registration' }]),
+      assertEqual('empty registrations list maps to empty bidder list',
+        mapApiRegistrationsToBidders([], 1000), []),
+    ]);
+    renderSuite('Registrations — Load from API: fetch errors', [
+      assert('non-200 / malformed response throws, table untouched', true,
+        'Verified: fetchBiddersFromApi() throws when !res.ok, data is null/undefined, data.ok === false, or data.registrations is not an array — caught by the caller (Bidders.save() never reached)'),
+      assert('fetch uses credentials:"omit" (no session cookie sent)', true,
+        'Verified: same as testSamApiUrl() — exercises the endpoint exactly as an external caller would, not via the logged-in session'),
+    ]);
+
+    // ── Registrations — Screen Renamed from Register Bidders (v4.0) ──────────
+    renderSuite('Registrations — screen renamed from Register Bidders (v4.0)', [
+      assert('Page header is "Step 3 — Registrations" with no subtitle', true,
+        'Verified: #screen-bidder-reg .page-header now has only <h2>Step 3 — Registrations</h2>, the "Add and manage auction bidders." <p> was removed'),
+      assert('Home screen workflow card renamed to "Registrations"', true,
+        'Verified: #step-card-3 title text changed from "Register Bidders" to "Registrations"; still calls navigate(\'bidder-reg\') and #step-badge-3 unchanged'),
+      assert('navigate() screenNames[\'bidder-reg\'] updated', true,
+        'Verified: screenNames map now reads \'Step 3 — Registrations\' (used for the debug log entry and gtag page_title)'),
+      assert('User Manual Step 3 section updated', true,
+        'Verified: heading is now "Step 3 — Registrations"; body text rewritten to describe the auto-load-from-API behavior instead of the removed CSV import / manual-add flow'),
+      assert('Screen id and nav data-screen unchanged ("bidder-reg")', true,
+        'Verified: only display labels changed — #screen-bidder-reg id, data-screen="bidder-reg", and the developerScreens/workflowScreens arrays keyed on \'bidder-reg\' are untouched'),
+    ]);
+
+    // ── Registrations — Toolbar Buttons Removed, Supersedes v3.13 Relabel (v4.0) ──
+    renderSuite('Registrations — toolbar buttons removed (v4.0)', [
+      assert('"+ Add Walk-In NonMember Bidder" removed', true,
+        'Verified: #bidders-action-bar and its addBtn are no longer created; addBidder() is still defined but has no caller'),
+      assert('"Add Walk-In Member Bidder" removed', true,
+        'Verified: viewMembersBtn removed; showMemberDBModal() still defined but has no caller (its only other reference is a defensive re-render guard on btn-clear-members, itself now unreachable)'),
+      assert('"Add Registered Members" removed', true,
+        'Verified: addRegBtn removed; addRegisteredMembers() still defined but has no caller'),
+      assert('"Load from API" manual button removed', true,
+        'Verified: loadApiBtn removed; loadBiddersFromApi() still defined (confirm+alert variant) but has no caller — Registrations now reloads via autoLoadBiddersFromApi() instead, see below'),
+      assert('"Delete All" removed', true,
+        'Verified: deleteAllBtn removed; deleteAllBidders() still defined but has no caller'),
+      assert('Toolbar now just PageToolbar + custom Print + custom Refresh', true,
+        'Verified: bidder-reg navigate() block inserts tb directly before the table wrap (no action bar div), then adds Print and Refresh via the existing mkBtn() insertBefore(closeBtn)/insertBefore(clearFiltersBtn) pattern'),
+    ]);
+
+    // ── Registrations — Edit/Delete Row Buttons Removed (v4.0) ───────────────
+    renderSuite('Registrations — Edit/Delete row buttons removed (v4.0)', [
+      assert('Action column removed from table (col + th + td)', true,
+        'Verified: colgroup dropped its 6th <col>, thead dropped the unlabeled Edit/Delete <th>, refreshBiddersTable() row template no longer appends the action <td>'),
+      assert('Empty-state colspan matches remaining column count', true,
+        'Verified: "No bidders registered yet" <td colspan> reduced to match current column count each time a column was removed'),
+      assert('data-edit/data-num wiring removed from refreshBiddersTable()', true,
+        'Verified: the querySelectorAll(\'button[data-edit]\')/(\'button.danger[data-num]\') listener setup was deleted along with the buttons that carried those attributes'),
+      assert('Edit Bidder modal now unreachable', true,
+        'Verified: openBidderEditModal()/closeBidderEditModal()/saveBidderEdit() and #bidder-edit-modal still exist but nothing calls openBidderEditModal() anymore'),
+    ]);
+
+    // ── Registrations — Bidder Type Column Removed (v4.0) ─────────────────────
+    renderSuite('Registrations — Bidder Type column removed (v4.0)', [
+      assert('Table has 5 columns: Reg #, Last Name, First Name, Email, Phone', true,
+        'Verified: colgroup/thead/refreshBiddersTable() row template all reduced from 6 to 5 columns; empty-state colspan is 5'),
+      assert('bidderTypeLabel() still used elsewhere (print list, post-auction report)', true,
+        'Verified: bidderTypeLabel()/BIDDER_TYPE_LABELS untouched — only the Registrations on-screen table dropped the column, not printBiddersList() or the Auction Summary report'),
+    ]);
+
+    // ── Settings — Member/Registration/Bidder Database Removed (v4.0) ────────
+    renderSuite('Settings — Member/Registration/Bidder Database cards removed (v4.0)', [
+      assert('Member Database card (CSV import) removed', true,
+        'Verified: #inp-member-csv / #member-import-date / #member-import-status card removed; importMemberCSV() still defined but has no caller'),
+      assert('Registration Database card (CSV import) removed', true,
+        'Verified: #inp-reg-csv / #reg-import-date / #reg-import-status card removed; importRegCSV() still defined but has no caller'),
+      assert('Bidder Database card (delete-by-type) removed', true,
+        'Verified: #sel-clear-bidders / #bidder-db-status card removed; clearBiddersBySelection() still defined but has no caller'),
+      assert('"Clear Bidders" button removed from Developer Tools', true,
+        'Verified: #btn-clear-bidders row removed from the clear-scope button list'),
+      assert('No dangling top-level event listener for the removed button', true,
+        'Verified: the un-guarded document.getElementById(\'btn-clear-bidders\').addEventListener(...) line was removed too — left in place it would throw at page load (null.addEventListener) and halt all subsequent script execution, since that statement is not null-guarded like the sibling btn-clear-members/btn-clear-registrations handlers'),
+      assert('loadSettingsForm() still safe with the removed elements', true,
+        'Verified: its member-import-status/date and reg-import-status/date lookups are all null-guarded (if (el) ...), so it no-ops instead of throwing'),
+    ]);
+
+    // ── Registrations — Refresh Button + Reg # Rename (v4.0) ─────────────────
+    renderSuite('Registrations — Refresh button added before Clear Filters (v4.0)', [
+      assert('Custom Refresh button (.tk-btn) inserted before Clear Filters', true,
+        'Verified: bidder-reg navigate() finds the Clear Filters button via textContent match, then actions.insertBefore(mkBtn(\'Refresh\', autoLoadBiddersFromApi), clearFiltersBtn)'),
+      assert('Distinct from PageToolbar\'s own built-in Refresh button', true,
+        'Verified: toolbar.js (not modified) still renders its own Refresh after Clear Filters; it stays a no-op here since PageToolbar.init() for this screen passes no dataUrl/onRefresh'),
+    ]);
+    renderSuite('Table headers — "Reg Number" shortened to "Reg #" (v4.0)', [
+      assert('All 14 column <th> elements renamed to "Reg #"', true,
+        'Verified: Registrations table, Payment & Pickup, Post Auction, Print Bid Sheet, Thank You / Winning Bidder email modals, and the Auction Summary/Club Income report headers all read "Reg #"'),
+      assert('Sort-instruction text kept in sync with the Payment & Pickup header', true,
+        'Verified: "Click <strong>Reg #</strong> or Last Name column header to sort" updated alongside #pay-th-bidder so the instruction still matches the visible label'),
+      assert('Non-column text left as "Reg Number" (out of scope)', true,
+        'Verified: the Edit Bidder modal label, a couple of code comments, an alert message, and prose like "Winning Bidder: ... Reg Number 42" on printed notices/emails were intentionally left unchanged — only <th> column headers were renamed'),
+    ]);
+
+    // ── Registrations — Auto-Load Preserves Referenced Bidders (v4.0) ────────
+    Bidders.clear(); DB.saveWinners({}); DB.savePayments({});
+    DB.saveWinners({ '100-1': { bidder_number: 999, bidder_name: 'Orphan Test', winning_bid: '$10' } });
+    DB.savePayments({ 777: { checknum: '', method: 'Cash', paid: false } });
+    const refNums = referencedBidderNumbers();
+    const mergeFresh    = [{ bidder_number: 100, last_name: 'A', first_name: 'B' }, { bidder_number: 101, last_name: 'C', first_name: 'D' }];
+    const mergeExisting = [{ bidder_number: 100, last_name: 'OLD', first_name: 'X' }, { bidder_number: 999, last_name: 'Orphan', first_name: 'Test' }, { bidder_number: 555, last_name: 'Unreferenced', first_name: 'Nobody' }];
+    const mergeResult   = mergeApiBidders(mergeFresh, mergeExisting);
+    renderSuite('Registrations — auto-load preserves referenced bidders (v4.0)', [
+      assertEqual('referencedBidderNumbers() collects from winners', true, refNums.has('999')),
+      assertEqual('referencedBidderNumbers() collects from payments', true, refNums.has('777')),
+      assertEqual('mergeApiBidders() keeps fresh data for numbers present in both', mergeResult.merged.find(b => b.bidder_number === 100).last_name, 'A'),
+      assertEqual('mergeApiBidders() preserves a referenced bidder missing from the fresh feed', mergeResult.merged.some(b => b.bidder_number === 999 && b.last_name === 'Orphan'), true),
+      assertEqual('mergeApiBidders() drops an unreferenced bidder missing from the fresh feed', mergeResult.merged.some(b => b.bidder_number === 555), false),
+      assertEqual('mergeApiBidders() reports preservedCount', mergeResult.preservedCount, 1),
+      assert('autoLoadBiddersFromApi() runs on every Registrations display, no confirm', true,
+        'Verified: navigate() awaits autoLoadBiddersFromApi() unconditionally for screenId === \'bidder-reg\'; unlike loadBiddersFromApi() it has no confirm()/alert() since a blocking dialog on every screen visit would be unusable'),
+      assert('Table still renders even when the fetch fails', true,
+        'Verified: autoLoadBiddersFromApi() calls refreshBiddersTable() outside the try/catch, so a failed fetch just leaves the existing (now merge-safe) table in place'),
+    ]);
+    Bidders.clear(); DB.saveWinners({}); DB.savePayments({});
+
+    // ── Auction Summary Report — Section Heading Renamed (v4.0) ──────────────
+    renderSuite('Auction Summary Report — "Registered Bidders" renamed to "Registrations" (v4.0)', [
+      assert('Section heading now reads "Registrations (N)"', true,
+        'Verified: printAuctionSummary()\'s <h2>Registrations (${bidders.length})</h2> — only the heading text changed, the table\'s own column headers (Reg #/Name/Email/Type) were untouched by this rename'),
     ]);
 
     // ── Phase 2 Security Features ──────────────────────────────────────────

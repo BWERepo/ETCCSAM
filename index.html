@@ -922,6 +922,9 @@
       <div class="nav-item nav-subitem" data-screen="changelog">
         📋 Change Log
       </div>
+      <div class="nav-item nav-subitem" data-screen="api">
+        🔌 API
+      </div>
     </div>
   </nav>
 
@@ -969,7 +972,7 @@
               </div>
               <div id="step-card-3" onclick="navigate('bidder-reg')"      style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
                 <span id="step-badge-3" class="step-badge">3</span>
-                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Register Bidders</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Add bidders and assign bidder numbers</div></div>
+                <div><div style="font-size:13px;font-weight:600;color:var(--text);">Registrations</div><div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">Add bidders and assign bidder numbers</div></div>
               </div>
               <div id="step-card-4" onclick="navigate('auction-close')"   style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='var(--bg-section)'" onmouseout="this.style.background=''">
                 <span id="step-badge-4" class="step-badge">4</span>
@@ -1214,9 +1217,11 @@
       </div>
     </section>
 
-    <!-- ══ Step 3: Register Bidders ══ -->
+    <!-- ══ Step 3: Registrations ══ -->
     <section class="screen" id="screen-bidder-reg">
-      <div class="page-header"><h2>Step 3 — Register Bidders</h2><p>Add and manage auction bidders.</p></div>
+      <div class="page-header"><h2>Step 3 — Registrations</h2></div>
+
+      <div style="max-width:900px;margin:0 auto;">
 
       <!-- Metric summary -->
       <div class="metric-row">
@@ -1265,7 +1270,7 @@
           <h3 style="margin:0 0 16px;font-size:16px;">Edit Bidder</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
             <div>
-              <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Bidder #</label>
+              <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Reg Number</label>
               <input id="edit-bidder-num" type="text" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);">
             </div>
             <div>
@@ -1303,15 +1308,14 @@
       <div class="card" id="bidders-card">
         <div id="bidders-toolbar-wrap"></div>
         <div style="overflow-x:auto;max-height:calc(100vh - 388px);overflow-y:auto;">
-          <table class="tablekit" id="bidders-table" style="table-layout:fixed;width:100%;min-width:1150px;">
+          <table class="tablekit" id="bidders-table" style="table-layout:fixed;width:100%;min-width:860px;">
             <colgroup>
-              <col style="width:100px;"><col style="width:130px;"><col style="width:180px;"><col style="width:180px;">
-              <col style="width:240px;"><col style="width:160px;"><col style="width:160px;">
+              <col style="width:100px;"><col style="width:180px;"><col style="width:180px;">
+              <col style="width:240px;"><col style="width:160px;">
             </colgroup>
             <thead>
               <tr>
-                <th>Bidder #</th>
-                <th>Bidder Type</th>
+                <th>Reg #</th>
                 <th>Last Name</th>
                 <th>First Name</th>
                 <th>Email</th>
@@ -1323,6 +1327,7 @@
         </div>
       </div>
 
+      </div>
     </section>
 
     <!-- ══ Step 4: Record Winning Bidders ══ -->
@@ -1375,7 +1380,7 @@
             </colgroup>
             <thead>
               <tr>
-                <th>Bidder #</th>
+                <th>Reg #</th>
                 <th>Bidder Name</th>
                 <th>Items Won</th>
               </tr>
@@ -1395,7 +1400,7 @@
         <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
           <table class="tablekit" id="payment-table" data-tk-sort="false" style="width:100%;min-width:1200px;border-collapse:collapse;font-size:13px;table-layout:fixed;">
             <colgroup>
-              <col style="width:55px;">   <!-- Bidder # -->
+              <col style="width:55px;">   <!-- Reg Number -->
               <col style="width:95px;">   <!-- Last Name -->
               <col style="width:95px;">   <!-- First Name -->
               <col style="width:50px;">   <!-- # Items -->
@@ -1412,10 +1417,10 @@
             </colgroup>
             <thead>
               <tr style="background:#f0f4ff;position:sticky;top:0;z-index:2;">
-                <td colspan="14" style="padding:3px 8px;font-size:11px;color:var(--text-secondary);font-style:italic;">Click <strong>Bidder #</strong> or <strong>Last Name</strong> column header to sort</td>
+                <td colspan="14" style="padding:3px 8px;font-size:11px;color:var(--text-secondary);font-style:italic;">Click <strong>Reg #</strong> or <strong>Last Name</strong> column header to sort</td>
               </tr>
               <tr style="background:#dbeafe;position:sticky;top:24px;z-index:1;">
-                <th id="pay-th-bidder" style="padding:6px 8px;text-align:left;font-weight:700;width:55px;cursor:pointer;user-select:none;" onclick="paySort('bidder_number')">Bidder # <span id="pay-sort-bidder"></span></th>
+                <th id="pay-th-bidder" style="padding:6px 8px;text-align:left;font-weight:700;width:55px;cursor:pointer;user-select:none;" onclick="paySort('bidder_number')">Reg # <span id="pay-sort-bidder"></span></th>
                 <th id="pay-th-last" style="padding:6px 8px;text-align:left;font-weight:700;width:90px;cursor:pointer;user-select:none;" onclick="paySort('last_name')">Last Name <span id="pay-sort-last"></span></th>
                 <th style="padding:6px 8px;text-align:left;font-weight:700;width:80px;">First Name</th>
                 <th style="padding:6px 8px;text-align:center;font-weight:700;width:42px;"># Items</th>
@@ -1455,7 +1460,7 @@
             <thead>
               <tr>
                 <th style="text-align:center;"></th>
-                <th>Bidder #</th>
+                <th>Reg #</th>
                 <th>Last Name</th>
                 <th>First Name</th>
                 <th style="text-align:center;"># Items</th>
@@ -1821,62 +1826,6 @@
         </div>
       </div>
 
-      <!-- Member Database -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">Member Database</div>
-        <div style="padding:16px;">
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
-            Import club members from a <strong>Club Express Additional Member Data</strong> CSV export. Expected columns: <code>member_number</code>, <code>last_name</code>, <code>first_name</code>, <code>primary_email</code>, <code>cell_phone</code>.
-          </p>
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <input type="file" id="inp-member-csv" accept=".csv" style="font-size:13px;" />
-            <button class="btn primary" onclick="importMemberCSV()">Import CSV</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-            <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">Last Imported:</label>
-            <input type="text" id="member-import-date" readonly style="font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-section);color:var(--text-secondary);width:220px;">
-          </div>
-          <div id="member-import-status" style="margin-top:6px;font-size:12px;color:var(--text-secondary);"></div>
-        </div>
-      </div>
-
-      <!-- Registration Database -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">Registration Database</div>
-        <div style="padding:16px;">
-          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
-            Import pre-registration bidders from a <strong>Club Express Registrant Data</strong> CSV export. Expected columns: <code>member_number</code>, <code>last_name</code>, <code>first_name</code>, <code>email</code>, <code>cell_phone</code>.
-          </p>
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <input type="file" id="inp-reg-csv" accept=".csv" style="font-size:13px;" />
-            <button class="btn primary" onclick="importRegCSV()">Import CSV</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-            <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">Last Imported:</label>
-            <input type="text" id="reg-import-date" readonly style="font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-section);color:var(--text-secondary);width:220px;">
-          </div>
-          <div id="reg-import-status" style="margin-top:6px;font-size:12px;color:var(--text-secondary);"></div>
-        </div>
-      </div>
-
-      <!-- Bidder Database -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">Bidder Database</div>
-        <div style="padding:16px;">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">Select bidders to delete:</label>
-            <select id="sel-clear-bidders" style="font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
-              <option value="all">Entire Table</option>
-              <option value="walkins">Walk-In NonMember</option>
-              <option value="members">Walk-In Member</option>
-              <option value="preregistration">Pre-registration</option>
-            </select>
-            <button class="btn danger" onclick="clearBiddersBySelection()">Delete Bidders</button>
-          </div>
-          <div id="bidder-db-status" style="margin-top:8px;font-size:12px;color:var(--text-secondary);"></div>
-        </div>
-      </div>
-
       <!-- Data Backup -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-header">Data Backup</div>
@@ -1971,10 +1920,6 @@
             <span style="font-size:12px;color:var(--text-secondary);">Clear all loaded auction items from the database.</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px;">
-            <button class="btn danger" id="btn-clear-bidders">Clear Bidders</button>
-            <span style="font-size:12px;color:var(--text-secondary);">Clear all registered bidders from the database.</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px;">
             <button class="btn danger" id="btn-clear-winners">Clear Winners</button>
             <span style="font-size:12px;color:var(--text-secondary);">Clear all recorded winning bidders for this auction.</span>
           </div>
@@ -2034,7 +1979,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 10, 2026 11:05 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 11, 2026 6:18 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2097,6 +2042,33 @@
           </thead>
           <tbody id="changelog-tbody"></tbody>
         </table>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- ══ Developer: API ══ -->
+    <section class="screen" id="screen-api">
+      <div style="max-width:800px;margin:0 auto;">
+      <div class="page-header">
+        <h2>API</h2>
+        <p>Test any API URL — defaults to the Car Show app's paid-registrations feed, but the field is editable. This URL is also what Register Bidders' "Load from API" button pulls from.</p>
+      </div>
+      <div class="card" style="margin-bottom:16px;padding:16px;">
+        <h4 style="margin:0 0 8px;font-size:13px;">URL</h4>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="api-test-url" onchange="saveApiTestUrl()" style="flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:monospace;">
+          <button class="btn" onclick="copyApiTestUrl()">Copy URL</button>
+        </div>
+        <div id="api-url-saved-msg" style="display:none;font-size:11px;color:var(--success);margin-top:6px;">Saved.</div>
+      </div>
+      <div class="card" style="padding:16px;">
+        <h4 style="margin:0 0 8px;font-size:13px;">Test</h4>
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px;">Fires a GET request against the URL above — no login session involved — and shows the raw response.</p>
+        <button class="btn primary" id="api-test-btn" onclick="testSamApiUrl()">Test This URL</button>
+        <div id="api-test-result" style="margin-top:12px;display:none;">
+          <div id="api-test-status" style="font-size:12px;font-weight:600;margin-bottom:6px;"></div>
+          <pre id="api-test-body" style="font-size:12px;background:var(--bg-section);padding:10px;border-radius:6px;overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word;"></pre>
         </div>
       </div>
       </div>
@@ -2195,7 +2167,7 @@
             <th style="width:50px;text-align:center;padding:10px;border:1px solid var(--border);">
               <input type="checkbox" id="thankyou-select-all" onchange="toggleAllThankYouBidders()" style="cursor:pointer;width:16px;height:16px;" title="Select All" />
             </th>
-            <th style="padding:10px;text-align:left;border:1px solid var(--border);">Bidder #</th>
+            <th style="padding:10px;text-align:left;border:1px solid var(--border);">Reg #</th>
             <th style="padding:10px;text-align:left;border:1px solid var(--border);">Name</th>
             <th style="padding:10px;text-align:left;border:1px solid var(--border);">Email</th>
             <th style="padding:10px;text-align:center;border:1px solid var(--border);width:80px;">Winner</th>
@@ -2258,7 +2230,7 @@
             <th style="width:50px;text-align:center;padding:10px;border:1px solid var(--border);">
               <input type="checkbox" id="winbidder-pickup-select-all" onchange="toggleAllWinningBidderPickup()" style="cursor:pointer;width:16px;height:16px;" title="Select All" />
             </th>
-            <th style="padding:10px;text-align:left;border:1px solid var(--border);">Bidder #</th>
+            <th style="padding:10px;text-align:left;border:1px solid var(--border);">Reg #</th>
             <th style="padding:10px;text-align:left;border:1px solid var(--border);">Name</th>
             <th style="padding:10px;text-align:left;border:1px solid var(--border);">Email</th>
           </tr>
@@ -2384,8 +2356,8 @@
       <h3>Step 2 — Create Bid Sheets</h3>
       <p>Generates a printable bid sheet for each item. Each sheet shows the item number, description, donor, value, starting bid, and a numbered table of bid rows with increment amounts. Starting bid percentage and bid count are configurable in Settings. Select individual items or use the header Select-All checkbox, then click Print.</p>
 
-      <h3>Step 3 — Register Bidders</h3>
-      <p>Add auction attendees as bidders and assign bidder numbers. Import members from a Club Express export file or a registration CSV. Walk-in bidder numbers start at the configured Walk-in Start value (default 1000). Each bidder record stores name, email, and phone.</p>
+      <h3>Step 3 — Registrations</h3>
+      <p>Shows registered bidders. The table auto-populates from the configured API URL (see Developer &gt; API) every time this screen is displayed, replacing whatever was there before. Each record stores a Reg Number, name, email, and phone.</p>
 
       <h3>Step 4 — Record Winning Bidders</h3>
       <p>After the auction closes, enter the winning bidder number and winning bid amount for each item. Type the bidder number and bid amount into each row — entries are saved immediately as you complete each field. Only rows with both a bidder number and a bid amount are recorded as winners.</p>
@@ -2559,6 +2531,7 @@ const DEFAULT_SETTINGS = {
   squarePct:       2.6,
   squareFee:       0.10,
   walkInStart:        1000,
+  externalApiUrl:     '', // Developer > API screen's URL field — also used by Register Bidders' "Load from API"
   bidRowHeight:       0.28, // Bid sheet row height in inches (Step 2 — Create Bid Sheets)
   memberImportDate:   '',
   regImportDate:      '',
@@ -4344,7 +4317,7 @@ function printBiddingSheets() {
       </table>
       <div class="bid-wrap">
         <table class="bid-table">
-          <thead><tr><th>Print Bidder Initials</th><th>Bidder #</th><th>Bid Amount</th></tr></thead>
+          <thead><tr><th>Print Bidder Initials</th><th>Reg #</th><th>Bid Amount</th></tr></thead>
           <tbody>${bidRows}</tbody>
         </table>
       </div>
@@ -4394,7 +4367,7 @@ function printBiddingSheets() {
      that's the only background these bid sheets need to force-print. */
   .bid-table th { background: #d2d2d7; font-weight: 800; padding: 1px 4px; border: 1px solid #000; text-align: left; font-size: 16.8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .bid-table td { padding: 1px 4px; border: 1px solid #000; height: var(--row-h, ${rowHeight}in); vertical-align: middle; }
-  /* Bidder Initials and Bidder # share equal width; Bid Amount matches the
+  /* Bidder Initials and Reg Number share equal width; Bid Amount matches the
      Value box width above it via --bid-amt-w (set per-sheet in JS). */
   .bid-table th:nth-child(1), .bid-table td:nth-child(1),
   .bid-table th:nth-child(2), .bid-table td:nth-child(2) { width: var(--bid-other-w, 45%); }
@@ -4614,47 +4587,27 @@ function refreshBiddersTable() {
   tbody.innerHTML = '';
 
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary);">No bidders registered yet. Use the toolbar to add bidders.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">No bidders registered yet. Use the toolbar to add bidders.</td></tr>';
     return;
   }
 
   const tdStyle = 'font-size:12px;padding:2px 8px;';
-  const typeOpts = ['walk-in', 'member', 'pre-registration'];
-  const selStyle = 'font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);width:100%;';
 
   list.forEach(b => {
     const tr = document.createElement('tr');
     tr.dataset.num = b.bidder_number;
-    const optHtml = typeOpts.map(t => `<option value="${t}"${(b.bidder_type||'walk-in')===t?' selected':''}>${t}</option>`).join('');
     tr.innerHTML = `
       <td style="${tdStyle}font-weight:600;">${escHtml(String(b.bidder_number))}</td>
-      <td style="${tdStyle}">${escHtml(bidderTypeLabel(b.bidder_type))}</td>
       <td style="${tdStyle}">${escHtml(b.last_name  || '')}</td>
       <td style="${tdStyle}">${escHtml(b.first_name || '')}</td>
       <td style="${tdStyle}">${escHtml(b.email      || '')}</td>
       <td style="${tdStyle}">${escHtml(fmtPhone(b.phone))}</td>
-      <td style="text-align:center;white-space:nowrap;padding:2px 8px;">
-        <button class="btn workflow-edit-btn" data-edit="${b.bidder_number}" style="font-size:11px;padding:2px 8px;margin-right:4px;">Edit</button>
-        <button class="btn danger workflow-edit-btn" data-num="${b.bidder_number}" style="font-size:11px;padding:2px 8px;">Delete</button>
-      </td>
     `;
     tbody.appendChild(tr);
   });
 
-  tbody.querySelectorAll('button[data-edit]').forEach(btn => {
-    btn.addEventListener('click', () => openBidderEditModal(parseInt(btn.dataset.edit, 10)));
-  });
-
   const numInput = document.getElementById('new-bidder-num');
   if (numInput) numInput.value = Bidders.nextNumber();
-
-  tbody.querySelectorAll('button.danger[data-num]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!confirm('Remove this bidder?')) return;
-      Bidders.remove(parseInt(btn.dataset.num, 10));
-      refreshBiddersTable();
-    });
-  });
 
   updateBidderCountMetric();
 }
@@ -4851,7 +4804,7 @@ function saveBidderEdit() {
   if (missing.length) { alert(`Required: ${missing.join(', ')}`); return; }
   if (newNum !== originalNum) {
     const exists = bidders.some(b => b.bidder_number === newNum);
-    if (exists) { alert('Bidder # already exists'); return; }
+    if (exists) { alert('Reg Number already exists'); return; }
     const winners = DB.getWinners();
     const payments = DB.getPayments();
     Object.entries(winners).forEach(([itemKey, w]) => {
@@ -4977,6 +4930,96 @@ function addRegisteredMembers() {
   }
 }
 
+// Fetches and maps the external API's "paid registrations" feed into SAM
+// bidder records. Pure fetch+map — no confirm/alert/table refresh — so both
+// the silent auto-load (on screen display) and the manual button can share
+// it. Throws on any failure (non-200, malformed body, ok:false).
+async function fetchBiddersFromApi() {
+  const url = getExternalApiUrl();
+  const res = await fetch(url, { method: 'GET', credentials: 'omit' });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data || data.ok === false || !Array.isArray(data.registrations)) {
+    throw new Error((data && data.error) || `HTTP ${res.status}`);
+  }
+  const walkInStart = DB.getSettings().walkInStart ?? 1000;
+  const withNum = data.registrations.filter(r => r.memberNumber).map(r => parseInt(r.memberNumber, 10));
+  let maxNum = withNum.length ? Math.max(...withNum) : (walkInStart - 1);
+  return data.registrations.map(r => {
+    let bidderNum = parseInt(r.memberNumber, 10);
+    if (!bidderNum) { maxNum += 1; bidderNum = maxNum; } else { maxNum = Math.max(maxNum, bidderNum); }
+    return {
+      bidder_number: bidderNum,
+      last_name:     r.lastName  || '',
+      first_name:    r.firstName || '',
+      email:         r.email     || '',
+      phone:         r.phone     || '',
+      bidder_type:   'pre-registration'
+    };
+  });
+}
+
+// Bidder numbers that must never silently vanish from the table — anyone
+// with a recorded winner or payment. Dropping them breaks the name lookup
+// in reports like printClubIncomeReport() (falls back to "Reg Number N")
+// even though their winning bid / payment record is still on file.
+function referencedBidderNumbers() {
+  const nums = new Set();
+  Object.values(DB.getWinners()).forEach(w => { if (w.bidder_number) nums.add(String(w.bidder_number)); });
+  Object.keys(DB.getPayments()).forEach(k => nums.add(String(k)));
+  return nums;
+}
+
+// Merges a fresh API-fetched bidder list with the current table: the fresh
+// list is authoritative for any bidder_number it contains, but existing
+// bidders referenced by a winner/payment that are missing from the fresh
+// feed are carried forward instead of dropped.
+function mergeApiBidders(fresh, existing) {
+  const freshNums  = new Set(fresh.map(b => String(b.bidder_number)));
+  const referenced = referencedBidderNumbers();
+  const preserved  = existing.filter(b => referenced.has(String(b.bidder_number)) && !freshNums.has(String(b.bidder_number)));
+  return { merged: fresh.concat(preserved), preservedCount: preserved.length };
+}
+
+// Manual "Load from API" button — explicit user action, so it confirms and
+// reports success/failure. Not a hard replace: see mergeApiBidders().
+async function loadBiddersFromApi() {
+  const existing = Bidders.getAll();
+  if (!confirm(`Reload bidders in the table with data from:\n${getExternalApiUrl()}\n\nAnyone with a recorded winner or payment is kept even if missing from the feed.`)) return;
+  try {
+    const fresh = await fetchBiddersFromApi();
+    const { merged, preservedCount } = mergeApiBidders(fresh, existing);
+    Bidders.save(merged);
+    refreshBiddersTable();
+    debugLog(`Loaded ${fresh.length} bidder(s) from API${preservedCount ? `, preserved ${preservedCount} referenced bidder(s) missing from the feed` : ''}`);
+    alert(`Loaded ${fresh.length} bidder(s) from the API.${preservedCount ? ` Kept ${preservedCount} existing bidder(s) with recorded winners/payments.` : ''}`);
+  } catch (err) {
+    const errMsg = err.message || err;
+    debugLog(`✗ Error loading bidders from API: ${errMsg}`, 'ERROR');
+    console.error('loadBiddersFromApi error:', err);
+    alert('Error loading bidders from API: ' + errMsg);
+  }
+}
+
+// Runs automatically every time Registrations is displayed (see navigate()) —
+// silently reloads the table from the current API feed. No confirm/alert
+// (a blocking dialog on every screen visit would be unusable); failures are
+// logged only, and the table still renders whatever was already there.
+// Not a hard replace: see mergeApiBidders().
+async function autoLoadBiddersFromApi() {
+  try {
+    const fresh = await fetchBiddersFromApi();
+    const existing = Bidders.getAll();
+    const { merged, preservedCount } = mergeApiBidders(fresh, existing);
+    Bidders.save(merged);
+    debugLog(`Auto-loaded ${fresh.length} bidder(s) from API on screen display${preservedCount ? `, preserved ${preservedCount} referenced bidder(s) missing from the feed` : ''}`);
+  } catch (err) {
+    const errMsg = err.message || err;
+    debugLog(`✗ Error auto-loading bidders from API: ${errMsg}`, 'ERROR');
+    console.error('autoLoadBiddersFromApi error:', err);
+  }
+  refreshBiddersTable();
+}
+
 // ══════════════════════════════════════
 //  RENDER — Winners table
 // ══════════════════════════════════════
@@ -5043,7 +5086,7 @@ function printInvoice(bidderNum) {
     </div>
   </div>
   <div style="margin-bottom:20px;">
-    <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
+    <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
   </div>
   <table>
     <thead><tr><th style="width:100px;">Item #</th><th>Description</th><th style="width:120px;text-align:right;">Amount</th></tr></thead>
@@ -5099,7 +5142,7 @@ function printBiddersList() {
     </div>
   </div>
   <table>
-    <thead><tr><th>Bidder #</th><th>Type</th><th>Last Name</th><th>First Name</th><th>Email</th><th>Phone</th></tr></thead>
+    <thead><tr><th>Reg #</th><th>Type</th><th>Last Name</th><th>First Name</th><th>Email</th><th>Phone</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
@@ -5173,7 +5216,7 @@ function printPaymentTable() {
     </div>
   </div>
   <table>
-    <thead><tr><th>Bidder #</th><th>Last Name</th><th>First Name</th><th># Items</th><th>Winning Bid</th><th>Items</th><th>Cash/Check</th><th>CC Total</th><th>Paid</th><th>Method</th></tr></thead>
+    <thead><tr><th>Reg #</th><th>Last Name</th><th>First Name</th><th># Items</th><th>Winning Bid</th><th>Items</th><th>Cash/Check</th><th>CC Total</th><th>Paid</th><th>Method</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
@@ -5224,7 +5267,7 @@ function printAnnounceTable() {
     </div>
   </div>
   <table>
-    <thead><tr><th>Bidder #</th><th>Bidder Name</th><th style="text-align:center;">Items Won</th></tr></thead>
+    <thead><tr><th>Reg #</th><th>Bidder Name</th><th style="text-align:center;">Items Won</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
@@ -5271,7 +5314,7 @@ function printWinnersTable() {
     </div>
   </div>
   <table>
-    <thead><tr><th>Item #</th><th>Description</th><th>Value</th><th>Winning Bid</th><th>Bidder #</th><th>Bidder Name</th></tr></thead>
+    <thead><tr><th>Item #</th><th>Description</th><th>Value</th><th>Winning Bid</th><th>Reg #</th><th>Bidder Name</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   </body></html>`;
@@ -5370,7 +5413,7 @@ function printCheckedInvoices() {
           <div><h2 style="margin:0 0 2px;">Silent Auction Invoice</h2><div style="font-size:12px;color:#555;">${getClub().name}</div></div>
         </div>
       </div>
-      <div style="margin-bottom:10px;font-size:16px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
+      <div style="margin-bottom:10px;font-size:16px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
         <thead><tr><th style="background:#dbeafe;padding:6px 10px;width:90px;border:1px solid #000;">Item #</th><th style="background:#dbeafe;padding:6px 10px;border:1px solid #000;">Description</th><th style="background:#dbeafe;padding:6px 10px;width:100px;text-align:right;border:1px solid #000;">Amount</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -5497,7 +5540,7 @@ function printAllInvoices() {
         </div>
       </div>
       <div style="margin-bottom:20px;">
-        <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
+        <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
       </div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;">
         <thead><tr><th style="width:100px;background:#dbeafe;padding:8px 10px;text-align:left;border:1px solid #000;">Item #</th><th style="background:#dbeafe;padding:8px 10px;text-align:left;border:1px solid #000;">Description</th><th style="width:120px;background:#dbeafe;padding:8px 10px;text-align:right;border:1px solid #000;">Amount</th></tr></thead>
@@ -6605,7 +6648,7 @@ async function navigate(screenId) {
     'home': 'Home',
     'item-load': 'Step 1 — Load Item Emails',
     'bidding-sheets': 'Step 2 — Create Bid Sheets',
-    'bidder-reg': 'Step 3 — Register Bidders',
+    'bidder-reg': 'Step 3 — Registrations',
     'auction-close': 'Step 4 — Record Winning Bidders',
     'print-invoices': 'Step 4.5 — Print Invoices',
     'winner-announce': 'Step 5 — Announce Winners',
@@ -6613,7 +6656,8 @@ async function navigate(screenId) {
     'post-auction': 'Step 7 — Post Auction',
     'settings': 'Settings',
     'config': 'Configuration',
-    'changelog': 'Change Log'
+    'changelog': 'Change Log',
+    'api': 'API'
   };
 
   const screenName = screenNames[screenId] || screenId;
@@ -6666,7 +6710,7 @@ async function navigate(screenId) {
   if (workflowScreens.includes(screenId) && !DB.getCurrentAuctionId()) {
     screenId = 'home';
   }
-  const developerScreens = ['settings', 'config', 'changelog'];
+  const developerScreens = ['settings', 'config', 'changelog', 'api'];
   if (developerScreens.includes(screenId) && !isSettingsAuthenticated()) {
     if (!await authenticateSettings()) return;
   }
@@ -6711,6 +6755,7 @@ async function navigate(screenId) {
   if (screenId === 'changelog')      loadChangelog();
   if (screenId === 'settings')       loadSettingsForm();
   if (screenId === 'config')         loadSettingsForm();
+  if (screenId === 'api')            loadApiTestPage();
   if (screenId === 'bidding-sheets') {
     PageToolbar.init({ title: '', tableSelector: '#bs-items-table' });
     const tb   = document.getElementById('page-toolbar');
@@ -6799,38 +6844,11 @@ async function navigate(screenId) {
     const tb   = document.getElementById('page-toolbar');
     const card = document.getElementById('bidders-card');
     if (tb && card) {
+      // No action bar — the table auto-populates from the API on every
+      // display (see autoLoadBiddersFromApi() below), so the manual
+      // add/import/delete buttons that used to live here were removed.
       const wrap = card.querySelector('div[style*="overflow-x"]');
-      let actionBar = card.querySelector('#bidders-action-bar');
-      if (!actionBar) {
-        actionBar = document.createElement('div');
-        actionBar.id = 'bidders-action-bar';
-        actionBar.style.cssText = 'display:flex;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg);';
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn primary workflow-edit-btn';
-        addBtn.textContent = '+ Add Walk-In NonMember Bidder';
-        addBtn.addEventListener('click', addBidder);
-        actionBar.appendChild(addBtn);
-        const viewMembersBtn = document.createElement('button');
-        viewMembersBtn.className = 'btn workflow-edit-btn';
-        viewMembersBtn.textContent = 'Add Walk-In Member Bidder';
-        viewMembersBtn.style.marginLeft = '8px';
-        viewMembersBtn.addEventListener('click', showMemberDBModal);
-        actionBar.appendChild(viewMembersBtn);
-        const addRegBtn = document.createElement('button');
-        addRegBtn.className = 'btn workflow-edit-btn';
-        addRegBtn.textContent = 'Add Registered Members';
-        addRegBtn.style.marginLeft = '8px';
-        addRegBtn.addEventListener('click', addRegisteredMembers);
-        actionBar.appendChild(addRegBtn);
-        const deleteAllBtn = document.createElement('button');
-        deleteAllBtn.className = 'btn danger workflow-edit-btn';
-        deleteAllBtn.textContent = 'Delete All';
-        deleteAllBtn.style.marginLeft = '8px';
-        deleteAllBtn.addEventListener('click', deleteAllBidders);
-        actionBar.appendChild(deleteAllBtn);
-        card.insertBefore(actionBar, wrap);
-      }
-      card.insertBefore(tb, actionBar);
+      card.insertBefore(tb, wrap);
     }
     const actions = tb ? tb.querySelector('.tk-toolbar-actions') : null;
     if (actions) {
@@ -6838,6 +6856,12 @@ async function navigate(screenId) {
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
       actions.insertBefore(mkBtn('Print', printBiddersList), closeBtn);
       addStepBtns('bidders', actions, closeBtn);
+      // Custom Refresh — reloads the table from the API. Positioned before
+      // Clear Filters, distinct from PageToolbar's own built-in Refresh button
+      // (which sits after Clear Filters and is a no-op here since no
+      // dataUrl/onRefresh was passed to PageToolbar.init()).
+      const clearFiltersBtn = [...actions.querySelectorAll('button')].find(b => /Clear Filters/i.test(b.textContent));
+      if (clearFiltersBtn) actions.insertBefore(mkBtn('Refresh', autoLoadBiddersFromApi), clearFiltersBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -6845,7 +6869,7 @@ async function navigate(screenId) {
       closeBtn.replaceWith(fresh);
       fresh.addEventListener('click', () => navigate('home'));
     }
-    refreshBiddersTable();
+    await autoLoadBiddersFromApi();
     refreshRegDBTable();
   }
   if (screenId === 'auction-close') {
@@ -7102,7 +7126,7 @@ function openEmailBiddersPage() {
         <table>
           <thead><tr>
             <th style="width:30px;text-align:center;"><input type="checkbox" id="cb-all" checked onchange="selectAll(this.checked)" style="accent-color:#0071e3;cursor:pointer;"></th>
-            <th style="width:60px;">Bidder #</th>
+            <th style="width:60px;">Reg #</th>
             <th>Name</th>
             <th>Email</th>
             <th style="width:70px;text-align:center;">Status</th>
@@ -7702,7 +7726,7 @@ function buildPickupInvoiceHtml(bidderNum) {
     <div style="margin:20px 0;">
       <div style="font-weight:700;font-size:16px;">Silent Auction Invoice</div>
       <div style="font-size:12px;color:#555;margin-bottom:8px;">${escHtml(getClub().name)}</div>
-      <div style="font-weight:800;font-size:15px;margin-bottom:10px;">Winning Bidder: ${escHtml(bidderName)} &nbsp;|&nbsp; Bidder #${bidderNum}</div>
+      <div style="font-weight:800;font-size:15px;margin-bottom:10px;">Winning Bidder: ${escHtml(bidderName)} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
         <thead>
           <tr style="background:#dbeafe;">
@@ -8215,7 +8239,7 @@ function printAuctionSummary() {
     ? items.map(item => {
         const key = String(item.item_number);
         const w   = winners[key] || {};
-        const winnerName = w.bidder_name || (w.bidder_number ? `Bidder #${w.bidder_number}` : '—');
+        const winnerName = w.bidder_name || (w.bidder_number ? `Reg Number ${w.bidder_number}` : '—');
         const winBid = w.winning_bid ? fmtDollar(w.winning_bid) : '—';
         return `<tr>
           <td>${escHtml(key)}</td>
@@ -8233,7 +8257,7 @@ function printAuctionSummary() {
   Object.entries(winners).forEach(([itemKey, w]) => {
     if (!w.bidder_number) return;
     const k = String(w.bidder_number);
-    if (!winnerGroups[k]) winnerGroups[k] = { name: w.bidder_name || `Bidder #${w.bidder_number}`, items: [] };
+    if (!winnerGroups[k]) winnerGroups[k] = { name: w.bidder_name || `Reg Number ${w.bidder_number}`, items: [] };
     winnerGroups[k].items.push({ itemKey, bid: w.winning_bid });
   });
 
@@ -8280,9 +8304,9 @@ function printAuctionSummary() {
     </div>
   </div>
 
-  <h2>Registered Bidders (${bidders.length})</h2>
+  <h2>Registrations (${bidders.length})</h2>
   <table>
-    <thead><tr><th style="width:80px;">Bidder #</th><th>Name</th><th>Email</th><th style="width:120px;">Type</th></tr></thead>
+    <thead><tr><th style="width:80px;">Reg #</th><th>Name</th><th>Email</th><th style="width:120px;">Type</th></tr></thead>
     <tbody>${bidderRows}</tbody>
   </table>
 
@@ -8328,7 +8352,7 @@ function printWinningBidderReport() {
       const b = bidderMap[k];
       groups[k] = {
         bidder_number: w.bidder_number,
-        name: b ? `${b.first_name} ${b.last_name}`.trim() : (w.bidder_name || `Bidder #${w.bidder_number}`),
+        name: b ? `${b.first_name} ${b.last_name}`.trim() : (w.bidder_name || `Reg Number ${w.bidder_number}`),
         items: []
       };
     }
@@ -8357,7 +8381,7 @@ function printWinningBidderReport() {
     return `
       <div class="bidder-block">
         <div class="bidder-header">
-          <span>Bidder #${escHtml(String(g.bidder_number))} &nbsp;—&nbsp; ${escHtml(g.name)}</span>
+          <span>Reg Number ${escHtml(String(g.bidder_number))} &nbsp;—&nbsp; ${escHtml(g.name)}</span>
           <span class="bidder-total">Total Due: ${fmtDollar(subtotal)}</span>
         </div>
         <table>
@@ -8554,7 +8578,7 @@ function printClubIncomeReport() {
     const pay    = payments[k] || payments[parseInt(k, 10)] || {};
     const method = pay.method || 'Credit Card';
     const b      = bidderMap[k];
-    const name   = b ? `${b.first_name} ${b.last_name}`.trim() : `Bidder #${k}`;
+    const name   = b ? `${b.first_name} ${b.last_name}`.trim() : `Reg Number ${k}`;
     const total  = data.total;
     const ccFee  = method === 'Credit Card' ? total * sqPct + sqFee : 0;
     const amtDue = method === 'Credit Card' ? total + ccFee : total;
@@ -8584,7 +8608,7 @@ function printClubIncomeReport() {
       <div class="section">
         <div class="section-header">${label} <span class="count">(${entries.length})</span><span class="section-total">${fmtDollar(sectionTotal)}</span></div>
         <table>
-          <thead><tr><th style="width:70px;">Bidder #</th><th>Name</th>${extraTh}<th style="text-align:right;">Winning Bids</th><th style="text-align:right;">Amount Due</th><th style="width:50px;text-align:center;">Paid</th></tr></thead>
+          <thead><tr><th style="width:70px;">Reg #</th><th>Name</th>${extraTh}<th style="text-align:right;">Winning Bids</th><th style="text-align:right;">Amount Due</th><th style="width:50px;text-align:center;">Paid</th></tr></thead>
           <tbody>${rows}</tbody>
           <tr class="total-row"><td colspan="${showCheck||showCC||showOther ? 4 : 3}" style="text-align:right;">Section Total</td><td style="text-align:right;">${fmtDollar(sectionTotal)}</td><td></td></tr>
         </table>
@@ -9762,7 +9786,6 @@ async function clearScopedData(type, label) {
 
 document.getElementById('btn-clear-emails').addEventListener('click', () => clearScopedData('emails', 'scanned emails'));
 document.getElementById('btn-clear-items').addEventListener('click', () => clearScopedData('items', 'loaded items'));
-document.getElementById('btn-clear-bidders').addEventListener('click', () => clearScopedData('bidders', 'registered bidders'));
 document.getElementById('btn-clear-winners').addEventListener('click', () => clearScopedData('winners', 'winning bidders'));
 document.getElementById('btn-clear-payments').addEventListener('click', () => clearScopedData('payments', 'pickup & pay records'));
 
@@ -10900,12 +10923,91 @@ async function loadChangelog() {
     err.textContent   = 'Failed to load change log: ' + e.message;
   }
 }
+
+// ══════════════════════════════════════
+//  Developer: API test page
+// ══════════════════════════════════════
+// Seed value used only until an externalApiUrl setting has actually been
+// saved (see getExternalApiUrl()) — once saved, the setting is authoritative.
+const DEFAULT_API_TEST_URL = 'https://etccapps.com/apps/carshow/paid-registrations-api.php?key=92d3b014523e89c2aac59e3272326251';
+
+// Single source of truth for "the API URL" — read by both this test page
+// and Register Bidders' "Load from API" button.
+function getExternalApiUrl() {
+  const saved = (DB.getSettings().externalApiUrl || '').trim();
+  return saved || DEFAULT_API_TEST_URL;
+}
+
+function loadApiTestPage() {
+  const urlEl = document.getElementById('api-test-url');
+  if (urlEl) urlEl.value = getExternalApiUrl();
+  const resultEl = document.getElementById('api-test-result');
+  if (resultEl) resultEl.style.display = 'none';
+  const savedMsg = document.getElementById('api-url-saved-msg');
+  if (savedMsg) savedMsg.style.display = 'none';
+}
+
+// Persists the URL field as a real setting (sam_settings.externalApiUrl) so
+// it survives reloads/sessions and other screens (Register Bidders) can use it.
+function saveApiTestUrl() {
+  const urlEl = document.getElementById('api-test-url');
+  if (!urlEl) return;
+  const settings = DB.getSettings();
+  settings.externalApiUrl = urlEl.value.trim();
+  DB.saveSettings(settings);
+  const savedMsg = document.getElementById('api-url-saved-msg');
+  if (savedMsg) {
+    savedMsg.style.display = '';
+    clearTimeout(saveApiTestUrl._t);
+    saveApiTestUrl._t = setTimeout(() => { savedMsg.style.display = 'none'; }, 2000);
+  }
+}
+
+function copyApiTestUrl() {
+  const urlEl = document.getElementById('api-test-url');
+  if (!urlEl) return;
+  urlEl.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(urlEl.value).catch(() => {});
+}
+
+// Fires a GET against whatever URL is currently in the field — credentials
+// 'omit' so this browser's own login session cookie is never sent — and
+// shows the raw response, exactly as an external caller would see it.
+async function testSamApiUrl() {
+  const btn      = document.getElementById('api-test-btn');
+  const urlEl    = document.getElementById('api-test-url');
+  const resultEl = document.getElementById('api-test-result');
+  const statusEl = document.getElementById('api-test-status');
+  const bodyEl   = document.getElementById('api-test-body');
+  if (!btn || !urlEl) return;
+  const url = urlEl.value.trim();
+  if (!url) return;
+  btn.disabled    = true;
+  btn.textContent = 'Testing…';
+  resultEl.style.display = 'none';
+  try {
+    const res  = await fetch(url, { method: 'GET', credentials: 'omit' });
+    const text = await res.text();
+    let pretty = text;
+    try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (e) { /* show raw text as-is */ }
+    statusEl.textContent   = `HTTP ${res.status}`;
+    statusEl.style.color   = res.ok ? 'var(--success)' : 'var(--danger)';
+    bodyEl.textContent     = pretty;
+  } catch (err) {
+    statusEl.textContent = 'Request failed';
+    statusEl.style.color = 'var(--danger)';
+    bodyEl.textContent   = String((err && err.message) || err);
+  }
+  resultEl.style.display = '';
+  btn.disabled    = false;
+  btn.textContent = 'Test This URL';
+}
 </script>
 
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v3.13</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 10, 2026 11:05 AM</span></div>
+  <div>Version: <span id="app-version">v4.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 11, 2026 6:18 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 
