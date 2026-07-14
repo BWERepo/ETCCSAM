@@ -217,7 +217,7 @@ Items are parsed from Gmail emails using a configurable field map (`sam_fieldmap
     suite hangs at "Running UI tests… 179".
   - Do not run the local headless runner against a plain static server for
     sign-off; it doesn't reproduce the live CSP/server-sync environment.
-- Run from: Settings → Developer Tools → Run Regression Tests (opens in new tab)
+- Run from: left nav → 🛠 Developer → ▶ Regression Tests (opens in new tab)
 - **Always run regression tests before reporting any task complete**
 - When `test.html` changes, deploy it (`.\deploy.ps1 test.html`) before running,
   so the deployed suite reflects the latest tests.

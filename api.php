@@ -201,6 +201,8 @@ $allowedActions = [
     'delete_auction',
     'get_items',
     'save_items',
+    'get_pending_donations',
+    'mark_donations_imported',
     'get_bidders',
     'save_bidders',
     'get_winners',
@@ -405,6 +407,27 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS sam_store (
     `key`        VARCHAR(100) PRIMARY KEY,
     `value`      LONGTEXT     NOT NULL,
     `updated_at` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// Holds public item-donation-form submissions (donate-item.php) until staff
+// import them into the app via "Import Donated Items" on Load Item Emails.
+// Deliberately its own append-only table (AUTO_INCREMENT id) rather than a
+// sam_store JSON blob — donate-item.php has no session/auth, so concurrent
+// public submissions must be safe without a read-modify-write race, which a
+// plain INSERT gives us for free. Never written to by save_items's
+// full-replace, so nothing here can be silently wiped by a normal app sync.
+$pdo->exec("CREATE TABLE IF NOT EXISTS donated_items_pending (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    category_code    VARCHAR(10)  NOT NULL,
+    category_name    VARCHAR(255),
+    description      LONGTEXT,
+    item_value       VARCHAR(20),
+    donor_name       VARCHAR(255),
+    donor_email      VARCHAR(255),
+    donor_phone      VARCHAR(20),
+    status           VARCHAR(20)  NOT NULL DEFAULT 'pending',
+    submitted_at     TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -678,22 +701,26 @@ if ($action === 'login') {
     $key = $input['key']   ?? '';
     $val = $input['value'] ?? '';
 
-    // Check if key is allowed. Supports static keys (sam_items) and
-    // namespaced keys (sam_{auctionId}_items, sam_{auctionId}_{suffix})
+    // Check if key is allowed. Supports static keys (sam_items,
+    // sam_current_auction) and namespaced keys (sam_{auctionId}_items).
     $isAllowed = false;
     if (strpos($key, 'sam_') === 0) {
         // Extract the part after 'sam_'
         $rest = substr($key, 4);
-        // Find the last underscore to extract the suffix
-        $lastUnderscore = strrpos($rest, '_');
-        if ($lastUnderscore === false) {
-            // No underscore: static key like 'sam_members', check exact match
-            $isAllowed = in_array($rest, $ALLOWED_SUFFIXES, true);
-        } else {
-            // Has underscore: namespaced key like 'sam_{id}_items'
-            // Extract suffix after last underscore
-            $suffix = substr($rest, $lastUnderscore + 1);
-            $isAllowed = in_array($suffix, $ALLOWED_SUFFIXES, true);
+        // Exact static match FIRST — 'current_auction' itself contains an
+        // underscore, so checking only "no underscore = static" below would
+        // (and for a long time silently did) misparse 'sam_current_auction'
+        // as a namespaced key with suffix 'auction', which isn't allowed,
+        // rejecting every write and leaving the server never knowing which
+        // auction is current.
+        $isAllowed = in_array($rest, $ALLOWED_SUFFIXES, true);
+        if (!$isAllowed) {
+            // Namespaced key like 'sam_{id}_items': suffix after last underscore
+            $lastUnderscore = strrpos($rest, '_');
+            if ($lastUnderscore !== false) {
+                $suffix = substr($rest, $lastUnderscore + 1);
+                $isAllowed = in_array($suffix, $ALLOWED_SUFFIXES, true);
+            }
         }
     }
     if (!$isAllowed) {
@@ -1166,6 +1193,36 @@ if ($action === 'login') {
     } catch (Exception $e) {
         logQuery($action, $insertQuery ?? 'N/A', 'ERROR', $e->getMessage());
         echo json_encode(['error' => 'Failed to save items: ' . $e->getMessage()]);
+    }
+
+} elseif ($action === 'get_pending_donations') {
+    try {
+        $query = "SELECT * FROM donated_items_pending WHERE status = 'pending' ORDER BY submitted_at ASC";
+        $rows = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
+        logQuery($action, $query, 'SUCCESS', "Rows: " . count($rows));
+        echo json_encode($rows);
+    } catch (Exception $e) {
+        logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
+        echo json_encode(['error' => 'Failed to fetch pending donations: ' . $e->getMessage()]);
+    }
+
+} elseif ($action === 'mark_donations_imported') {
+    $ids = $input['ids'] ?? [];
+    $ids = array_values(array_filter(array_map('intval', is_array($ids) ? $ids : []), fn($v) => $v > 0));
+    if (!$ids) {
+        echo json_encode(['ok' => true, 'count' => 0]);
+    } else {
+        try {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $query = "UPDATE donated_items_pending SET status = 'imported' WHERE id IN ($placeholders)";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute($ids);
+            logQuery($action, $query, 'SUCCESS', "Marked " . count($ids) . " donation(s) imported");
+            echo json_encode(['ok' => true, 'count' => count($ids)]);
+        } catch (Exception $e) {
+            logQuery($action, $query ?? 'N/A', 'ERROR', $e->getMessage());
+            echo json_encode(['error' => 'Failed to mark donations imported: ' . $e->getMessage()]);
+        }
     }
 
 } elseif ($action === 'get_bidders') {

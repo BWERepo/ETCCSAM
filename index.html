@@ -925,6 +925,9 @@
       <div class="nav-item nav-subitem" data-screen="api">
         🔌 API
       </div>
+      <div class="nav-item nav-subitem" id="nav-dev-regtests" onclick="window.open('test.html','_blank')">
+        ▶ Regression Tests
+      </div>
     </div>
   </nav>
 
@@ -1099,7 +1102,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="clearTableFilters('#items-table')">Clear Filter</button>
-            <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="openAddItemModal()">+ Add Item</button>
+            <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="openDonatedItemsModal()">Donated Items</button>
             <button class="btn danger" style="font-size:11px;padding:3px 10px;" onclick="deleteAllItems()">Delete All</button>
             <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showCategories()">View Categories</button>
             <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="showViewAll('items')">View All</button>
@@ -1134,10 +1137,61 @@
         </div>
       </div>
 
+    <!-- Donated Items Modal — same layout as Step 1 (metric row + items table),
+         but for reviewing pending web-form donations (donate-item.php) instead
+         of scanned inbox emails; there is no email list here at all. -->
+    <div id="donated-items-modal" style="display:none;position:fixed;top:70px;left:0;right:0;bottom:0;background:var(--bg-section);z-index:1000;flex-direction:column;">
+      <div class="page-header" style="flex-shrink:0;background:var(--bg);">
+        <h2>Donated Items</h2>
+        <button class="btn" onclick="closeDonatedItemsModal()" style="margin-left:auto;font-size:13px;padding:6px 16px;">✕ Close</button>
+      </div>
+      <div style="padding:20px;flex:1;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="card" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+            <span style="font-size:14px;font-weight:600;">Donated Items</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="clearTableFilters('#donated-items-table')">Clear Filter</button>
+            </div>
+          </div>
+          <div style="overflow:auto;flex:1;">
+            <table class="tablekit" id="donated-items-table" style="table-layout:fixed;width:100%;min-width:1800px;">
+              <colgroup>
+                <col style="width:70px;"><col style="width:150px;">
+                <col style="width:80px;"><col style="width:140px;"><col style="width:360px;">
+                <col style="width:90px;"><col style="width:90px;"><col style="width:200px;">
+                <col style="width:240px;"><col style="width:130px;"><col style="width:200px;">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Item #</th>
+                  <th>Submission Date</th>
+                  <th>Source</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Value</th>
+                  <th>Reserve</th>
+                  <th>Donor Name</th>
+                  <th>Donor Email</th>
+                  <th>Donor Phone</th>
+                  <th style="width:200px;text-align:center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="donated-items-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;border-top:1px solid var(--border);background:var(--bg);">
+        <span id="donated-items-status" style="font-size:12px;color:var(--text-secondary);"></span>
+      </div>
+    </div>
+
     <!-- Add Item Modal -->
     <div id="add-item-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
       <div style="background:var(--bg);border-radius:12px;padding:24px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);">
-        <h3 style="margin:0 0 16px;font-size:16px;">Add Item</h3>
+        <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" style="display:block;height:56px;width:56px;object-fit:contain;margin:0 auto 8px;border-radius:6px;">
+        <h3 style="margin:0;font-size:19px;text-align:center;">Add Item</h3>
+        <div style="text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:18px;">East Tennessee Corvette Club</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
           <div>
             <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Category</label>
@@ -1895,10 +1949,6 @@
             <span style="font-size:12px;color:var(--text-secondary);">Designate whether this is a production or test environment.</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px;">
-            <button class="btn" onclick="window.open('test.html','_blank')">▶ Run Regression Tests</button>
-            <span style="font-size:12px;color:var(--text-secondary);">Opens the automated test suite in a new tab.</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px;">
             <button class="btn" onclick="viewDebugLog()">📋 View Debug Log</button>
             <span style="font-size:12px;color:var(--text-secondary);">View the debug log file (requires Debug Mode enabled).</span>
           </div>
@@ -1979,7 +2029,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 14, 2026 10:59 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 14, 2026 1:33 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -2419,7 +2469,7 @@
         <li><strong>Settings Password</strong> — controls access to Settings, Configuration, and Delete Auction</li>
         <li><strong>Maintenance Mode</strong> — shows visitors a maintenance screen; staff bypass it with the settings password</li>
         <li><strong>Data Backup</strong> — export a full JSON backup of all auction data, or import a previously saved backup</li>
-        <li><strong>Developer Tools</strong> — run the regression test suite</li>
+        <li><strong>Developer Tools</strong> — debug mode, maintenance mode, environment, debug log, database push</li>
       </ul>
 
       <h3>Data &amp; Sync</h3>
@@ -4008,6 +4058,153 @@ function saveAddItemModal() {
   if (lastRow) lastRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// ══════════════════════════════════════
+//  DONATED ITEMS MODAL
+//  Reviews item donations submitted through the public donate-item.php form
+//  (stored server-side in donated_items_pending — never in the app's live
+//  `items` table, since save_items fully replaces that table on every normal
+//  save and would silently wipe a directly-inserted row).
+//
+//  This screen was originally its own view onto that pending-donations
+//  queue (with Import/Delete actions), separate from Loaded Items. Since
+//  add-item.php writes straight into the live item list rather than the
+//  queue, that queue stopped reflecting what staff were actually adding —
+//  so this screen now just mirrors Loaded Items directly (same data,
+//  same Edit/Delete actions) instead of querying donated_items_pending.
+//  get_pending_donations/mark_donations_imported (api.php) and
+//  importDonatedItemById/deletePendingDonation/importAllDonatedItems/
+//  importDonations (below) are left in place but orphaned — no UI calls
+//  them anymore.
+// ══════════════════════════════════════
+function openDonatedItemsModal() {
+  const modal = document.getElementById('donated-items-modal');
+  if (modal) modal.style.display = 'flex';
+  renderDonatedItemsTable();
+}
+
+function closeDonatedItemsModal() {
+  const modal = document.getElementById('donated-items-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function renderDonatedItemsTable() {
+  const tbody = document.getElementById('donated-items-tbody');
+  if (!tbody) return;
+
+  const items = Items.getAll();
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-secondary);">No donated items.</td></tr>';
+    TableKit.init(document.getElementById('donated-items-table'));
+    return;
+  }
+
+  // Same row shape as refreshItemsTable()'s items-table — this screen now
+  // mirrors Loaded Items exactly (minus the Item # / Date Loaded columns
+  // already dropped from this table).
+  tbody.innerHTML = items.map(item => {
+    const catCode = item.category_code ? 'cat-' + item.category_code : 'cat-900';
+    return `
+      <tr>
+        <td><strong>${escHtml(String(item.item_number))}</strong></td>
+        <td style="white-space:nowrap;">${escHtml(item.email_date || '')}</td>
+        <td>${escHtml(item.source || (item.email_message_id ? 'Email' : 'Added'))}</td>
+        <td style="vertical-align:top;"><span class="badge ${catCode}" style="display:inline-block;white-space:normal;word-break:break-word;line-height:1.35;">${escHtml(String(item.category_code))} ${escHtml(item.category_name)}</span></td>
+        <td style="white-space:normal;word-break:break-word;vertical-align:top;">${escHtml(item.description)}</td>
+        <td>${fmtDollar(item.item_value)}</td>
+        <td>${parseFloat(item.reserve_amount) > 0 ? fmtDollar(item.reserve_amount) : ''}</td>
+        <td>${escHtml(item.donor_name)}</td>
+        <td>${escHtml(item.donor_email)}</td>
+        <td>${escHtml(item.donor_phone)}</td>
+        <td style="text-align:center;white-space:nowrap;">
+          <button class="btn" style="padding:3px 10px;margin-right:4px;font-size:11px;" onclick="editItemByNumber('${escHtml(item.item_number)}')" title="Edit item">Edit</button>
+          <button class="btn danger" style="padding:3px 10px;font-size:11px;" onclick="deleteItemByNumber('${escHtml(item.item_number)}')" title="Delete item">Delete</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  TableKit.init(document.getElementById('donated-items-table'));
+}
+
+let _pendingDonations = [];
+
+function importDonatedItemById(id) {
+  const item = _pendingDonations.find(d => String(d.id) === String(id));
+  if (!item) return;
+  importDonations([item]);
+}
+
+async function deletePendingDonation(id) {
+  const item = _pendingDonations.find(d => String(d.id) === String(id));
+  if (!item) return;
+  if (!confirm(`Discard this donation (${item.description || 'no description'})? This cannot be undone.`)) return;
+  try {
+    await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'mark_donations_imported', ids: [item.id] })
+    });
+  } catch (e) {
+    alert('Failed to reach the server: ' + e.message);
+    return;
+  }
+  _pendingDonations = _pendingDonations.filter(d => String(d.id) !== String(id));
+}
+
+function importAllDonatedItems() {
+  if (!_pendingDonations.length) {
+    alert('No donated items to import.');
+    return;
+  }
+  importDonations(_pendingDonations);
+}
+
+async function importDonations(list) {
+  if (!list.length) return;
+  if (!confirm(`Import ${list.length} donated item(s) into Loaded Items?`)) return;
+
+  const importedIds = [];
+  list.forEach(d => {
+    const categoryCode = String(d.category_code || '');
+    const categoryName = d.category_name || CATEGORIES[categoryCode] || '';
+    const itemNum = Items.nextItemNumber(categoryCode);
+    Items.add({
+      item_number: itemNum,
+      category_code: categoryCode,
+      category_name: categoryName,
+      description: d.description || '',
+      item_value: d.item_value || '',
+      reserve_amount: '0',
+      donor_name: d.donor_name || '',
+      donor_email: d.donor_email || '',
+      donor_phone: d.donor_phone || '',
+      email_date: d.submitted_at ? new Date(d.submitted_at).toLocaleString() : '',
+      loaded_date: '',
+      email_message_id: '',
+      source: 'Donated (Web)'
+    });
+    importedIds.push(d.id);
+  });
+
+  try {
+    await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'mark_donations_imported', ids: importedIds })
+    });
+  } catch (e) {
+    debugLog(`⚠ Imported ${importedIds.length} donated item(s) locally, but failed to mark them imported server-side: ${e.message}`);
+  }
+
+  refreshItemsTable();
+  refreshMetrics();
+  alert(`Imported ${importedIds.length} donated item(s).`);
+}
+
+// Column index maps for the two table layouts this inline editor supports.
+// #items-tbody (and #view-all-table, which mirrors it with an optional
+// leading checkbox column) has a "Date Loaded" column that #donated-items-tbody
+// doesn't — everything after Submission Date shifts left by one there.
+const ITEM_EDIT_COLS_MAIN    = { item:0, subdate:1, category:4, desc:5, value:6, reserve:7, donorName:8, donorEmail:9, donorPhone:10, actions:11 };
+const ITEM_EDIT_COLS_DONATED = { item:0, subdate:1, category:3, desc:4, value:5, reserve:6, donorName:7, donorEmail:8, donorPhone:9,  actions:10 };
+
 function editItemByNumber(itemNumber) {
   console.log('[editItemByNumber] Called with itemNumber:', itemNumber);
 
@@ -4018,9 +4215,11 @@ function editItemByNumber(itemNumber) {
     return;
   }
 
-  // Find the row in the table - prioritize modal if it's open
-  const modal = document.getElementById('view-all-modal');
-  const isModalOpen = modal && modal.style.display === 'flex';
+  // Find the row in the table - prioritize whichever overlay is open
+  const viewAllModal = document.getElementById('view-all-modal');
+  const isViewAllOpen = viewAllModal && viewAllModal.style.display === 'flex';
+  const donatedModal = document.getElementById('donated-items-modal');
+  const isDonatedOpen = donatedModal && donatedModal.style.display === 'flex';
 
   // The View All modal may prepend a checkbox column, shifting all data cells
   // by one. `off` keeps cell indices correct in either table.
@@ -4029,19 +4228,25 @@ function editItemByNumber(itemNumber) {
     return tr.cells[o]?.textContent.trim() === itemNumber;
   };
 
-  let row;
-  if (isModalOpen) {
-    console.log('[editItemByNumber] Modal is open, searching modal table first');
+  let row, cols = ITEM_EDIT_COLS_MAIN;
+  if (isViewAllOpen) {
+    console.log('[editItemByNumber] View All modal is open, searching it first');
     row = [...document.querySelectorAll('#view-all-table tbody tr')].find(matchesItem);
   }
 
-  // Fall back to main table if not found in modal
+  if (!row && isDonatedOpen) {
+    console.log('[editItemByNumber] Donated Items modal is open, searching it');
+    row = [...document.querySelectorAll('#donated-items-tbody tr')].find(matchesItem);
+    if (row) cols = ITEM_EDIT_COLS_DONATED;
+  }
+
+  // Fall back to main table if not found above
   if (!row) {
-    console.log('[editItemByNumber] Not found in modal, searching main table');
+    console.log('[editItemByNumber] Not found in an open modal, searching main table');
     row = [...document.querySelectorAll('#items-tbody tr')].find(matchesItem);
   }
 
-  console.log('[editItemByNumber] Found row:', !!row, 'in', isModalOpen && row?.closest('#view-all-table') ? 'modal' : 'main');
+  console.log('[editItemByNumber] Found row:', !!row);
 
   if (!row) {
     console.log('[editItemByNumber] Row not found in any table');
@@ -4052,38 +4257,38 @@ function editItemByNumber(itemNumber) {
 
   // Store original values for cancel
   const originalValues = {
-    date: row.cells[1 + off]?.textContent || '',
-    description: row.cells[5 + off]?.textContent || '',
-    value: row.cells[6 + off]?.textContent || '',
-    reserve: row.cells[7 + off]?.textContent || '',
-    donor_name: row.cells[8 + off]?.textContent || '',
-    donor_email: row.cells[9 + off]?.textContent || '',
-    donor_phone: row.cells[10 + off]?.textContent || ''
+    date: row.cells[cols.subdate + off]?.textContent || '',
+    description: row.cells[cols.desc + off]?.textContent || '',
+    value: row.cells[cols.value + off]?.textContent || '',
+    reserve: row.cells[cols.reserve + off]?.textContent || '',
+    donor_name: row.cells[cols.donorName + off]?.textContent || '',
+    donor_email: row.cells[cols.donorEmail + off]?.textContent || '',
+    donor_phone: row.cells[cols.donorPhone + off]?.textContent || ''
   };
   console.log('[editItemByNumber] Original values:', originalValues);
 
   // Make item # editable
   console.log('[editItemByNumber] Converting row cells to editable...');
-  row.cells[0 + off].innerHTML = `<input type="text" value="${escHtml(itemNumber)}" style="width:100%;padding:4px;border:1px solid var(--border);font-weight:600;">`;
+  row.cells[cols.item + off].innerHTML = `<input type="text" value="${escHtml(itemNumber)}" style="width:100%;padding:4px;border:1px solid var(--border);font-weight:600;">`;
   console.log('[editItemByNumber] cell[0] converted');
 
   // Make category a dropdown
   const catOptions = Object.entries({100:'Auto',200:'Corvette',300:'Mens',400:'Womens',500:'Household',600:'Artwork',700:'Baskets',800:'Certs',900:'Misc'})
     .map(([code, name]) => `<option value="${code}" ${String(item.category_code) === code ? 'selected' : ''}>${code} - ${name}</option>`)
     .join('');
-  row.cells[4 + off].innerHTML = `<select style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${catOptions}</select>`;
+  row.cells[cols.category + off].innerHTML = `<select style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${catOptions}</select>`;
 
   // Other editable fields
-  row.cells[1 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.date)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[5 + off].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.description)}</textarea>`;
-  row.cells[6 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.value)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[7 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.reserve)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[8 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_name)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[9 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_email)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[10 + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_phone)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.subdate + off].innerHTML = `<input type="text" value="${escHtml(originalValues.date)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.desc + off].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.description)}</textarea>`;
+  row.cells[cols.value + off].innerHTML = `<input type="text" value="${escHtml(originalValues.value)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.reserve + off].innerHTML = `<input type="text" value="${escHtml(originalValues.reserve)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.donorName + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_name)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.donorEmail + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_email)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.donorPhone + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_phone)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
 
-  // Replace action buttons with Save/Cancel (actions cell is index 11 + offset)
-  row.cells[11 + off].innerHTML = `
+  // Replace action buttons with Save/Cancel
+  row.cells[cols.actions + off].innerHTML = `
     <button class="btn success" style="padding:3px 8px;margin-right:4px;font-size:10px;" onclick="saveItemEdit('${itemNumber}')">Save</button>
     <button class="btn" style="padding:3px 8px;font-size:10px;" onclick="cancelItemEdit('${itemNumber}')">Cancel</button>
   `;
@@ -4107,23 +4312,24 @@ function saveItemEdit(itemNumber) {
 
   // The View All modal may prepend a checkbox column, shifting data cells by one.
   const off = row.querySelector('.item-view-all-checkbox') ? 1 : 0;
+  const cols = row.closest('#donated-items-tbody') ? ITEM_EDIT_COLS_DONATED : ITEM_EDIT_COLS_MAIN;
 
   // Get edited values from inputs
-  const textarea = row.cells[5 + off]?.querySelector('textarea');
+  const textarea = row.cells[cols.desc + off]?.querySelector('textarea');
   const newDesc = textarea?.value;
 
   console.log('[saveItemEdit] Textarea found:', !!textarea);
   console.log('[saveItemEdit] Raw textarea value:', JSON.stringify(newDesc));
   console.log('[saveItemEdit] Value length:', newDesc?.length);
 
-  const newValue = row.cells[6 + off]?.querySelector('input')?.value;
+  const newValue = row.cells[cols.value + off]?.querySelector('input')?.value;
 
   console.log('[saveItemEdit] Before update:', {desc: item.description, value: item.item_value});
   console.log('[saveItemEdit] Input values from form:', {newDesc, newValue});
 
-  item.item_number = row.cells[0 + off]?.querySelector('input')?.value || item.item_number;
-  item.email_date = row.cells[1 + off]?.querySelector('input')?.value || item.email_date;
-  item.category_code = row.cells[4 + off]?.querySelector('select')?.value || item.category_code;
+  item.item_number = row.cells[cols.item + off]?.querySelector('input')?.value || item.item_number;
+  item.email_date = row.cells[cols.subdate + off]?.querySelector('input')?.value || item.email_date;
+  item.category_code = row.cells[cols.category + off]?.querySelector('select')?.value || item.category_code;
 
   // Always update with new value if it exists (not just || logic)
   if (newDesc !== undefined && newDesc !== null) {
@@ -4133,10 +4339,10 @@ function saveItemEdit(itemNumber) {
     item.item_value = newValue;
   }
 
-  item.reserve_amount = row.cells[7 + off]?.querySelector('input')?.value || item.reserve_amount;
-  item.donor_name = row.cells[8 + off]?.querySelector('input')?.value || item.donor_name;
-  item.donor_email = row.cells[9 + off]?.querySelector('input')?.value || item.donor_email;
-  item.donor_phone = row.cells[10 + off]?.querySelector('input')?.value || item.donor_phone;
+  item.reserve_amount = row.cells[cols.reserve + off]?.querySelector('input')?.value || item.reserve_amount;
+  item.donor_name = row.cells[cols.donorName + off]?.querySelector('input')?.value || item.donor_name;
+  item.donor_email = row.cells[cols.donorEmail + off]?.querySelector('input')?.value || item.donor_email;
+  item.donor_phone = row.cells[cols.donorPhone + off]?.querySelector('input')?.value || item.donor_phone;
   item.source = 'Edited';
 
   console.log('[saveItemEdit] After update:', {desc: item.description, value: item.item_value});
@@ -4235,6 +4441,10 @@ function refreshItemsTable() {
 
   TableKit.init(document.getElementById('items-table'));
   refreshBsItemsTable();
+  // Keep the Donated Items screen (which now just mirrors Loaded Items) in
+  // sync whenever the underlying item list changes, not only when its modal
+  // is opened.
+  if (document.getElementById('donated-items-tbody')) renderDonatedItemsTable();
 }
 
 function printBiddingSheets() {
@@ -10781,6 +10991,17 @@ const DuplicateEmailChecker = {
   await window._samServerSync;
   await syncFromAPI(); // Sync data from API if available
   await syncFromKeyValueDB(); // Fallback: load from key-value database
+
+  // One-time resync: api.php's 'set' action used to reject sam_current_auction
+  // (it misparsed the underscore in "current_auction" as a namespace
+  // separator), so the server never learned which auction was current even
+  // though every browser had it locally. Now that api.php is fixed, re-fire
+  // localStorage.setItem for this key on every load so the value actually
+  // reaches the server — a plain read wouldn't re-trigger the sync hook,
+  // only an explicit write does.
+  const _curAuctionId = localStorage.getItem('sam_current_auction');
+  if (_curAuctionId) localStorage.setItem('sam_current_auction', _curAuctionId);
+
   migrateToMultiAuction();
   migrateGlobalData();
   updateHomeAuctionPanel();
@@ -11024,7 +11245,7 @@ async function testSamApiUrl() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v4.2</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 14, 2026 10:59 AM</span></div>
+  <div>Version: <span id="app-version">v4.3</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 14, 2026 1:33 PM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

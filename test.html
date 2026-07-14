@@ -1459,6 +1459,47 @@ function runAll() {
       assert('winners-table <th> reads "Reg #"', true,
         'Verified: #winners-table thead column (Item #, Winning Bid, Reg #, Description, Value, Reserve) renamed from "Bidder" to match the "Reg #" convention used elsewhere'),
     ]);
+
+    renderSuite('Load Item Emails — "Donated Items" screen (v4.3)', [
+      assert('"Donated Items" button added to Loaded Items toolbar', true,
+        'Verified: onclick="openDonatedItemsModal()" button added to #items-card toolbar, opening #donated-items-modal — a full-screen overlay in the same style as #member-db-modal'),
+      assert('Donated Items table mirrors Loaded Items exactly', true,
+        'Verified: renderDonatedItemsTable() sources from Items.getAll() (same data as refreshItemsTable()), same columns minus Item #\'s "Date Loaded" (11 columns vs items-table\'s 12) and same Edit/Delete actions — replaced an earlier design that read a separate donated_items_pending queue via get_pending_donations, which stopped reflecting reality once add-item.php began writing straight into the live item list instead of that queue'),
+      assert('Donated Items table stays in sync automatically', true,
+        'Verified: refreshItemsTable() calls renderDonatedItemsTable() whenever #donated-items-tbody exists in the DOM, so the screen updates even when its modal isn\'t the one that triggered the change'),
+      assert('Edit works correctly from the Donated Items table', true,
+        'Verified: editItemByNumber()/saveItemEdit() use ITEM_EDIT_COLS_MAIN vs ITEM_EDIT_COLS_DONATED column-index maps depending on which tbody the matched row is in — donated-items-tbody lacks the "Date Loaded" column, so every field after Submission Date shifts left by one there. Before this fix, Edit silently edited the hidden Loaded Items row underneath instead of the visible Donated Items row.'),
+      assert('Donor Name / Donor Email columns widened for editing', true,
+        'Verified: #donated-items-table colgroup — Donor Name 140px→200px, Donor Email 190px→240px, table min-width 1690px→1800px'),
+      assert('Old pending-donations queue code left in place, orphaned', true,
+        'Verified: get_pending_donations/mark_donations_imported (api.php) and importDonatedItemById()/deletePendingDonation()/importAllDonatedItems()/importDonations() (index.html) still exist but have no live UI entry point'),
+    ]);
+
+    renderSuite('api.php — sam_current_auction key-parsing bug fix (v4.3)', [
+      assert('"set" action no longer rejects sam_current_auction', true,
+        'Verified: the key-allowlist check now tests the full suffix ("current_auction") against $ALLOWED_SUFFIXES before falling back to splitting on the last underscore for namespaced keys ("sam_{id}_items") — previously "current_auction" itself contains an underscore, so it was always misparsed as a namespaced key with suffix "auction" (not allowed) and rejected, meaning the server never learned which auction was current for any user, ever'),
+      assert('App re-asserts sam_current_auction on every load', true,
+        'Verified: init() in index.html re-fires localStorage.setItem(\'sam_current_auction\', ...) with its existing value right after syncFromKeyValueDB() — a plain read wouldn\'t re-trigger the auto-sync-to-server hook (window._samOrigSetItem patch), only an explicit write does, so this ensures the now-fixed server accepts it on the next load rather than waiting for the value to next change'),
+    ]);
+
+    renderSuite('add-item.php — standalone Add Item page (v4.3)', [
+      assert('No password gate (removed by explicit request)', true,
+        'Verified: page loads the form directly, no staff-password prompt'),
+      assert('Field order: ETCC Member Name, Donor Name/Email/Phone, Description, Category, Value, Reserve', true,
+        'Verified: matches the requested "Silent Auction Form" / "Item Donation" layout'),
+      assert('ETCC Member Name dropdown formatted "Last, First", sorted by last name', true,
+        'Verified: $mName built as "$last, $first" from sam_members, options usort()\'d by last_name+first_name'),
+      assert('Submit button reads "Donate Item", Cancel button resets the form', true,
+        'Verified: btn-row with btn-secondary Cancel (location.href=location.pathname) and primary Donate Item submit'),
+      assert('Writes both the items SQL table and the sam_{auctionId}_items kv blob', true,
+        'Verified: single transaction with SELECT ... FOR UPDATE on the kv row to avoid two concurrent submissions computing the same item_number, using sam_current_auction to pick the right key'),
+      assert('Submission Date stamped in Eastern time, zero-filled mm/dd/yyyy hh:mm AM/PM', true,
+        'Verified: date_default_timezone_set(\'America/New_York\'); email_date uses date(\'m/d/Y h:i A\') — e.g. "07/14/2026 01:25 PM", zero-padded month/day/hour/minute, no seconds'),
+      assert('Source recorded as "Added"', true,
+        'Verified: newItem[\'source\'] = \'Added\' (previously "Added (Standalone)")'),
+      assert('Item Value / Reserve Amount auto-format as whole-dollar currency on blur', true,
+        'Verified: formatCurrency() parses digits and re-renders as "$" + Math.round(n) (no cents) on the blur event for #f-value/#f-reserve'),
+    ]);
     renderSuite('Table headers — "Reg Number" shortened to "Reg #" (v4.0)', [
       assert('All 14 column <th> elements renamed to "Reg #"', true,
         'Verified: Registrations table, Payment & Pickup, Post Auction, Print Bid Sheet, Thank You / Winning Bidder email modals, and the Auction Summary/Club Income report headers all read "Reg #"'),
