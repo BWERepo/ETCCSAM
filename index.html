@@ -1979,7 +1979,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 11, 2026 6:18 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 14, 2026 10:46 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -5086,7 +5086,7 @@ function printInvoice(bidderNum) {
     </div>
   </div>
   <div style="margin-bottom:20px;">
-    <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
+    <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Reg # ${bidderNum}</div>
   </div>
   <table>
     <thead><tr><th style="width:100px;">Item #</th><th>Description</th><th style="width:120px;text-align:right;">Amount</th></tr></thead>
@@ -5413,7 +5413,7 @@ function printCheckedInvoices() {
           <div><h2 style="margin:0 0 2px;">Silent Auction Invoice</h2><div style="font-size:12px;color:#555;">${getClub().name}</div></div>
         </div>
       </div>
-      <div style="margin-bottom:10px;font-size:16px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
+      <div style="margin-bottom:10px;font-size:16px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name||'')} ${escHtml(bidder.last_name||'')} &nbsp;|&nbsp; Reg # ${bidderNum}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
         <thead><tr><th style="background:#dbeafe;padding:6px 10px;width:90px;border:1px solid #000;">Item #</th><th style="background:#dbeafe;padding:6px 10px;border:1px solid #000;">Description</th><th style="background:#dbeafe;padding:6px 10px;width:100px;text-align:right;border:1px solid #000;">Amount</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -5540,7 +5540,7 @@ function printAllInvoices() {
         </div>
       </div>
       <div style="margin-bottom:20px;">
-        <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
+        <div style="font-size:18px;font-weight:800;">Winning Bidder: ${escHtml(bidder.first_name || '')} ${escHtml(bidder.last_name || '')} &nbsp;|&nbsp; Reg # ${bidderNum}</div>
       </div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;">
         <thead><tr><th style="width:100px;background:#dbeafe;padding:8px 10px;text-align:left;border:1px solid #000;">Item #</th><th style="background:#dbeafe;padding:8px 10px;text-align:left;border:1px solid #000;">Description</th><th style="width:120px;background:#dbeafe;padding:8px 10px;text-align:right;border:1px solid #000;">Amount</th></tr></thead>
@@ -7726,7 +7726,7 @@ function buildPickupInvoiceHtml(bidderNum) {
     <div style="margin:20px 0;">
       <div style="font-weight:700;font-size:16px;">Silent Auction Invoice</div>
       <div style="font-size:12px;color:#555;margin-bottom:8px;">${escHtml(getClub().name)}</div>
-      <div style="font-weight:800;font-size:15px;margin-bottom:10px;">Winning Bidder: ${escHtml(bidderName)} &nbsp;|&nbsp; Reg Number ${bidderNum}</div>
+      <div style="font-weight:800;font-size:15px;margin-bottom:10px;">Winning Bidder: ${escHtml(bidderName)} &nbsp;|&nbsp; Reg # ${bidderNum}</div>
       <table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:13px;">
         <thead>
           <tr style="background:#dbeafe;">
@@ -8352,7 +8352,7 @@ function printWinningBidderReport() {
       const b = bidderMap[k];
       groups[k] = {
         bidder_number: w.bidder_number,
-        name: b ? `${b.first_name} ${b.last_name}`.trim() : (w.bidder_name || `Reg Number ${w.bidder_number}`),
+        name: b ? `${b.first_name} ${b.last_name}`.trim() : (w.bidder_name || `Reg # ${w.bidder_number}`),
         items: []
       };
     }
@@ -8381,7 +8381,7 @@ function printWinningBidderReport() {
     return `
       <div class="bidder-block">
         <div class="bidder-header">
-          <span>Reg Number ${escHtml(String(g.bidder_number))} &nbsp;—&nbsp; ${escHtml(g.name)}</span>
+          <span>Reg # ${escHtml(String(g.bidder_number))} &nbsp;—&nbsp; ${escHtml(g.name)}</span>
           <span class="bidder-total">Total Due: ${fmtDollar(subtotal)}</span>
         </div>
         <table>
@@ -8795,7 +8795,7 @@ function printItemsNotPaidReport() {
         <th>Description</th>
         <th>Category</th>
         <th style="text-align:right;">Winning Bid</th>
-        <th>Winning Bidder</th>
+        <th>Winning Reg #</th>
         <th>Email</th>
         <th>Phone</th>
       </tr>
@@ -11007,7 +11007,7 @@ async function testSamApiUrl() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v4.0</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 11, 2026 6:18 AM</span></div>
+  <div>Version: <span id="app-version">v4.1</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 14, 2026 10:46 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

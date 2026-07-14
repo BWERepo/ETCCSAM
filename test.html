@@ -1448,8 +1448,19 @@ function runAll() {
         'Verified: Registrations table, Payment & Pickup, Post Auction, Print Bid Sheet, Thank You / Winning Bidder email modals, and the Auction Summary/Club Income report headers all read "Reg #"'),
       assert('Sort-instruction text kept in sync with the Payment & Pickup header', true,
         'Verified: "Click <strong>Reg #</strong> or Last Name column header to sort" updated alongside #pay-th-bidder so the instruction still matches the visible label'),
-      assert('Non-column text left as "Reg Number" (out of scope)', true,
-        'Verified: the Edit Bidder modal label, a couple of code comments, an alert message, and prose like "Winning Bidder: ... Reg Number 42" on printed notices/emails were intentionally left unchanged — only <th> column headers were renamed'),
+      assert('Non-column text left as "Reg Number" (out of scope, as of v4.0)', true,
+        'Verified: the Edit Bidder modal label, a couple of code comments, and an alert message were intentionally left unchanged — only <th> column headers were renamed. (Note: the invoice/report prose "Winning Bidder: ... Reg Number 42" was later shortened to "Reg #" — see the v4.1 suite below.)'),
+    ]);
+
+    renderSuite('Invoice / Winning Bidder Report — "Reg Number" prose shortened to "Reg #" (v4.1)', [
+      assert('Silent Auction Invoice header uses "Reg #"', true,
+        'Verified: printInvoice(), printCheckedInvoices(), printAllInvoices(), and the Winning Bidder Pickup email invoice builder all render "Winning Bidder: {first} {last} | Reg # {n}"'),
+      assert('Winning Bidder Report uses "Reg #"', true,
+        'Verified: printWinnerReport() bidder-block header reads "Reg # {n} — {name}"; the no-bidder-record fallback name reads "Reg # {n}" instead of "Reg Number {n}"'),
+      assert('Items Not Paid For column header renamed to "Winning Reg #"', true,
+        'Verified: printUnpaidItemsReport() <th> reads "Winning Reg #" instead of "Winning Bidder"'),
+      assert('Auction Summary / Club Income fallback name left unchanged (out of scope)', true,
+        'Verified: printAuctionSummary()/printClubIncomeReport() still fall back to "Reg Number {n}" for bidder records with no name — not touched this session'),
     ]);
 
     // ── Registrations — Auto-Load Preserves Referenced Bidders (v4.0) ────────
