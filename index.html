@@ -1353,7 +1353,7 @@
                 <th style="text-align:center;" title="Print invoice">🖨</th>
                 <th>Item #</th>
                 <th>Winning Bid</th>
-                <th>Bidder</th>
+                <th>Reg #</th>
                 <th>Description</th>
                 <th>Value</th>
                 <th>Reserve</th>
@@ -1979,7 +1979,7 @@
           </div>
           <div>
             <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 14, 2026 10:46 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
+            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 14, 2026 10:59 AM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
           </div>
           <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
@@ -6856,12 +6856,17 @@ async function navigate(screenId) {
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'tk-btn'; b.textContent = label; b.addEventListener('click', fn); return b; };
       actions.insertBefore(mkBtn('Print', printBiddersList), closeBtn);
       addStepBtns('bidders', actions, closeBtn);
-      // Custom Refresh — reloads the table from the API. Positioned before
+      // Update Registrations — reloads the table from the API. Positioned before
       // Clear Filters, distinct from PageToolbar's own built-in Refresh button
       // (which sits after Clear Filters and is a no-op here since no
-      // dataUrl/onRefresh was passed to PageToolbar.init()).
+      // dataUrl/onRefresh was passed to PageToolbar.init()). Same confirmation
+      // behavior as the Record Winning Bidders screen's Update Registrations button.
       const clearFiltersBtn = [...actions.querySelectorAll('button')].find(b => /Clear Filters/i.test(b.textContent));
-      if (clearFiltersBtn) actions.insertBefore(mkBtn('Refresh', autoLoadBiddersFromApi), clearFiltersBtn);
+      const updateRegBtn = mkBtn('Update Registrations', async () => {
+        await autoLoadBiddersFromApi();
+        alert('Registrations updated from the Car Show API.');
+      });
+      actions.insertBefore(updateRegBtn, clearFiltersBtn || closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -6892,6 +6897,18 @@ async function navigate(screenId) {
       actions.insertBefore(mkBtn('Print', printWinnersTable), closeBtn);
       // Check All / Clear All removed — use the toggle-all checkbox in the table header instead.
       addStepBtns('winners', actions, closeBtn);
+      // Update Registrations — re-syncs bidders from the external Car Show API
+      // (same autoLoadBiddersFromApi() used on the Registrations screen) so
+      // newly-registered walk-ins are available while recording winners.
+      // Positioned before Clear Filters, same convention as the Registrations
+      // screen's own custom Refresh button.
+      const clearFiltersBtn = [...actions.querySelectorAll('button')].find(b => /Clear Filters/i.test(b.textContent));
+      const updateRegBtn = mkBtn('Update Registrations', async () => {
+        await autoLoadBiddersFromApi();
+        refreshWinnersTable();
+        alert('Registrations updated from the Car Show API.');
+      });
+      actions.insertBefore(updateRegBtn, clearFiltersBtn || closeBtn);
     }
     const closeBtn = tb ? tb.querySelector('.tk-btn-close') : null;
     if (closeBtn) {
@@ -11007,7 +11024,7 @@ async function testSamApiUrl() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v4.1</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 14, 2026 10:46 AM</span></div>
+  <div>Version: <span id="app-version">v4.2</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 14, 2026 10:59 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

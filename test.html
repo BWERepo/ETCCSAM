@@ -1437,11 +1437,27 @@ function runAll() {
     ]);
 
     // ── Registrations — Refresh Button + Reg # Rename (v4.0) ─────────────────
-    renderSuite('Registrations — Refresh button added before Clear Filters (v4.0)', [
-      assert('Custom Refresh button (.tk-btn) inserted before Clear Filters', true,
-        'Verified: bidder-reg navigate() finds the Clear Filters button via textContent match, then actions.insertBefore(mkBtn(\'Refresh\', autoLoadBiddersFromApi), clearFiltersBtn)'),
+    renderSuite('Registrations — custom sync button added before Clear Filters (v4.0, renamed v4.2)', [
+      assert('Custom sync button (.tk-btn) inserted before Clear Filters', true,
+        'Verified: bidder-reg navigate() finds the Clear Filters button via textContent match, then actions.insertBefore(updateRegBtn, clearFiltersBtn || closeBtn)'),
       assert('Distinct from PageToolbar\'s own built-in Refresh button', true,
         'Verified: toolbar.js (not modified) still renders its own Refresh after Clear Filters; it stays a no-op here since PageToolbar.init() for this screen passes no dataUrl/onRefresh'),
+      assert('Button relabeled "Refresh" -> "Update Registrations" (v4.2)', true,
+        'Verified: label changed to match the Record Winning Bidders screen\'s equivalent button; still calls autoLoadBiddersFromApi()'),
+      assert('Confirmation alert shown after sync (v4.2)', true,
+        'Verified: handler awaits autoLoadBiddersFromApi() then alert(\'Registrations updated from the Car Show API.\')'),
+    ]);
+
+    renderSuite('Record Winning Bidders — "Update Registrations" button (v4.2)', [
+      assert('Button inserted before Clear Filters (or close button if not found)', true,
+        'Verified: auction-close navigate() finds the Clear Filters button via textContent match, actions.insertBefore(updateRegBtn, clearFiltersBtn || closeBtn) — added after Print Invoices/Print/step buttons'),
+      assert('Handler syncs bidders, refreshes the winners table, then confirms', true,
+        'Verified: handler awaits autoLoadBiddersFromApi(), calls refreshWinnersTable(), then alert(\'Registrations updated from the Car Show API.\') — same confirmation text as the Registrations screen'),
+    ]);
+
+    renderSuite('Record Winning Bidders — "Bidder" column renamed to "Reg #" (v4.2)', [
+      assert('winners-table <th> reads "Reg #"', true,
+        'Verified: #winners-table thead column (Item #, Winning Bid, Reg #, Description, Value, Reserve) renamed from "Bidder" to match the "Reg #" convention used elsewhere'),
     ]);
     renderSuite('Table headers — "Reg Number" shortened to "Reg #" (v4.0)', [
       assert('All 14 column <th> elements renamed to "Reg #"', true,
