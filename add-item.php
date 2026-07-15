@@ -86,12 +86,12 @@ usort($members, fn($a, $b) => strcasecmp(($a['last_name'] ?? '') . ($a['first_na
 $errors = [];
 $success = false;
 $values = [
-    'etccMemberName' => '', 'category' => '', 'description' => '', 'itemValue' => '', 'reserveAmount' => '',
+    'etccMemberName' => '', 'memberEmail' => '', 'category' => '', 'description' => '', 'itemValue' => '', 'reserveAmount' => '',
     'donorName' => '', 'donorEmail' => '', 'donorPhone' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['description'])) {
-    foreach (['etccMemberName', 'category', 'description', 'itemValue', 'reserveAmount', 'donorName', 'donorEmail', 'donorPhone'] as $f) {
+    foreach (['etccMemberName', 'memberEmail', 'category', 'description', 'itemValue', 'reserveAmount', 'donorName', 'donorEmail', 'donorPhone'] as $f) {
         $values[$f] = trim((string)($_POST[$f] ?? ''));
     }
 
@@ -182,6 +182,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['description'])) {
                     $emailBcc = trim((string)($s['donationEmailBcc'] ?? ''));
                     $emailSubject = trim((string)($s['donationEmailSubject'] ?? '')) ?: $emailSubject;
                 }
+                // The selected ETCC member's email (auto-filled from the member
+                // dropdown) takes priority as the To: recipient over the static
+                // Settings-configured address, so the confirmation goes straight
+                // to the member who submitted the item. Falls back to the
+                // Settings To address if no member email is available.
+                if ($values['memberEmail'] !== '' && filter_var($values['memberEmail'], FILTER_VALIDATE_EMAIL)) {
+                    $emailTo = $values['memberEmail'];
+                }
                 if ($emailTo !== '' && sam_parse_addr_list($emailTo)) {
                     $logoUrl = 'https://etccapps.com/apps/sam/Images/ETCClogoWhiteBackground.png';
                     $rows = [
@@ -226,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['description'])) {
             $success = true;
             $lastItemNumber = $itemNumber;
             $values = [
-                'etccMemberName' => '', 'category' => '', 'description' => '', 'itemValue' => '', 'reserveAmount' => '',
+                'etccMemberName' => '', 'memberEmail' => '', 'category' => '', 'description' => '', 'itemValue' => '', 'reserveAmount' => '',
                 'donorName' => '', 'donorEmail' => '', 'donorPhone' => '',
             ];
         } catch (Exception $e) {
@@ -288,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['description'])) {
     <form method="post" novalidate>
       <div class="form-row">
         <label for="f-member">ETCC Member Name *</label>
-        <select id="f-member" name="etccMemberName">
+        <select id="f-member" name="etccMemberName" onchange="samFillMemberEmail()">
           <option value="">— choose —</option>
           <?php foreach ($members as $m): ?>
             <?php
@@ -296,11 +304,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['description'])) {
               $first = trim($m['first_name'] ?? '');
               if ($last === '' && $first === '') continue;
               $mName = $last !== '' && $first !== '' ? "$last, $first" : ($last ?: $first);
+              $mEmail = trim($m['primary_email'] ?? '');
             ?>
-            <option value="<?php echo htmlspecialchars($mName); ?>" <?php echo $values['etccMemberName'] === $mName ? 'selected' : ''; ?>><?php echo htmlspecialchars($mName); ?></option>
+            <option value="<?php echo htmlspecialchars($mName); ?>" data-email="<?php echo htmlspecialchars($mEmail); ?>" <?php echo $values['etccMemberName'] === $mName ? 'selected' : ''; ?>><?php echo htmlspecialchars($mName); ?></option>
           <?php endforeach; ?>
         </select>
       </div>
+      <div class="form-row">
+        <label for="f-member-email">Member Email</label>
+        <input type="email" id="f-member-email" name="memberEmail" readonly style="background:#f4f6f8;color:#667085;" value="<?php echo htmlspecialchars($values['memberEmail'] ?? ''); ?>">
+      </div>
+      <script>
+        function samFillMemberEmail() {
+          var sel = document.getElementById('f-member');
+          var opt = sel.options[sel.selectedIndex];
+          document.getElementById('f-member-email').value = (opt && opt.dataset.email) || '';
+        }
+      </script>
       <div class="form-row">
         <label for="f-donor">Donor Name *</label>
         <input type="text" id="f-donor" name="donorName" required value="<?php echo htmlspecialchars($values['donorName']); ?>">

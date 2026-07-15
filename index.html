@@ -925,6 +925,9 @@
       <div class="nav-item nav-subitem" data-screen="api">
         🔌 API
       </div>
+      <div class="nav-item nav-subitem" data-screen="import-members">
+        📇 Import Members
+      </div>
       <div class="nav-item nav-subitem" id="nav-dev-regtests" onclick="window.open('test.html','_blank')">
         ▶ Regression Tests
       </div>
@@ -1150,19 +1153,24 @@
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
             <span style="font-size:14px;font-weight:600;">Donated Items</span>
             <div style="display:flex;gap:8px;">
+              <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="selectAllDonatedItemRows(true)">Check All</button>
+              <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="selectAllDonatedItemRows(false)">Uncheck All</button>
+              <button class="btn danger" style="font-size:11px;padding:3px 10px;" onclick="deleteCheckedDonatedItems()">Delete Item</button>
               <button class="btn" style="font-size:11px;padding:3px 10px;" onclick="clearTableFilters('#donated-items-table')">Clear Filter</button>
             </div>
           </div>
           <div style="overflow:auto;flex:1;">
-            <table class="tablekit" id="donated-items-table" style="table-layout:fixed;width:100%;min-width:1800px;">
+            <table class="tablekit" id="donated-items-table" style="table-layout:fixed;width:100%;min-width:1836px;">
               <colgroup>
+                <col style="width:36px;">
                 <col style="width:70px;"><col style="width:150px;">
                 <col style="width:80px;"><col style="width:140px;"><col style="width:360px;">
                 <col style="width:90px;"><col style="width:90px;"><col style="width:200px;">
-                <col style="width:240px;"><col style="width:130px;"><col style="width:200px;">
+                <col style="width:240px;"><col style="width:130px;"><col style="width:100px;">
               </colgroup>
               <thead>
                 <tr>
+                  <th style="text-align:center;"><input type="checkbox" id="donated-items-check-all-th" onchange="selectAllDonatedItemRows(this.checked)" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"></th>
                   <th>Item #</th>
                   <th>Submission Date</th>
                   <th>Source</th>
@@ -1173,7 +1181,7 @@
                   <th>Donor Name</th>
                   <th>Donor Email</th>
                   <th>Donor Phone</th>
-                  <th style="width:200px;text-align:center;">Actions</th>
+                  <th style="width:100px;text-align:center;">Actions</th>
                 </tr>
               </thead>
               <tbody id="donated-items-tbody"></tbody>
@@ -2135,6 +2143,38 @@
         <div id="api-test-result" style="margin-top:12px;display:none;">
           <div id="api-test-status" style="font-size:12px;font-weight:600;margin-bottom:6px;"></div>
           <pre id="api-test-body" style="font-size:12px;background:var(--bg-section);padding:10px;border-radius:6px;overflow:auto;max-height:300px;white-space:pre-wrap;word-break:break-word;"></pre>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- ══ Developer: Import Members ══ -->
+    <section class="screen" id="screen-import-members">
+      <div style="max-width:800px;margin:0 auto;">
+      <div class="page-header">
+        <h2>Import Members</h2>
+        <p>Import the club member roster (Last Name, First Name, Email) from a CSV. Used to populate the ETCC Member Name dropdown on the Silent Auction Form (add-item.php).</p>
+      </div>
+      <div class="card" style="margin-bottom:16px;padding:16px;">
+        <h4 style="margin:0 0 8px;font-size:13px;">Import CSV</h4>
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px;">CSV must have header columns for <strong>Last Name</strong>, <strong>First Name</strong>, and <strong>Email</strong> (column names are matched case-insensitively; common variants like "last_name" or "Last" are accepted). Importing replaces the entire member list.</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="file" id="inp-import-members-csv" accept=".csv" style="font-size:12px;">
+          <button class="btn primary" onclick="importMembersCsv()">Import</button>
+        </div>
+        <div id="import-members-status" style="margin-top:10px;font-size:12px;color:var(--text-secondary);"></div>
+      </div>
+      <div class="card" style="padding:0;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;">
+          <span id="import-members-count">0 members</span>
+          <button class="btn danger" style="font-size:11px;padding:3px 10px;" onclick="clearImportedMembers()">Delete All</button>
+        </div>
+        <div style="max-height:400px;overflow:auto;">
+          <table class="tablekit" id="import-members-table" style="width:100%;table-layout:fixed;">
+            <colgroup><col style="width:200px;"><col style="width:200px;"><col></colgroup>
+            <thead><tr><th>Last Name</th><th>First Name</th><th>Email</th></tr></thead>
+            <tbody id="import-members-tbody"></tbody>
+          </table>
         </div>
       </div>
       </div>
@@ -4112,18 +4152,21 @@ function renderDonatedItemsTable() {
 
   const items = Items.getAll();
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-secondary);">No donated items.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text-secondary);">No donated items.</td></tr>';
     TableKit.init(document.getElementById('donated-items-table'));
     return;
   }
 
   // Same row shape as refreshItemsTable()'s items-table — this screen now
   // mirrors Loaded Items exactly (minus the Item # / Date Loaded columns
-  // already dropped from this table).
+  // already dropped from this table) — plus a leading checkbox column used
+  // by Check All / Uncheck All / Delete Item (bulk delete replaces the old
+  // per-row Delete button).
   tbody.innerHTML = items.map(item => {
     const catCode = item.category_code ? 'cat-' + item.category_code : 'cat-900';
     return `
       <tr>
+        <td style="text-align:center;"><input type="checkbox" class="donated-item-row-check" data-item-number="${escHtml(String(item.item_number))}" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;"></td>
         <td><strong>${escHtml(String(item.item_number))}</strong></td>
         <td style="white-space:nowrap;">${escHtml(item.email_date || '')}</td>
         <td>${escHtml(item.source || (item.email_message_id ? 'Email' : 'Added'))}</td>
@@ -4135,8 +4178,7 @@ function renderDonatedItemsTable() {
         <td>${escHtml(item.donor_email)}</td>
         <td>${escHtml(item.donor_phone)}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn" style="padding:3px 10px;margin-right:4px;font-size:11px;" onclick="editItemByNumber('${escHtml(item.item_number)}')" title="Edit item">Edit</button>
-          <button class="btn danger" style="padding:3px 10px;font-size:11px;" onclick="deleteItemByNumber('${escHtml(item.item_number)}')" title="Delete item">Delete</button>
+          <button class="btn" style="padding:3px 10px;font-size:11px;" onclick="editItemByNumber('${escHtml(item.item_number)}')" title="Edit item">Edit</button>
         </td>
       </tr>`;
   }).join('');
@@ -4144,12 +4186,54 @@ function renderDonatedItemsTable() {
   TableKit.init(document.getElementById('donated-items-table'));
 }
 
+function selectAllDonatedItemRows(checked) {
+  document.querySelectorAll('.donated-item-row-check').forEach(cb => { cb.checked = checked; });
+  const headerCb = document.getElementById('donated-items-check-all-th');
+  if (headerCb) headerCb.checked = checked;
+}
+
+function deleteCheckedDonatedItems() {
+  const checked = [...document.querySelectorAll('.donated-item-row-check:checked')];
+  if (!checked.length) {
+    alert('No items selected. Check one or more rows first.');
+    return;
+  }
+  const itemNumbers = checked.map(cb => cb.dataset.itemNumber);
+  if (!confirm(`Delete ${itemNumbers.length} item(s)? This cannot be undone.`)) return;
+
+  let items = Items.getAll();
+  items = items.filter(i => !itemNumbers.includes(i.item_number));
+  DB.saveItems(items);
+
+  // Remove any winner record for deleted items so they can't linger as
+  // orphans on invoices / Pay & Pickup (same cleanup deleteItemByNumber() does).
+  const winners = DB.getWinners();
+  let winnersChanged = false;
+  itemNumbers.forEach(num => { if (winners[num]) { delete winners[num]; winnersChanged = true; } });
+  if (winnersChanged) DB.saveWinners(winners);
+
+  refreshItemsTable();
+  persistItemLoadScreenToDB();
+}
+
 // Column index maps for the two table layouts this inline editor supports.
 // #items-tbody (and #view-all-table, which mirrors it with an optional
 // leading checkbox column) has a "Date Loaded" column that #donated-items-tbody
 // doesn't — everything after Submission Date shifts left by one there.
 const ITEM_EDIT_COLS_MAIN    = { item:0, subdate:1, category:4, desc:5, value:6, reserve:7, donorName:8, donorEmail:9, donorPhone:10, actions:11 };
+// #donated-items-tbody now has its own leading checkbox column (Check All /
+// Delete Item), same as #view-all-table's optional one — `off` in
+// editItemByNumber()/saveItemEdit() already accounts for a leading checkbox
+// cell generically, so these indices are the un-shifted (no-checkbox) column
+// positions; `off` adds 1 when a checkbox cell is actually present.
 const ITEM_EDIT_COLS_DONATED = { item:0, subdate:1, category:3, desc:4, value:5, reserve:6, donorName:7, donorEmail:8, donorPhone:9,  actions:10 };
+
+// Shared by editItemByNumber()/saveItemEdit(): a row may have a leading
+// checkbox column (View All's select-all checkbox, or Donated Items' bulk-
+// delete checkbox) that shifts every data cell right by one.
+function rowCheckboxOffset(tr) {
+  return tr.cells[0]?.querySelector('input[type="checkbox"]') ? 1 : 0;
+}
 
 function editItemByNumber(itemNumber) {
   console.log('[editItemByNumber] Called with itemNumber:', itemNumber);
@@ -4167,10 +4251,11 @@ function editItemByNumber(itemNumber) {
   const donatedModal = document.getElementById('donated-items-modal');
   const isDonatedOpen = donatedModal && donatedModal.style.display === 'flex';
 
-  // The View All modal may prepend a checkbox column, shifting all data cells
-  // by one. `off` keeps cell indices correct in either table.
+  // The View All modal and the Donated Items table may each prepend a
+  // checkbox column, shifting all data cells by one. `off` keeps cell indices
+  // correct regardless of which (if any) checkbox column is present.
   const matchesItem = (tr) => {
-    const o = tr.querySelector('.item-view-all-checkbox') ? 1 : 0;
+    const o = rowCheckboxOffset(tr);
     return tr.cells[o]?.textContent.trim() === itemNumber;
   };
 
@@ -4199,7 +4284,7 @@ function editItemByNumber(itemNumber) {
     return;
   }
 
-  const off = row.querySelector('.item-view-all-checkbox') ? 1 : 0;
+  const off = rowCheckboxOffset(row);
 
   // Store original values for cancel
   const originalValues = {
@@ -4256,8 +4341,9 @@ function saveItemEdit(itemNumber) {
     return;
   }
 
-  // The View All modal may prepend a checkbox column, shifting data cells by one.
-  const off = row.querySelector('.item-view-all-checkbox') ? 1 : 0;
+  // The View All modal / Donated Items table may prepend a checkbox column,
+  // shifting data cells by one.
+  const off = rowCheckboxOffset(row);
   const cols = row.closest('#donated-items-tbody') ? ITEM_EDIT_COLS_DONATED : ITEM_EDIT_COLS_MAIN;
 
   // Get edited values from inputs
@@ -6837,7 +6923,8 @@ async function navigate(screenId) {
     'settings': 'Settings',
     'config': 'Configuration',
     'changelog': 'Change Log',
-    'api': 'API'
+    'api': 'API',
+    'import-members': 'Import Members'
   };
 
   const screenName = screenNames[screenId] || screenId;
@@ -6890,7 +6977,7 @@ async function navigate(screenId) {
   if (workflowScreens.includes(screenId) && !DB.getCurrentAuctionId()) {
     screenId = 'home';
   }
-  const developerScreens = ['settings', 'config', 'changelog', 'api'];
+  const developerScreens = ['settings', 'config', 'changelog', 'api', 'import-members'];
   if (developerScreens.includes(screenId) && !isSettingsAuthenticated()) {
     if (!await authenticateSettings()) return;
   }
@@ -6936,6 +7023,7 @@ async function navigate(screenId) {
   if (screenId === 'settings')       loadSettingsForm();
   if (screenId === 'config')         loadSettingsForm();
   if (screenId === 'api')            loadApiTestPage();
+  if (screenId === 'import-members') refreshImportMembersTable();
   if (screenId === 'bidding-sheets') {
     PageToolbar.init({ title: '', tableSelector: '#bs-items-table' });
     const tb   = document.getElementById('page-toolbar');
@@ -9645,6 +9733,92 @@ function initializeEntryGate() {
 })();
 
 // ══════════════════════════════════════
+//  DEVELOPER > IMPORT MEMBERS
+//  Standalone re-implementation of member CSV import (the original Settings
+//  card + importMemberCSV() below was removed from the UI in v4.0 but left
+//  orphaned). Deliberately simpler: only Last Name, First Name, and Email are
+//  imported/required — no member_number/phone requirement — matching the
+//  fields the ETCC Member Name dropdown (add-item.php) actually needs.
+// ══════════════════════════════════════
+const IMPORT_MEMBERS_COL_ALIASES = {
+  last_name:  ['last_name', 'last', 'lastname', 'surname'],
+  first_name: ['first_name', 'first', 'firstname', 'given_name'],
+  email:      ['email', 'email_address', 'primary_email', 'e_mail'],
+};
+
+function importMembersCsv() {
+  const fileInput = document.getElementById('inp-import-members-csv');
+  const file = fileInput.files[0];
+  const statusEl = document.getElementById('import-members-status');
+  if (!file) { statusEl.textContent = 'Please select a CSV file first.'; return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim());
+    if (!lines.length) { statusEl.textContent = 'File is empty.'; return; }
+
+    const rawHeader = lines[0].replace(/^﻿/, '');
+    const headers = parseCSVLine(rawHeader).map(h => cleanTrim(h).toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+
+    const colMap = {};
+    for (const field of Object.keys(IMPORT_MEMBERS_COL_ALIASES)) {
+      colMap[field] = -1;
+      for (const alias of IMPORT_MEMBERS_COL_ALIASES[field]) {
+        const idx = headers.indexOf(alias);
+        if (idx !== -1) { colMap[field] = idx; break; }
+      }
+    }
+    const missing = Object.keys(colMap).filter(f => colMap[f] === -1);
+    if (missing.length) {
+      statusEl.textContent = 'Missing required columns: ' + missing.join(', ') + '. Found: ' + headers.join(', ');
+      return;
+    }
+
+    const members = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      const get = key => cleanTrim(cols[colMap[key]] || '');
+      const last_name = get('last_name'), first_name = get('first_name'), email = get('email');
+      if (!last_name && !first_name && !email) continue; // skip blank rows
+      members.push({ last_name, first_name, primary_email: email });
+    }
+
+    DB.saveMembers(members);
+    statusEl.textContent = `${members.length} member(s) imported.`;
+    fileInput.value = '';
+    refreshImportMembersTable();
+    debugLog(`✓ Imported ${members.length} members via Developer > Import Members`);
+  };
+  reader.readAsText(file);
+}
+
+function refreshImportMembersTable() {
+  const members = DB.getMembers() || [];
+  document.getElementById('import-members-count').textContent = `${members.length} member${members.length === 1 ? '' : 's'}`;
+  const tbody = document.getElementById('import-members-tbody');
+  if (!tbody) return;
+  if (!members.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-secondary);">No members imported yet.</td></tr>';
+  } else {
+    tbody.innerHTML = members.map(m => `
+      <tr>
+        <td>${escHtml(m.last_name || '')}</td>
+        <td>${escHtml(m.first_name || '')}</td>
+        <td>${escHtml(m.primary_email || '')}</td>
+      </tr>`).join('');
+  }
+  TableKit.init(document.getElementById('import-members-table'));
+}
+
+function clearImportedMembers() {
+  if (!confirm('Delete all imported members? This cannot be undone.')) return;
+  DB.saveMembers([]);
+  refreshImportMembersTable();
+  document.getElementById('import-members-status').textContent = 'All members deleted.';
+}
+
+// ══════════════════════════════════════
 //  MEMBER DATABASE
 // ══════════════════════════════════════
 function importMemberCSV() {
@@ -11215,7 +11389,7 @@ async function testSamApiUrl() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v4.4</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 15, 2026 5:08 PM</span></div>
+  <div>Version: <span id="app-version">v4.5</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 15, 2026 6:52 PM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 
