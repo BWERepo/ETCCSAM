@@ -63,7 +63,6 @@ try {
     die('Database connection error.');
 }
 
-
 // Password gate removed (explicit request) — this page now writes directly
 // into the live `items` table/kv blob with no authentication at all. Unlike
 // donate-item.php (which only reaches the isolated donated_items_pending
