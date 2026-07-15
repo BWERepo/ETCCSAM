@@ -469,6 +469,42 @@ function logQuery($action, $query, $status, $details = '') {
 
 logQuery($action, 'START', 'REQUEST', "Action=$action");
 
+// ═════════════════════════════════════════════════════════════════════════════
+// Settings password guard (server-side backstop against lockouts)
+// ═════════════════════════════════════════════════════════════════════════════
+// The sam_settings blob is a FULL overwrite written by ~15 "Save Settings"
+// buttons and several load-time paths. A stale-tab / stale-localStorage write
+// used to blank or default-revert `password` / `settingsPassword`, repeatedly
+// locking staff out. The client-side saveSettings() now merges onto current
+// settings, but this is the durable server-side backstop: for each protected
+// field, keep the EXISTING stored value unless the incoming value is a genuine
+// change — non-empty, different from what's stored, and (for settingsPassword,
+// which has a known public default) not that default. Net effect: these two
+// fields can only ever be CHANGED to a real value; a settings save can never
+// drop, blank, or reset-to-default them. (Trade-off: you can't set
+// settingsPassword back TO the literal default 'Gladiator#1' — acceptable,
+// since that value is exactly the corruption signature we're guarding against.)
+function sam_guard_settings_passwords($incoming, PDO $pdo) {
+    if (!is_array($incoming)) return $incoming;
+    $existing = [];
+    try {
+        $val = $pdo->query("SELECT `value` FROM sam_store WHERE `key` = 'sam_settings' LIMIT 1")->fetchColumn();
+        if ($val) $existing = json_decode($val, true) ?: [];
+    } catch (Exception $e) {
+        return $incoming; // can't read existing — don't interfere
+    }
+    // settingsPassword has a known hardcoded default; the login password does not.
+    $defaults = ['password' => null, 'settingsPassword' => 'Gladiator#1'];
+    foreach ($defaults as $field => $default) {
+        $exVal = isset($existing[$field]) ? (string)$existing[$field] : '';
+        if ($exVal === '') continue; // nothing stored yet — allow the first-time set
+        $inVal = isset($incoming[$field]) ? (string)$incoming[$field] : '';
+        $isRealChange = ($inVal !== '') && ($inVal !== $exVal) && ($default === null || $inVal !== $default);
+        if (!$isRealChange) $incoming[$field] = $exVal; // preserve the stored value
+    }
+    return $incoming;
+}
+
 if ($action === 'login') {
     // Server-side authentication. Establishes $_SESSION['authenticated'] so that
     // protected write actions (set, save_*, delete_*) are permitted. The expected
@@ -726,6 +762,16 @@ if ($action === 'login') {
     if (!$isAllowed) {
         echo json_encode(['error' => 'Invalid key']);
         exit;
+    }
+    // Guard the password fields when the full settings blob is written through
+    // this generic path (the client's auto-sync hook posts sam_settings here on
+    // every localStorage write — the most frequent clobber vector).
+    if ($key === 'sam_settings') {
+        $decoded = json_decode((string)$val, true);
+        if (is_array($decoded)) {
+            $decoded = sam_guard_settings_passwords($decoded, $pdo);
+            $val = json_encode($decoded);
+        }
     }
     $stmt = $pdo->prepare(
         "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?)
@@ -1562,6 +1608,7 @@ if ($action === 'login') {
 
 } elseif ($action === 'save_settings') {
     $data = $input['data'] ?? [];
+    $data = sam_guard_settings_passwords($data, $pdo); // never let a save drop/blank/default the passwords
     try {
         $query = "INSERT INTO sam_store (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)";
         $stmt = $pdo->prepare($query);

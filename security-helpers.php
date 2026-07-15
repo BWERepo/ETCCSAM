@@ -9,15 +9,45 @@
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * Sends a plain-text email via authenticated SMTP using credentials from
- * $env (SMTP_HOST/PORT/USER/PASS/FROM in .env). Ported from the Car Show
- * app's carshow_send_mail() — PHP's raw mail() was tried there first and
- * dropped: it returned success while silently failing to deliver to Gmail
- * from a Hostinger account (no SPF/DKIM behind mail()'s sendmail path).
+ * Parses a comma/semicolon-separated address list into an array of valid
+ * email addresses, silently dropping anything that doesn't validate.
+ */
+function sam_parse_addr_list($raw) {
+    if (!is_string($raw) || trim($raw) === '') return [];
+    $out = [];
+    foreach (preg_split('/[,;]+/', $raw) as $part) {
+        $part = trim($part);
+        if ($part !== '' && filter_var($part, FILTER_VALIDATE_EMAIL)) $out[] = $part;
+    }
+    return $out;
+}
+
+/**
+ * Sends an email via authenticated SMTP using credentials from $env
+ * (SMTP_HOST/PORT/USER/PASS/FROM in .env). Ported from the Car Show app's
+ * carshow_send_mail() — PHP's raw mail() was tried there first and dropped:
+ * it returned success while silently failing to deliver to Gmail from a
+ * Hostinger account (no SPF/DKIM behind mail()'s sendmail path).
+ * @param string       $to      Primary recipient(s) — comma/semicolon-separated allowed.
+ * @param string       $subject
+ * @param string       $body    Plain text, or full HTML when $html is true.
+ * @param array        $env
+ * @param string       $cc      Optional CC recipient(s), same list syntax as $to.
+ *                              Added as extra RCPT TOs (actually delivered) and a
+ *                              Cc: header (shows in the message).
+ * @param string       $bcc     Optional BCC recipient(s), same list syntax. Added
+ *                              as extra RCPT TOs only — deliberately NO header, since
+ *                              a Bcc: header would defeat the point of a blind copy.
+ * @param bool         $html    When true, sends as Content-Type: text/html.
  * @return bool True if the server accepted the message for delivery.
  */
-function sam_send_mail($to, $subject, $body, $env) {
+function sam_send_mail($to, $subject, $body, $env, $cc = '', $bcc = '', $html = false) {
     if (empty($env['SMTP_HOST']) || empty($env['SMTP_USER']) || empty($env['SMTP_PASS'])) return false;
+
+    $toList  = sam_parse_addr_list($to);
+    $ccList  = sam_parse_addr_list($cc);
+    $bccList = sam_parse_addr_list($bcc);
+    if (!$toList) return false;
 
     $host = $env['SMTP_HOST'];
     $port = !empty($env['SMTP_PORT']) ? (int)$env['SMTP_PORT'] : 465;
@@ -66,13 +96,17 @@ function sam_send_mail($to, $subject, $body, $env) {
 
     $write('MAIL FROM:<' . $from . '>');
     if (!$expect(250)) return $fail();
-    $write('RCPT TO:<' . $to . '>');
-    if (!$expect(250)) return $fail();
+    foreach (array_merge($toList, $ccList, $bccList) as $rcpt) {
+        $write('RCPT TO:<' . $rcpt . '>');
+        if (!$expect(250)) return $fail();
+    }
     $write('DATA');
     if (!$expect(354)) return $fail();
 
-    $headers = "From: {$from}\r\nTo: {$to}\r\nSubject: {$subject}\r\n" .
-        "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n";
+    $headers = "From: {$from}\r\nTo: " . implode(', ', $toList) . "\r\n" .
+        ($ccList ? "Cc: " . implode(', ', $ccList) . "\r\n" : '') .
+        "Subject: {$subject}\r\n" .
+        "MIME-Version: 1.0\r\nContent-Type: " . ($html ? 'text/html' : 'text/plain') . "; charset=UTF-8\r\n";
     // Dot-stuffing: a line starting with "." in the body must be escaped to
     // ".." or the SMTP server reads it as the end-of-DATA terminator.
     $safeBody = preg_replace('/^\./m', '..', $body);

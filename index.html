@@ -909,7 +909,7 @@
       📖 User Manual
     </div>
     <hr class="nav-divider" />
-    <div class="nav-item" id="nav-developer" onclick="toggleDeveloperMenu()" aria-expanded="false">
+    <div class="nav-item" id="nav-developer" onclick="toggleDeveloperMenu()" aria-expanded="false" tabindex="0">
       🛠 Developer
     </div>
     <div id="nav-developer-submenu" style="display:none;">
@@ -1787,12 +1787,47 @@
         <div class="card-header">Security</div>
         <div style="padding:16px;">
           <div class="form-row">
-            <label for="inp-app-password">App Access Password</label>
+            <label for="inp-app-password">Login Password</label>
             <input type="password" id="inp-app-password" style="width:250px;" placeholder="Enter new password" />
             <span class="form-hint">Password required to access the Silent Auction Manager (default: ETCCauctionoct2026)</span>
           </div>
           <div style="margin-top:12px;">
             <button class="btn primary" onclick="changeAppPassword()" style="font-size:12px;white-space:nowrap;">Update Password</button>
+          </div>
+          <div class="form-row" style="margin-top:22px;">
+            <label for="inp-settings-password">Settings Password</label>
+            <input type="password" id="inp-settings-password" style="width:250px;" placeholder="Enter new password" />
+            <span class="form-hint">Password gating access to Settings, Configuration, and Delete Auction (default: Gladiator#1)</span>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="changeSettingsPassword()" style="font-size:12px;white-space:nowrap;">Change Password</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Donation Confirmation Email -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">Item Donation Confirmation Email</div>
+        <div style="padding:16px;">
+          <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px;">Sent whenever an item is submitted through the Silent Auction Form (add-item.php). Leave To blank to disable.</p>
+          <div class="form-row">
+            <label for="inp-donation-email-to">To</label>
+            <input type="text" id="inp-donation-email-to" placeholder="name@example.com" />
+          </div>
+          <div class="form-row">
+            <label for="inp-donation-email-cc">CC</label>
+            <input type="text" id="inp-donation-email-cc" placeholder="name@example.com" />
+          </div>
+          <div class="form-row">
+            <label for="inp-donation-email-bcc">BCC</label>
+            <input type="text" id="inp-donation-email-bcc" placeholder="name@example.com" />
+          </div>
+          <div class="form-row">
+            <label for="inp-donation-email-subject">Subject</label>
+            <input type="text" id="inp-donation-email-subject" placeholder="New Item Donation Submitted" />
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="saveSettings()">Save Settings</button>
           </div>
         </div>
       </div>
@@ -2013,25 +2048,6 @@
             <button class="btn" onclick="loadTableData()">Load</button>
           </div>
           <div id="table-viewer-container" style="margin-top:16px;"></div>
-        </div>
-      </div>
-
-      <!-- Security & Version -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="card-header">Security & Version</div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:14px;">
-          <div style="display:flex;gap:12px;align-items:flex-end;">
-            <div style="flex:1;">
-              <label for="inp-settings-password" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Settings Password</label>
-              <input type="password" id="inp-settings-password" placeholder="Enter new password" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
-            </div>
-            <button class="btn primary" onclick="changeSettingsPassword()" style="font-size:12px;white-space:nowrap;">Change Password</button>
-          </div>
-          <div>
-            <label for="inp-deploy-date" style="display:block;margin-bottom:4px;font-size:12px;font-weight:600;">Last Deploy Date</label>
-            <input type="text" id="inp-deploy-date" data-deploy-date="Jul 14, 2026 1:33 PM" placeholder="e.g. Jun 20, 2026 5:19 PM" style="width:250px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);" />
-          </div>
-          <button class="btn primary" onclick="saveSettings()" style="font-size:12px;align-self:flex-start;">Save Settings</button>
         </div>
       </div>
 
@@ -2582,6 +2598,10 @@ const DEFAULT_SETTINGS = {
   squareFee:       0.10,
   walkInStart:        1000,
   externalApiUrl:     '', // Developer > API screen's URL field — also used by Register Bidders' "Load from API"
+  donationEmailTo:      '', // Settings screen — Item Donation Confirmation Email card. add-item.php (Silent Auction Form) sends here (blank = disabled)
+  donationEmailCc:      '',
+  donationEmailBcc:     '',
+  donationEmailSubject: 'New Item Donation Submitted',
   bidRowHeight:       0.28, // Bid sheet row height in inches (Step 2 — Create Bid Sheets)
   memberImportDate:   '',
   regImportDate:      '',
@@ -4071,10 +4091,9 @@ function saveAddItemModal() {
 //  queue, that queue stopped reflecting what staff were actually adding —
 //  so this screen now just mirrors Loaded Items directly (same data,
 //  same Edit/Delete actions) instead of querying donated_items_pending.
-//  get_pending_donations/mark_donations_imported (api.php) and
-//  importDonatedItemById/deletePendingDonation/importAllDonatedItems/
-//  importDonations (below) are left in place but orphaned — no UI calls
-//  them anymore.
+//  donate-item.php (the only writer to that queue) has since been removed
+//  entirely; get_pending_donations/mark_donations_imported (api.php) are
+//  left in place but orphaned — nothing calls them anymore.
 // ══════════════════════════════════════
 function openDonatedItemsModal() {
   const modal = document.getElementById('donated-items-modal');
@@ -4123,79 +4142,6 @@ function renderDonatedItemsTable() {
   }).join('');
 
   TableKit.init(document.getElementById('donated-items-table'));
-}
-
-let _pendingDonations = [];
-
-function importDonatedItemById(id) {
-  const item = _pendingDonations.find(d => String(d.id) === String(id));
-  if (!item) return;
-  importDonations([item]);
-}
-
-async function deletePendingDonation(id) {
-  const item = _pendingDonations.find(d => String(d.id) === String(id));
-  if (!item) return;
-  if (!confirm(`Discard this donation (${item.description || 'no description'})? This cannot be undone.`)) return;
-  try {
-    await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
-      method: 'POST',
-      body: JSON.stringify({ action: 'mark_donations_imported', ids: [item.id] })
-    });
-  } catch (e) {
-    alert('Failed to reach the server: ' + e.message);
-    return;
-  }
-  _pendingDonations = _pendingDonations.filter(d => String(d.id) !== String(id));
-}
-
-function importAllDonatedItems() {
-  if (!_pendingDonations.length) {
-    alert('No donated items to import.');
-    return;
-  }
-  importDonations(_pendingDonations);
-}
-
-async function importDonations(list) {
-  if (!list.length) return;
-  if (!confirm(`Import ${list.length} donated item(s) into Loaded Items?`)) return;
-
-  const importedIds = [];
-  list.forEach(d => {
-    const categoryCode = String(d.category_code || '');
-    const categoryName = d.category_name || CATEGORIES[categoryCode] || '';
-    const itemNum = Items.nextItemNumber(categoryCode);
-    Items.add({
-      item_number: itemNum,
-      category_code: categoryCode,
-      category_name: categoryName,
-      description: d.description || '',
-      item_value: d.item_value || '',
-      reserve_amount: '0',
-      donor_name: d.donor_name || '',
-      donor_email: d.donor_email || '',
-      donor_phone: d.donor_phone || '',
-      email_date: d.submitted_at ? new Date(d.submitted_at).toLocaleString() : '',
-      loaded_date: '',
-      email_message_id: '',
-      source: 'Donated (Web)'
-    });
-    importedIds.push(d.id);
-  });
-
-  try {
-    await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
-      method: 'POST',
-      body: JSON.stringify({ action: 'mark_donations_imported', ids: importedIds })
-    });
-  } catch (e) {
-    debugLog(`⚠ Imported ${importedIds.length} donated item(s) locally, but failed to mark them imported server-side: ${e.message}`);
-  }
-
-  refreshItemsTable();
-  refreshMetrics();
-  alert(`Imported ${importedIds.length} donated item(s).`);
 }
 
 // Column index maps for the two table layouts this inline editor supports.
@@ -6294,6 +6240,10 @@ function loadSettingsForm() {
   document.getElementById('inp-client-id').value       = s.gmailClientId  || '';
   document.getElementById('inp-inbox-email').value     = s.inboxEmail     || '';
   document.getElementById('inp-email-folder').value    = s.emailFolder    || 'INBOX';
+  document.getElementById('inp-donation-email-to').value = s.donationEmailTo || '';
+  document.getElementById('inp-donation-email-cc').value = s.donationEmailCc || '';
+  document.getElementById('inp-donation-email-bcc').value = s.donationEmailBcc || '';
+  document.getElementById('inp-donation-email-subject').value = s.donationEmailSubject || 'New Item Donation Submitted';
   document.getElementById('inp-debug-mode').checked    = !!s.debugMode;
   document.getElementById('inp-maintenance-mode').checked = !!s.maintenanceMode;
   if (typeof populateClearScope === 'function') populateClearScope();
@@ -6333,10 +6283,8 @@ function loadSettingsForm() {
   renderFieldMapTable();
   refreshDeleteAuctionDropdown();
   updateFavicon(s.clubFavicon);
-  // Deploy date comes from the footer span baked in at deploy time, not Settings
-  const footerDate = document.getElementById('app-deploy-date')?.textContent?.trim();
-  document.getElementById('inp-deploy-date').value = (footerDate && footerDate !== 'Never') ? footerDate : (s.deployDate || '');
-  document.getElementById('inp-settings-password').value = '';
+  const settingsPwEl = document.getElementById('inp-settings-password');
+  if (settingsPwEl) settingsPwEl.value = '';
 }
 
 // Deploy date is baked into the footer span by deploy.ps1; do not overwrite it
@@ -6423,6 +6371,12 @@ function submitAuthPassword() {
   if (password === correctPassword) {
     window._settingsAuthAt = Date.now();
     document.getElementById('auth-modal').style.display = 'none';
+    // Entering the settings password unlocks the Developer submenu, so expand
+    // it now regardless of what triggered the gate.
+    const submenu = document.getElementById('nav-developer-submenu');
+    const devItem = document.getElementById('nav-developer');
+    if (submenu) submenu.style.display = 'block';
+    if (devItem) { devItem.setAttribute('aria-expanded', 'true'); devItem.focus(); }
     if (_authPasswordCallback) _authPasswordCallback(true);
     _authPasswordCallback = null;
   } else {
@@ -6545,10 +6499,24 @@ function updateFavicon(faviconUrl) {
 
 function saveSettings() {
   const clientId = document.getElementById('inp-client-id').value.trim();
-  const settings = {
+  // CRITICAL: merge the form fields ONTO the current full settings rather than
+  // rebuilding the blob from scratch. DB.saveSettings() does a full overwrite
+  // of the stored settings, so any key NOT present in this object is silently
+  // dropped — DB.getSettings() then falls back to DEFAULT_SETTINGS for it.
+  // This screen has no input for `password` or `settingsPassword` (they have
+  // their own change-password handlers), so a from-scratch literal wiped both
+  // every time Save Settings was clicked — reverting settingsPassword to the
+  // 'Gladiator#1' default and blanking the login password entirely. Same
+  // hazard for externalApiUrl / bidRowHeight / memberImportDate / regImportDate,
+  // which are also managed outside this form.
+  const settings = Object.assign({}, DB.getSettings(), {
     gmailClientId:  clientId,
     inboxEmail:     document.getElementById('inp-inbox-email').value.trim(),
     emailFolder:    document.getElementById('inp-email-folder').value.trim() || 'INBOX',
+    donationEmailTo:      document.getElementById('inp-donation-email-to').value.trim(),
+    donationEmailCc:      document.getElementById('inp-donation-email-cc').value.trim(),
+    donationEmailBcc:     document.getElementById('inp-donation-email-bcc').value.trim(),
+    donationEmailSubject: document.getElementById('inp-donation-email-subject').value.trim() || 'New Item Donation Submitted',
     debugMode:      document.getElementById('inp-debug-mode').checked,
     maintenanceMode: document.getElementById('inp-maintenance-mode').checked,
     environment:    document.getElementById('inp-environment').value || 'Prod',
@@ -6584,8 +6552,10 @@ function saveSettings() {
     donorNotBidFooterLeft:   document.getElementById('inp-donor-notbid-footer-left').value,
     donorNotBidFooterCenter: document.getElementById('inp-donor-notbid-footer-center').value,
     donorNotBidFooterRight:  document.getElementById('inp-donor-notbid-footer-right').value,
-    deployDate:     document.getElementById('inp-deploy-date').value.trim(),
-  };
+    // deployDate has no input on this screen anymore (the Last Deploy Date field
+    // was removed with the Security & Version card); the Object.assign onto
+    // DB.getSettings() above preserves whatever value is already stored.
+  });
   DB.saveSettings(settings);
   applyBranding(settings);
   updateFavicon(settings.clubFavicon);
@@ -9348,7 +9318,7 @@ function initializePasswordScreen() {
     forgotStatus.className = 'show';
     forgotStatus.textContent = 'Sending reset link…';
     try {
-      const res = await fetch('https://etccapps.com/apps/sam/api.php', {
+      const res = await secureApiFetch('https://etccapps.com/apps/sam/api.php', {
         method: 'POST',
         body: JSON.stringify({ action: 'forgot_password' })
       });
@@ -11245,7 +11215,7 @@ async function testSamApiUrl() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v4.3</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 14, 2026 1:33 PM</span></div>
+  <div>Version: <span id="app-version">v4.3</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 15, 2026 6:36 AM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

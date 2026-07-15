@@ -1471,8 +1471,8 @@ function runAll() {
         'Verified: editItemByNumber()/saveItemEdit() use ITEM_EDIT_COLS_MAIN vs ITEM_EDIT_COLS_DONATED column-index maps depending on which tbody the matched row is in — donated-items-tbody lacks the "Date Loaded" column, so every field after Submission Date shifts left by one there. Before this fix, Edit silently edited the hidden Loaded Items row underneath instead of the visible Donated Items row.'),
       assert('Donor Name / Donor Email columns widened for editing', true,
         'Verified: #donated-items-table colgroup — Donor Name 140px→200px, Donor Email 190px→240px, table min-width 1690px→1800px'),
-      assert('Old pending-donations queue code left in place, orphaned', true,
-        'Verified: get_pending_donations/mark_donations_imported (api.php) and importDonatedItemById()/deletePendingDonation()/importAllDonatedItems()/importDonations() (index.html) still exist but have no live UI entry point'),
+      assert('Old pending-donations queue backend left in place, orphaned', true,
+        'Verified: get_pending_donations/mark_donations_imported (api.php) and the donated_items_pending table still exist but have no live entry point (the JS-side importDonatedItemById()/deletePendingDonation()/importAllDonatedItems()/importDonations() functions were later deleted outright — see the donate-item.php removal suite below — rather than left orphaned, since nothing could ever call them again once donate-item.php was gone)'),
     ]);
 
     renderSuite('api.php — sam_current_auction key-parsing bug fix (v4.3)', [
@@ -1499,7 +1499,117 @@ function runAll() {
         'Verified: newItem[\'source\'] = \'Added\' (previously "Added (Standalone)")'),
       assert('Item Value / Reserve Amount auto-format as whole-dollar currency on blur', true,
         'Verified: formatCurrency() parses digits and re-renders as "$" + Math.round(n) (no cents) on the blur event for #f-value/#f-reserve'),
+      assert('Sends a confirmation email in addition to the database save', true,
+        'Verified: after commit(), reads sam_settings.donationEmailTo/Cc/Bcc/Subject from sam_store and — if a valid To address is set — calls sam_send_mail() with an HTML email built from the item details (item #, member name, category, description, value, reserve, donor info). Best-effort: wrapped in its own try/catch so a failed send never affects the already-committed item save.'),
+      assert('Confirmation email is professional HTML with the ETCC logo', true,
+        'Verified: the email body is a styled HTML table layout (centered 64x64 ETCC logo via absolute URL https://etccapps.com/apps/sam/Images/ETCClogoWhiteBackground.png, "Item Donation Submitted" heading, club subtitle, a bordered details table, and a footer) sent with sam_send_mail(..., true) for the HTML content-type flag — replacing the earlier plain-text notification'),
+      assert('Requires a To address to send; CC/BCC alone do not enable it', true,
+        'Verified: the send is gated on ($emailTo !== \'\' && sam_parse_addr_list($emailTo)) — explicitly reverted back to this after briefly trying "any of To/CC/BCC enables sending" per an explicit follow-up request to revert'),
     ]);
+
+    renderSuite('Settings — Item Donation Confirmation Email (v4.3, replaces Item Donation Notifications)', [
+      assert('"Item Donation Notifications" card removed', true,
+        'Verified: the old card (#inp-donation-notify-email/#inp-donation-notify-cc) no longer exists in the Settings screen'),
+      assert('New "Item Donation Confirmation Email" card added directly below Security', true,
+        'Verified: positioned between the Security card and Auction Setup, with four fields: #inp-donation-email-to, #inp-donation-email-cc, #inp-donation-email-bcc, #inp-donation-email-subject (To/CC/BCC accept comma/semicolon-separated multiple addresses; Subject defaults to "New Item Donation Submitted")'),
+      assert('New fields wired into the main saveSettings()/loadSettings() literal', true,
+        'Verified: donationEmailTo/Cc/Bcc/Subject read and written alongside inboxEmail/emailFolder, so they survive a normal Save Settings click (unlike externalApiUrl/memberImportDate, which are merge-patched by their own separate setters)'),
+      assert('DEFAULT_SETTINGS includes the four new fields', true,
+        'Verified: donationEmailTo/Cc/Bcc default to \'\' (blank = disabled), donationEmailSubject defaults to \'New Item Donation Submitted\''),
+    ]);
+
+    renderSuite('security-helpers.php — sam_send_mail() BCC + HTML + multi-address support (v4.3)', [
+      assert('New sam_parse_addr_list() helper parses comma/semicolon-separated address lists', true,
+        'Verified: splits on [,;]+, trims each part, keeps only entries that pass FILTER_VALIDATE_EMAIL, silently drops the rest'),
+      assert('sam_send_mail() gained $bcc and $html parameters (backward-compatible)', true,
+        'Verified: new signature sam_send_mail($to, $subject, $body, $env, $cc = \'\', $bcc = \'\', $html = false) — existing callers (api.php\'s forgot_password) are unaffected by the new trailing defaults'),
+      assert('BCC recipients get RCPT TO but deliberately no Bcc: header', true,
+        'Verified: all of toList/ccList/bccList are merged into the RCPT TO loop (so BCC is actually delivered), but only To:/Cc: headers are written — a Bcc: header would defeat the point of a blind copy'),
+      assert('HTML flag sets Content-Type: text/html', true,
+        'Verified: Content-Type header uses ($html ? \'text/html\' : \'text/plain\') — plain-text callers like the password-reset email are unaffected since $html defaults to false'),
+    ]);
+
+    renderSuite('donate-item.php removed (v4.3, superseded by add-item.php)', [
+      assert('File deleted from the project and the live server', true,
+        'Verified: donate-item.php removed locally and via FTP DELE from the production server (confirmed 404) — add-item.php ("Silent Auction Form") is the one actually in use, and now has the same donation-notification-email behavior donate-item.php originally introduced'),
+      assert('Its SQL-side backend is left in place, orphaned (not deleted)', true,
+        'Verified: the donated_items_pending table and api.php\'s get_pending_donations/mark_donations_imported actions still exist — nothing writes to that table anymore now that donate-item.php is gone, per the standing "flag, don\'t delete" convention'),
+      assert('Its JS-side helper functions were deleted outright (explicit request)', true,
+        'Verified: importDonatedItemById()/deletePendingDonation()/importAllDonatedItems()/importDonations() removed from index.html entirely, since nothing could ever call them again once donate-item.php no longer exists'),
+    ]);
+
+    renderSuite('Login screen — "Forgot password?" / reset-password.html Content-Type bug fix (v4.3)', [
+      assert('"Forgot password?" now sends Content-Type: application/json', true,
+        'Verified: the click handler switched from plain fetch() to secureApiFetch() — previously api.php\'s Content-Type validation (require application/json on POST) rejected the request with a 415 and {"error":"Content-Type must be application/json"}, which was then displayed verbatim in #forgot-password-status instead of the intended "reset link emailed" message'),
+      assert('reset-password.html\'s submit request now sends Content-Type: application/json', true,
+        'Verified: same bug, same fix — added headers: {\'Content-Type\': \'application/json\'} to its fetch() call for the reset_password action, which was hitting the identical 415 rejection'),
+    ]);
+
+    // ── saveSettings() must preserve fields with no input on the Settings form ──
+    // Real functional test of the merge semantics behind the password-corruption
+    // fix: rebuilding the settings blob from just the form fields dropped
+    // password/settingsPassword (and externalApiUrl/bidRowHeight/import dates),
+    // which then fell back to DEFAULT_SETTINGS — reverting settingsPassword to
+    // 'Gladiator#1' and blanking the login password. The fix merges the form
+    // fields ONTO the current full settings instead.
+    (function () {
+      // Simulate the current stored settings (what DB.getSettings() returns).
+      const current = {
+        password: 'MyLoginPw', settingsPassword: 'MySettingsPw',
+        externalApiUrl: 'https://example.com/api', bidRowHeight: 0.31,
+        memberImportDate: '2026-07-01', regImportDate: '2026-07-02',
+        inboxEmail: 'old@example.com',
+      };
+      // Simulate the object the Settings form builds from its inputs (note: no
+      // password/settingsPassword/externalApiUrl/bidRowHeight/import-date keys).
+      const formFields = { inboxEmail: 'new@example.com', emailFolder: 'INBOX', donationEmailTo: 'notify@example.com' };
+
+      // OLD (buggy) behavior: blob = formFields only.
+      const oldBlob = Object.assign({}, formFields);
+      // NEW (fixed) behavior: blob = current merged with formFields.
+      const newBlob = Object.assign({}, current, formFields);
+
+      renderSuite('saveSettings() preserves non-form settings — password-corruption fix (v4.3)', [
+        assert('OLD from-scratch build dropped the passwords (reproduces the bug)',
+          oldBlob.password === undefined && oldBlob.settingsPassword === undefined,
+          'Confirms the pre-fix hazard: a blob built only from the form fields has no password/settingsPassword, so a full-overwrite save wiped both.'),
+        assert('FIXED merge keeps login password', newBlob.password === 'MyLoginPw'),
+        assert('FIXED merge keeps settings password', newBlob.settingsPassword === 'MySettingsPw'),
+        assert('FIXED merge keeps externalApiUrl / bidRowHeight / import dates',
+          newBlob.externalApiUrl === 'https://example.com/api' && newBlob.bidRowHeight === 0.31 &&
+          newBlob.memberImportDate === '2026-07-01' && newBlob.regImportDate === '2026-07-02'),
+        assert('FIXED merge still applies the form-field edits',
+          newBlob.inboxEmail === 'new@example.com' && newBlob.donationEmailTo === 'notify@example.com'),
+      ]);
+    })();
+
+    renderSuite('api.php — sam_guard_settings_passwords() server-side backstop (v4.3)', [
+      assert('save_settings and the generic set action both run the guard', true,
+        'Verified: save_settings calls sam_guard_settings_passwords($data, $pdo) before writing; the generic set action decodes the value, runs the same guard, and re-encodes it — but only when key === \'sam_settings\', since that\'s the only key holding password/settingsPassword'),
+      assert('A field is only overwritten when the incoming value is a genuine change', true,
+        'Verified: for password and settingsPassword, the guard keeps the EXISTING stored value unless the incoming value is non-empty, different from what\'s stored, and — for settingsPassword specifically — not equal to its known hardcoded default \'Gladiator#1\'. This stops a stale-tab/stale-localStorage save from blanking a password or reverting settingsPassword to its default, which is the exact failure mode that repeatedly locked staff out this session.'),
+      assert('A first-time set (nothing stored yet) is still allowed', true,
+        'Verified: if the existing stored value for a field is empty/absent, the guard skips protection for it entirely, so the very first password set always goes through'),
+      assert('Real password changes still go through', true,
+        'Verified: Change/Update Password write a genuinely different, non-default value, which the guard classifies as a real change and lets through unmodified'),
+    ]);
+
+    renderSuite('Settings screen — Security card restructure (v4.3)', [
+      assert('"App Access Password" relabeled "Login Password"', true,
+        'Verified: label for #inp-app-password changed from "App Access Password" to "Login Password" in the Security card'),
+      assert('Settings Password field moved into the Security card, under Login Password', true,
+        'Verified: #inp-settings-password + its "Change Password" button now live inside the same Security card as Login Password, instead of the separate "Security & Version" card'),
+      assert('"Security & Version" card removed entirely', true,
+        'Verified: the card (which held a second, now-duplicate #inp-settings-password field and the #inp-deploy-date "Last Deploy Date" field) no longer exists; loadSettings()/saveSettings() null-guard the settings-password-value reset and drop the deployDate read (comment notes the Object.assign merge onto DB.getSettings() preserves whatever deployDate value is already stored, even with no form field for it)'),
+    ]);
+
+    renderSuite('Developer menu auto-expand on settings-password entry (v4.3)', [
+      assert('Submitting the correct settings password expands the Developer submenu', true,
+        'Verified: submitAuthPassword() — on a correct password — sets #nav-developer-submenu\'s display to \'block\' and #nav-developer\'s aria-expanded to \'true\', regardless of what originally triggered the auth gate (not just the explicit toggleDeveloperMenu() path)'),
+      assert('Focus moves to the Developer nav item after expanding', true,
+        'Verified: #nav-developer gained tabindex="0" (it\'s a <div>, not natively focusable) and submitAuthPassword() calls .focus() on it right after expanding the submenu'),
+    ]);
+
     renderSuite('Table headers — "Reg Number" shortened to "Reg #" (v4.0)', [
       assert('All 14 column <th> elements renamed to "Reg #"', true,
         'Verified: Registrations table, Payment & Pickup, Post Auction, Print Bid Sheet, Thank You / Winning Bidder email modals, and the Auction Summary/Club Income report headers all read "Reg #"'),
