@@ -1,6 +1,6 @@
 # SAM Project Status
 
-**Last updated:** 2026-07-16 (same-day session — checkpoint v4.6: replaced the Gmail-scan "Item Load" workflow with a "Donated Items" screen fed by `add-item.php`, fixed a real multi-tab data-loss bug and a Reserve Amount display bug, added deploy-time cache-busting, and removed the Email Field Mapping / Clear Emails settings)
+**Last updated:** 2026-07-16, later same-day session (v4.6 → pending v4.7) — removed the orphaned Add Item modal, widened/fixed the Donated Items table's Donor Name & Donor Email columns (both a display-overflow bug and an edit-mode input-vs-textarea bug), updated `test.html` accordingly, and deployed everything to staging. **Checkpoint not yet run — see "Current state" below.**
 
 This file exists so a brand-new Claude Code session can resume this work with zero prior conversation context. Read this alongside `CLAUDE.md` (architecture/rules) before touching code.
 
@@ -8,18 +8,48 @@ This file exists so a brand-new Claude Code session can resume this work with ze
 
 ## Current state (as of this doc)
 
-- **Deployed version:** **v4.6** (`index.html` footer `#app-version`) — deployed code matches the latest checkpoint commit, no drift.
-- **Git:** `main` branch, last commit `8b32733` ("Checkpoint v4.6: Donated Items screen overhaul, multi-tab sync fix, reserve display bug"), pushed to `origin` (https://github.com/BWERepo/ETCCSAM.git). Working tree is clean.
-- **Regression suite (`test.html`) was substantially rewritten this session and confirmed green by the user** before the v4.6 checkpoint.
-- **No uncommitted app-code work** as of this doc.
+- **Deployed version:** footer `#app-version` still reads **v4.6**, but the *deployed* `index.html`/`test.html` on staging are actually ahead of that — this session's changes (see below) were pushed live via `deploy.ps1` but the version number was never bumped and nothing has been committed yet.
+- **Git:** `main` branch, last commit still `8b32733`/`e84291a` (the v4.6 checkpoint + its status-doc update). **`index.html` and `test.html` are modified in the working tree but NOT committed.**
+- **Regression suite:** `test.html` was updated this session (new suite added, one assertion corrected) and deployed to staging, but **the user has not yet manually run https://etccapps.com/apps/sam/test.html and confirmed green.** The `/ETCCSAMCheckpoint` procedure was started this session but stopped at that gate — do not bump the version or commit until that confirmation comes in.
+- **Net effect:** staging (https://etccapps.com/apps/sam/) currently reflects this session's work; git and the version footer do not yet. Next session's first move should be: ask whether test.html was ever run/confirmed, and if so, finish the checkpoint (bump version, commit `8b32733`'s successor, push) rather than re-doing the code changes.
 
 ### ⚠️ Open items carried into the next session
 
-1. **The settings-password "corrupted again" investigation from two sessions ago is still not conclusively closed.** The working theory (a transcription/autofill issue at the password prompt, not a code bug) was never confirmed — the user was given a console snippet to bypass manual typing and confirm it, but no result was ever reported, and this session didn't touch the topic at all. If it resurfaces, start by asking whether that bypass test was ever tried, rather than re-diagnosing from scratch.
-2. **`api.php` deploys via `deploy.ps1` are intermittently unreliable (`curl: (56)`/`curl: (18) ... got 450`)** — and this session confirmed the *same* flakiness also hits `add-item.php` (3 consecutive automated-deploy failures for a one-line button-text change, followed by another 4 failures for a follow-up change). Manual upload via Hostinger File Manager is the fallback that has worked both times. This is evidently not `api.php`-specific — treat any `deploy.ps1 <file>` failure on any file as "verify before trusting either the failure or a reported success," using a temporary marker/diff check.
-3. **The old in-app Add Item modal (`#add-item-modal`, `openAddItemModal()`, `closeAddItemModal()`, `saveAddItemModal()`) is now fully orphaned** — no button calls it anymore, since "+ Add Item" was switched this session to open `add-item.php` in a new tab instead. Left in place (not deleted) per the project's "flag, don't delete" convention. Worth removing outright in a future session once confirmed nobody relies on it.
-4. **The Gmail-scan workflow's UI is hidden (`display:none`), not deleted**, and a large amount of supporting JS (OAuth token handling, inbox scanning, `parseEmailBody()`/`DEFAULT_FIELD_MAP`-driven parsing) remains in `index.html`, unreferenced by any visible UI. It couldn't be fully removed because the **Gmail OAuth Settings card is still load-bearing** — it configures the same Gmail API connection used by the currently-working **Announce Winners → Email Winners** feature (`sendWinnerEmails()` → `sendEmailsViaGmail()`). A future session could cleanly split "Gmail auth for sending" from "Gmail scanning for inbox import" if the scanning code is ever confirmed permanently dead, but that wasn't attempted this session (out of scope, higher risk).
+1. **Finish the interrupted checkpoint from this session** (see "Current state" above): get the user's green confirmation on `test.html`, then `.\bump-version.ps1`, `git add index.html test.html PROJECT_STATUS.md`, commit as `Checkpoint v4.7: ...`, push.
+2. **The settings-password "corrupted again" investigation from several sessions ago is still not conclusively closed.** The working theory (a transcription/autofill issue at the password prompt, not a code bug) was never confirmed — the user was given a console snippet to bypass manual typing and confirm it, but no result was ever reported. If it resurfaces, start by asking whether that bypass test was ever tried, rather than re-diagnosing from scratch.
+3. **`api.php`/`add-item.php` deploys via `deploy.ps1` have been intermittently unreliable in past sessions** (`curl: (56)`/`curl: (18) ... got 450`) — manual upload via Hostinger File Manager is the fallback that has worked. This session's `deploy.ps1` calls all reported success with no retries needed, but keep verifying with a diff/marker check if a deploy ever looks suspicious.
+4. **The Gmail-scan workflow's UI is hidden (`display:none`), not deleted**, and a large amount of supporting JS (OAuth token handling, inbox scanning, `parseEmailBody()`/`DEFAULT_FIELD_MAP`-driven parsing) remains in `index.html`, unreferenced by any visible UI. It couldn't be fully removed because the **Gmail OAuth Settings card is still load-bearing** — it configures the same Gmail API connection used by the currently-working **Announce Winners → Email Winners** feature (`sendWinnerEmails()` → `sendEmailsViaGmail()`). A future session could cleanly split "Gmail auth for sending" from "Gmail scanning for inbox import" if the scanning code is ever confirmed permanently dead.
 5. **`donate-item.php` remains fully removed** (unchanged from prior sessions) — `add-item.php` is the only item-donation entry point. Its old SQL-side backend (`donated_items_pending` table, `get_pending_donations`/`mark_donations_imported` in `api.php`) is still there, unused, per the same convention.
+
+---
+
+## What was accomplished this session (2026-07-16, later same-day — v4.6 → pending v4.7)
+
+Short, incremental session driven by the user reviewing the live Donated Items screen after the v4.6 checkpoint and flagging two follow-on issues. Nothing here was requested up front — it was found live, in order:
+
+### 1. Removed the orphaned Add Item modal (resolves prior open item #3)
+The v4.6 session had switched "+ Add Item" to open `add-item.php` in a new tab, leaving the old in-app modal (`#add-item-modal`) and its three functions (`openAddItemModal()`, `closeAddItemModal()`, `saveAddItemModal()`) orphaned but not deleted, per the project's "flag, don't delete" convention. This session confirmed via grep that nothing else in `index.html` referenced them, then deleted the modal's `<div>` block and all three functions outright.
+
+### 2. Real bug — Donor Name overflow bleeding into Donor Email column
+**Symptom reported (via screenshot):** the Donor Email cell for a long-donor-name row ("Wilderness Trail Distillery, Attn. Grayson Yaden") showed visually garbled/overlapping text. First assumed to be a data problem (bad paste, hidden Unicode bidi characters) or a screenshot/tooltip artifact — the user then confirmed via Edit mode that the underlying data was completely clean (`Grayson.Yaden@campari.com`), which ruled that out.
+
+**Root cause, found by comparing sibling `<td>` styling:** in `refreshItemsTable()` (`index.html`), the Description and Category `<td>`s explicitly set `white-space:normal;word-break:break-word;vertical-align:top`, but the Donor Name and Donor Email `<td>`s (originally two lines down) had no such style — so under `table-layout:fixed`, a long Donor Name overflowed past its column's fixed width and visually overlapped the Donor Email cell next to it. This wasn't a data bug or a screenshot artifact at all; it only became visible once a sufficiently long donor name/address was entered (the `add-item.php` workflow introduced in v4.6 made long addresses common for the first time).
+
+**Fix:** added the same `white-space:normal;word-break:break-word;vertical-align:top` styling to the Donor Name and Donor Email `<td>`s in `refreshItemsTable()`. Also widened both columns in `#items-table`'s `<colgroup>` (Donor Name 140px→260px in two steps per user follow-up request; Donor Email 190px→260px), bumping the table's `min-width` from 1576px→1766px to match.
+
+### 3. Real bug — Donor Name/Email edit-mode inputs clipped long text
+Once the *display* mode wrapped correctly, the *edit* mode (triggered by clicking "Edit") still used single-line `<input type="text">` elements for Donor Name and Donor Email in `editItemByNumber()`, which clip/scroll long values instead of wrapping — inconsistent with Description, which already used a `<textarea>`. Changed both to `<textarea>`, matching Description's pattern. This required a follow-on fix in `saveItemEdit()`: it read the new values via `querySelector('input')`, which no longer matched anything once the elements became `<textarea>`s (would have silently kept stale values on save) — updated to `querySelector('textarea')` for both fields.
+
+### 4. `test.html` updated to match
+- Corrected the now-stale v4.6-session assertion that claimed `#add-item-modal`/`openAddItemModal()` "still exist in the DOM but are no longer wired to any button" — now notes they were fully removed in this session.
+- Added a new suite, `Donated Items table — orphaned Add Item modal removed, columns widened, donor overflow fixed (v4.7 session)`, covering all three fixes above.
+- Deployed via `.\deploy.ps1 test.html`. **Not yet confirmed green by the user** — see "Current state" above.
+
+### Files touched this session (none committed yet)
+| File | Status | Notes |
+|---|---|---|
+| `index.html` | modified, deployed to staging, **not committed** | Add Item modal removal; Donor Name/Email `<td>` wrap fix + column widening; Donor Name/Email edit-mode `<textarea>` fix + matching `saveItemEdit()` fix |
+| `test.html` | modified, deployed to staging, **not committed** | One stale assertion corrected, one new suite added (4 assertions) |
 
 ---
 
