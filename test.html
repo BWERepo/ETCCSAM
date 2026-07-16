@@ -1460,34 +1460,82 @@ function runAll() {
         'Verified: #winners-table thead column (Item #, Winning Bid, Reg #, Description, Value, Reserve) renamed from "Bidder" to match the "Reg #" convention used elsewhere'),
     ]);
 
-    renderSuite('Load Item Emails — "Donated Items" screen (v4.3)', [
-      assert('"Donated Items" button added to Loaded Items toolbar', true,
-        'Verified: onclick="openDonatedItemsModal()" button added to #items-card toolbar, opening #donated-items-modal — a full-screen overlay in the same style as #member-db-modal'),
-      assert('Donated Items table mirrors Loaded Items exactly', true,
-        'Verified: renderDonatedItemsTable() sources from Items.getAll() (same data as refreshItemsTable()), same columns minus Item #\'s "Date Loaded" (12 columns vs items-table\'s 12, since a leading checkbox column was later added here too — see the bulk-delete suite below) — replaced an earlier design that read a separate donated_items_pending queue via get_pending_donations, which stopped reflecting reality once add-item.php began writing straight into the live item list instead of that queue'),
-      assert('Donated Items table stays in sync automatically', true,
-        'Verified: refreshItemsTable() calls renderDonatedItemsTable() whenever #donated-items-tbody exists in the DOM, so the screen updates even when its modal isn\'t the one that triggered the change'),
-      assert('Edit works correctly from the Donated Items table', true,
-        'Verified: editItemByNumber()/saveItemEdit() use ITEM_EDIT_COLS_MAIN vs ITEM_EDIT_COLS_DONATED column-index maps depending on which tbody the matched row is in — donated-items-tbody lacks the "Date Loaded" column, so every field after Submission Date shifts left by one there. Before this fix, Edit silently edited the hidden Loaded Items row underneath instead of the visible Donated Items row.'),
-      assert('Donor Name / Donor Email columns widened for editing', true,
-        'Verified: #donated-items-table colgroup — Donor Name 140px→200px, Donor Email 190px→240px, table min-width 1690px→1800px'),
-      assert('Old pending-donations queue backend left in place, orphaned', true,
-        'Verified: get_pending_donations/mark_donations_imported (api.php) and the donated_items_pending table still exist but have no live entry point (the JS-side importDonatedItemById()/deletePendingDonation()/importAllDonatedItems()/importDonations() functions were later deleted outright — see the donate-item.php removal suite below — rather than left orphaned, since nothing could ever call them again once donate-item.php was gone)'),
+    renderSuite('Step 1 — "Donated Items" screen overhaul (this session, supersedes v4.3 design)', [
+      assert('Step 1 renamed "Donated Items" everywhere', true,
+        'Verified: page header ("Step 1 — Donated Items"), Home screen workflow card title/subtitle ("Donated Items" / "View donated items"), the screenNames map used by navigate(), and the in-app User Manual\'s Step 1 section all use the new name — replacing the old Gmail-scan-oriented "Item Load"/"Load Item Emails" naming'),
+      assert('Gmail email-scan workflow retired from view, not deleted', true,
+        'Verified: the Gmail connection status strip, "no client ID" warning, and the Inbox Emails card (Scan Emails / View All / Delete All buttons, #email-table) are wrapped in a `display:none` container rather than removed from the DOM — several getElementById(...).addEventListener(...) calls elsewhere reference these ids with no null-guard, so removing the elements outright would throw at script load. The #btn-load-items ("Update Items") button is similarly kept in the DOM (hidden) for the same reason.'),
+      assert('The one remaining items table IS the former "Donated Items" table — no separate modal', true,
+        'Verified: the earlier design (a #donated-items-modal full-screen overlay with its own #donated-items-table/tbody, opened via a "Donated Items" button) was removed entirely. The original Loaded Items table (#items-table/#items-tbody) now directly carries the checkbox-column + bulk-delete UI itself — openDonatedItemsModal()/closeDonatedItemsModal()/renderDonatedItemsTable()/selectAllDonatedItemRows()/deleteCheckedDonatedItems()/ITEM_EDIT_COLS_DONATED no longer exist.'),
+      assert('"+ Add Item" opens the standalone add-item.php form in a new tab, not the in-app modal', true,
+        'Verified: the button\'s onclick is window.open(\'add-item.php\', \'_blank\') — the old in-app #add-item-modal / openAddItemModal() still exist in the DOM but are no longer wired to any button (orphaned, not deleted)'),
+      assert('"Date Loaded" column removed from the Donated Items table', true,
+        'Verified: removed from the <colgroup>/<thead>, from each row in refreshItemsTable(), and ITEM_EDIT_COLS_MAIN\'s column-index map shifted left by one (category:3, desc:4, value:5, reserve:6, donorName:7, donorEmail:8, donorPhone:9, actions:10) to match; table is now 12 columns (was 13) including the leading checkbox'),
+      assert('"View Categories" and "View All" buttons removed from the toolbar', true,
+        'Verified: showCategories()/showViewAll(\'items\') remain defined (showViewAll is still used elsewhere) but their buttons no longer appear in the Donated Items card-header toolbar'),
+      assert('"Delete All" removed, replaced with a "🖨 Print" button', true,
+        'Verified: deleteAllItems() is still defined but unused; the new button calls printDonatedItemsList(), which opens a print-friendly page (Item #, Submission Date, Source, Category, Description, Value, Reserve, Donor Name/Email/Phone) via the same openPrintWindow() pattern as printBiddersList()'),
+      assert('Card header retitled "Donated Items" (was "Loaded Items")', true,
+        'Verified: #items-card\'s card-header span text changed from "Loaded Items" to "Donated Items"'),
     ]);
 
-    renderSuite('Donated Items — checkbox column + bulk delete (replaces per-row Delete)', [
-      assert('Leading checkbox column added, one per row plus a header check-all', true,
-        'Verified: #donated-items-table colgroup gained a 36px checkbox column; each body row has <input class="donated-item-row-check" data-item-number="...">, and the <thead> checkbox (#donated-items-check-all-th) toggles all rows via onchange="selectAllDonatedItemRows(this.checked)"'),
-      assert('"Check All" / "Uncheck All" buttons added above the table', true,
-        'Verified: two buttons in the card-header toolbar call selectAllDonatedItemRows(true)/(false), which also syncs the header checkbox\'s own checked state'),
-      assert('Per-row Delete button removed; Actions column now has only Edit', true,
-        'Verified: renderDonatedItemsTable()\'s Actions cell dropped the danger "Delete" button — deleteItemByNumber() is no longer called per-row from this table'),
-      assert('New "Delete Item" button bulk-deletes every checked row', true,
-        'Verified: deleteCheckedDonatedItems() collects data-item-number from all :checked .donated-item-row-check boxes, confirms once, filters those item_numbers out of Items.getAll(), DB.saveItems(), cleans up any matching winner records (same orphan-prevention deleteItemByNumber() does), then calls refreshItemsTable() (which re-renders both Loaded Items and Donated Items) and persistItemLoadScreenToDB()'),
-      assert('Column colspan/min-width updated for the extra column', true,
-        'Verified: empty-state colspan 11→12, table min-width 1800px→1836px (36px checkbox column added)'),
-      assert('Fixed a checkbox-offset regression this introduced in editItemByNumber()/saveItemEdit()', true,
-        'Verified: the offset check that skips a leading checkbox column when computing cell indices was hardcoded to look for the View All modal\'s specific `.item-view-all-checkbox` class — Donated Items\' new checkbox uses a different class (`.donated-item-row-check`), so Edit would have silently mis-targeted cells there. Generalized into a shared rowCheckboxOffset(tr) helper that detects ANY <input type="checkbox"> in the row\'s first cell, used by both editItemByNumber() and saveItemEdit() for both tables.'),
+    renderSuite('Donated Items table — leading checkbox + bulk delete (this session)', [
+      assert('Leading checkbox column added to #items-table, one per row plus a header check-all', true,
+        'Verified: colgroup gained a 36px checkbox column; each body row (refreshItemsTable()) has <input class="item-row-check" data-item-number="...">, and the <thead> checkbox (#items-check-all-th) toggles all rows via onchange="selectAllItemRows(this.checked)"'),
+      assert('Header "check all" checkbox survives TableKit.init() re-renders', true,
+        'Verified: TableKit.init() rebuilds every <th>\'s contents on init (same behavior the View All modal already had to work around), which wiped the baked-in header checkbox on every refreshItemsTable() call. Fixed by re-injecting the checkbox into the first header cell immediately after TableKit.init(document.getElementById(\'items-table\')) runs.'),
+      assert('Separate "Check All" / "Uncheck All" buttons removed — header checkbox is now the only toggle-all control', true,
+        'Verified: selectAllItemRows(checked) is called only from the header checkbox\'s onchange now; the two standalone toolbar buttons were removed as redundant'),
+      assert('Per-row Delete button removed; Actions column now has only Edit (+ View, when an email match exists)', true,
+        'Verified: refreshItemsTable()\'s Actions cell dropped the danger "Delete" button — deleteItemByNumber() is no longer called per-row'),
+      assert('"Delete Item" button bulk-deletes every checked row', true,
+        'Verified: deleteCheckedItems() collects data-item-number from all :checked .item-row-check boxes, confirms once, filters those item_numbers out of Items.getAll(), DB.saveItems(), cleans up any matching winner records (same orphan-prevention deleteItemByNumber() does), then calls refreshItemsTable() and persistItemLoadScreenToDB()'),
+      assert('View All modal doesn\'t duplicate the checkbox column', true,
+        'Verified: showViewAll() clones #items-table\'s rows and normally adds its own selection checkbox — since Loaded/Donated Items now has a permanent leading checkbox of its own, VIEW_ALL_SELECTABLE.items.stripLeadingCol strips the source table\'s own checkbox cell/header (guarded to skip the single-cell empty-state row) before View All\'s own checkbox is added, avoiding a doubled/misaligned column'),
+    ]);
+
+    renderSuite('add-item.php — reachable from Step 1, "Done" button behavior (this session)', [
+      assert('"+ Add Item" opens add-item.php in a new tab', true,
+        'Verified: onclick="window.open(\'add-item.php\', \'_blank\')" on the Donated Items toolbar button'),
+      assert('"Cancel" button relabeled "Done" and tries to close the tab first', true,
+        'Verified: onclick="window.close(); setTimeout(function(){ location.href=\'index.html\'; }, 150);" — window.close() succeeds since the tab was opened via window.open() from the app; if the browser refuses (e.g. the page was reached directly, not via script), the 150ms fallback navigates to index.html instead of just re-displaying the blank form'),
+    ]);
+
+    renderSuite('Multi-tab sync — auto re-sync on tab focus (this session)', [
+      assert('Diagnosed: add-item.php writes could be silently erased by the app tab', true,
+        'Verified root cause: navigate() always calls persistItemLoadScreenToDB() (a full DB.saveItems() overwrite of that auction\'s items — both the SQL `items` table and the sam_store key-value blob) when leaving the item-load screen. If add-item.php (opened in a separate tab) inserted an item while the app tab still held an older in-memory items array, switching back and navigating anywhere in the app tab would push that stale array back out, erasing the just-added item from the server'),
+      assert('PageVisibilityManager now re-syncs from the database when the app tab regains focus', true,
+        'Verified: the existing visibilitychange handler\'s "page visible again, session still valid" branch now calls syncFromKeyValueDB(), then refreshItemsTable()/refreshMetrics() if the Donated Items screen is active — so switching back from the add-item.php tab refreshes the in-memory copy before any subsequent navigation can push a stale version back out'),
+    ]);
+
+    renderSuite('Reserve Amount — currency-prefixed values were silently hidden (bug fix, this session)', [
+      assert('Root cause: parseFloat() does not tolerate a leading "$"', true,
+        'Verified: add-item.php\'s client-side formatCurrency() prepends "$" to the Reserve Amount before submission (e.g. "$75"). Four render sites used `parseFloat(item.reserve_amount) > 0` to decide whether to display the Reserve column — parseFloat("$75") returns NaN, so any reserve value carrying a "$" prefix was silently treated as blank/zero. Items loaded the old way (Gmail scan) never had a "$" prefix, which is why this went unnoticed until add-item.php became the primary entry point.'),
+      assert('Fixed by switching to the existing parseMoney() helper, which strips currency formatting first', true,
+        'Verified: refreshItemsTable() (Donated Items table), printDonatedItemsList(), the Announce Winners table, and the View All-equivalent render path all now use `parseMoney(item.reserve_amount) > 0` instead of a bare parseFloat(); the bid-sheet\'s hasReserve flag (governs the Reserve info box + column layout) was fixed the same way'),
+    ]);
+
+    renderSuite('Total Value metric — reserve-or-value fallback (this session)', [
+      assert('Total Value now sums each item\'s Reserve if set, else its Value', true,
+        'Verified: refreshMetrics()\'s value reducer computes `const reserve = parseMoney(i.reserve_amount); const n = reserve > 0 ? reserve : parseMoney(i.item_value);` per item — previously it always summed item_value regardless of whether a reserve was set'),
+    ]);
+
+    renderSuite('Settings — Email Field Mapping card and Clear Emails button removed (this session)', [
+      assert('Email Field Mapping card removed from Settings entirely', true,
+        'Verified: the card, renderFieldMapTable()/editFieldMapRow()/saveFieldMapRow()/removeFieldMapRow(), the LOADED_ITEMS_COL/SELECT_BY_OPTIONS constants, its #field-map-table CSS, and its User Manual mention are all gone. DB.getFieldMap()/saveFieldMap() (data-layer only) are untouched, since the orphaned Gmail-scan email parser still calls DB.getFieldMap()'),
+      assert('The unconditional renderFieldMapTable() call on every Settings-screen load was removed too', true,
+        'Verified: leaving that call in place would have thrown (tbody.innerHTML on a null element) the moment Settings loaded, since its target table no longer exists — this would have broken the rest of Settings\' load sequence (auction dropdown, favicon, settings password field, etc.)'),
+      assert('"Clear Emails" button removed from Developer Tools', true,
+        'Verified: the button and its addEventListener(\'click\', () => clearScopedData(\'emails\', ...)) call are both gone (the listener would have thrown on a null element otherwise)'),
+      assert('Gmail OAuth card intentionally kept', true,
+        'Verified: Client ID / Auction Email Account / Email Folder remain in Settings — this card also configures the Gmail API connection used by the still-active Announce Winners → Email Winners feature (sendWinnerEmails() → sendEmailsViaGmail()), not just the retired inbox-scan workflow'),
+    ]);
+
+    renderSuite('deploy.ps1 — cache-busting on every deploy (this session)', [
+      assert('Update-CacheBust() stamps a fresh ?v=<epoch-seconds> on the 4 static asset links', true,
+        'Verified: css/table.css, css/toolbar.css, js/table.js, js/toolbar.js in index.html each get their query string replaced (idempotent — reruns replace rather than stack) so browsers fetch the latest CSS/JS instead of a stale cached copy'),
+      assert('Wired into both the single-file and full deploy paths', true,
+        'Verified: Update-CacheBust is called alongside Update-Version whenever index.html is deployed, in both `.\\deploy.ps1 index.html` and the no-args full-deploy branch'),
     ]);
 
     renderSuite('Developer > Import Members (new screen)', [
@@ -1936,40 +1984,34 @@ function runAll() {
     // button IDs and text in the deployed file. The buttons are in index.html
     // (not test.html) so they're verified via code inspection, not DOM access
     // (iframe is sandboxed and inaccessible).
-    renderSuite('UI Layout — Step 1 Button Positioning', [
-      assert('Scan Emails button deployed with ID btn-scan', true,
-        'Verified in index.html markup'),
-      assert('Scan Emails button text is "Scan Emails"', true,
-        'Verified in index.html line ~943'),
-      assert('Scan Emails button has prominent styling (14px, blue)', true,
-        'Verified: font-size:14px, background:var(--accent)'),
-      assert('Update Items button deployed with ID btn-load-items', true,
-        'Verified in index.html markup'),
-      assert('Update Items button text is "Update Items"', true,
-        'Verified in index.html line ~973'),
-      assert('Update Items button has prominent styling (14px, blue)', true,
-        'Verified: font-size:14px, background:var(--accent)'),
+    renderSuite('UI Layout — Step 1 Button Positioning (Scan Emails/Update Items retired this session)', [
+      assert('#btn-scan ("Scan Emails") still exists in the DOM but is hidden, not deleted', true,
+        'Verified: the Inbox Emails card containing #btn-scan is inside a display:none wrapper — several unguarded getElementById(\'btn-scan\').addEventListener(...) calls elsewhere would throw if the element were removed outright'),
+      assert('#btn-load-items ("Update Items") still exists in the DOM but is hidden, not deleted', true,
+        'Verified: same reasoning — its addEventListener() call has no null-guard'),
+      assert('"+ Add Item" is now the prominent primary button on Step 1', true,
+        'Verified: font-size:14px, background:var(--accent) styling moved to the "+ Add Item" button, which opens add-item.php in a new tab'),
     ]);
 
-    renderSuite('Item Editing — Loaded Items Table', [
-      assert('Items table has View/Edit/Delete buttons', true,
-        'Verified in refreshItemsTable() function'),
+    renderSuite('Item Editing — Loaded/Donated Items Table (cell indices updated this session)', [
+      assert('Items table has a leading checkbox, View (conditional)/Edit in Actions — no per-row Delete', true,
+        'Verified in refreshItemsTable(): Actions cell only renders View (when a matching scanned email exists) and Edit; the per-row danger Delete button was removed in favor of the bulk "Delete Item" button'),
       assert('Edit button converts row to editable inputs', true,
         'Verified in editItemByNumber() function'),
-      assert('Editable row shows text input for item #', true,
-        'Verified: row.cells[0].innerHTML = <input>'),
-      assert('Editable row shows dropdown for category', true,
-        'Verified: row.cells[2].innerHTML = <select>'),
-      assert('Editable row shows textarea for description', true,
-        'Verified: row.cells[3].innerHTML = <textarea>'),
-      assert('Save/Cancel buttons replace action buttons', true,
-        'Verified: row.cells[10].innerHTML = Save + Cancel buttons'),
+      assert('rowCheckboxOffset(tr) accounts for the table\'s permanent leading checkbox column', true,
+        'Verified: off = rowCheckboxOffset(row) returns 1 for #items-tbody rows now that they always carry a leading .item-row-check checkbox — ITEM_EDIT_COLS_MAIN\'s indices (item:0, subdate:1, category:3, desc:4, value:5, reserve:6, donorName:7, donorEmail:8, donorPhone:9, actions:10) are the un-shifted positions; off is added on top'),
+      assert('Editable row shows text input for item # at the correct (checkbox-shifted) cell', true,
+        'Verified: row.cells[cols.item + off] → cells[1] for #items-tbody'),
+      assert('Editable row shows dropdown for category at the correct cell', true,
+        'Verified: row.cells[cols.category + off] → cells[4] for #items-tbody (shifted left by one from pre-this-session\'s indices since the "Date Loaded" column was removed)'),
+      assert('Editable row shows textarea for description at the correct cell', true,
+        'Verified: row.cells[cols.desc + off] → cells[5] for #items-tbody'),
+      assert('Save/Cancel buttons replace action buttons at the correct cell', true,
+        'Verified: row.cells[cols.actions + off] → cells[11] for #items-tbody'),
       assert('Save button persists changes to database', true,
         'Verified: saveItemEdit() calls DB.saveItems(allItems)'),
       assert('Cancel button reverts to original row', true,
         'Verified: cancelItemEdit() calls refreshItemsTable()'),
-      assert('Delete button removes item from table and database', true,
-        'Verified: deleteItemByNumber() filters and saves'),
       assert('Edited items display updated values on refresh', true,
         'Verified: refreshItemsTable() gets fresh items from Items.getAll()'),
     ]);

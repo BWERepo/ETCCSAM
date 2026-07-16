@@ -383,7 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['description'])) {
         })();
       </script>
       <div class="btn-row">
-        <button type="button" class="btn btn-secondary" onclick="location.href=location.pathname">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="window.close(); setTimeout(function(){ location.href='index.html'; }, 150);">Done</button>
         <button type="submit" class="btn">Donate Item</button>
       </div>
     </form>

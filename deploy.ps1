@@ -57,9 +57,26 @@ function Update-Version {
     Write-Host "  Deployed: $deployDate" -ForegroundColor Cyan
 }
 
+# Cache-bust the local CSS/JS asset links so browsers pick up changes to
+# table.css/toolbar.css/table.js/toolbar.js immediately after deploy, instead
+# of serving a stale cached copy. Uses a single epoch-seconds value per
+# deploy, stamped onto (or replacing any existing) ?v=... query string.
+function Update-CacheBust {
+    $indexPath = Join-Path $local "index.html"
+    $content = [System.IO.File]::ReadAllText($indexPath, [System.Text.Encoding]::UTF8)
+    $v = [int][double]::Parse((Get-Date -UFormat %s))
+    $assets = @("css/table.css", "css/toolbar.css", "js/table.js", "js/toolbar.js")
+    foreach ($asset in $assets) {
+        $escaped = [regex]::Escape($asset)
+        $content = $content -replace "$escaped(\?v=\d+)?(?=[`"'])", "$asset`?v=$v"
+    }
+    [System.IO.File]::WriteAllText($indexPath, $content, [System.Text.Encoding]::UTF8)
+    Write-Host "  Cache-bust: v=$v" -ForegroundColor Cyan
+}
+
 # Single file mode
 if ($args.Count -gt 0) {
-    if ($args[0] -eq "index.html") { Update-Version }
+    if ($args[0] -eq "index.html") { Update-Version; Update-CacheBust }
     Deploy-File $args[0]
     Remove-Item $netrcFile -Force -ErrorAction SilentlyContinue
     Write-Host "URL: $appUrl" -ForegroundColor Cyan
@@ -68,6 +85,7 @@ if ($args.Count -gt 0) {
 
 # Full deploy
 Update-Version
+Update-CacheBust
 Write-Host "Deploying all SAM files to $ftpHost/$remotePath ..." -ForegroundColor Yellow
 $files = Get-ChildItem -Path $local -Recurse -File | Where-Object { -not (Should-Exclude $_.FullName) }
 $i = 0
