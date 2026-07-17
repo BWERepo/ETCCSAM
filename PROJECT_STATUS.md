@@ -1,6 +1,6 @@
 # SAM Project Status
 
-**Last updated:** 2026-07-16, later same-day session — **checkpoint v4.7**: removed the orphaned Add Item modal, fixed a real Donor Name/Email overflow bug (both the display table and the edit-mode inputs) in the Donated Items screen, updated `test.html` to match, confirmed green by the user, and checkpointed (version bumped, committed, pushed).
+**Last updated:** 2026-07-17 — **checkpoint v5.0**: added a brand-new standalone page, `starting-bid-list.php`, listing every donated item's starting bid — built and refined through several rounds of live feedback, `test.html` updated with a new suite, confirmed green by the user, and checkpointed (major version bump, committed, pushed).
 
 This file exists so a brand-new Claude Code session can resume this work with zero prior conversation context. Read this alongside `CLAUDE.md` (architecture/rules) before touching code.
 
@@ -8,17 +8,65 @@ This file exists so a brand-new Claude Code session can resume this work with ze
 
 ## Current state (as of this doc)
 
-- **Deployed version:** **v4.7** (`index.html` footer `#app-version`) — deployed code matches the latest checkpoint commit, no drift.
-- **Git:** `main` branch, last commit `61f0345` ("Checkpoint v4.7: Donor Name/Email overflow fix, orphaned Add Item modal removed"), pushed to `origin` (https://github.com/BWERepo/ETCCSAM.git). Working tree is clean.
-- **Regression suite (`test.html`) was updated this session and confirmed green by the user** before the v4.7 checkpoint.
+- **Deployed version:** **v5.0** (`index.html` footer `#app-version`) — deployed code matches the latest checkpoint commit, no drift.
+- **Git:** `main` branch, last commit `5245137` ("Checkpoint v5.0: new Starting Bid List standalone page"), pushed to `origin` (https://github.com/BWERepo/ETCCSAM.git). Working tree is clean.
+- **Regression suite (`test.html`) was updated this session and confirmed green by the user** before the v5.0 checkpoint.
 - **No uncommitted app-code work** as of this doc.
 
 ### ⚠️ Open items carried into the next session
 
 1. **The settings-password "corrupted again" investigation from several sessions ago is still not conclusively closed.** The working theory (a transcription/autofill issue at the password prompt, not a code bug) was never confirmed — the user was given a console snippet to bypass manual typing and confirm it, but no result was ever reported. If it resurfaces, start by asking whether that bypass test was ever tried, rather than re-diagnosing from scratch.
-2. **`api.php`/`add-item.php` deploys via `deploy.ps1` have been intermittently unreliable in past sessions** (`curl: (56)`/`curl: (18) ... got 450`) — manual upload via Hostinger File Manager is the fallback that has worked. This session's `deploy.ps1` calls all reported success with no retries needed, but keep verifying with a diff/marker check if a deploy ever looks suspicious.
+2. **`api.php`/`add-item.php` deploys via `deploy.ps1` have been intermittently unreliable in past sessions** (`curl: (56)`/`curl: (18) ... got 450`) — manual upload via Hostinger File Manager is the fallback that has worked. This session's `deploy.ps1` calls (including the new `starting-bid-list.php`) all reported success with no retries needed, but keep verifying with a diff/marker check if a deploy ever looks suspicious.
 3. **The Gmail-scan workflow's UI is hidden (`display:none`), not deleted**, and a large amount of supporting JS (OAuth token handling, inbox scanning, `parseEmailBody()`/`DEFAULT_FIELD_MAP`-driven parsing) remains in `index.html`, unreferenced by any visible UI. It couldn't be fully removed because the **Gmail OAuth Settings card is still load-bearing** — it configures the same Gmail API connection used by the currently-working **Announce Winners → Email Winners** feature (`sendWinnerEmails()` → `sendEmailsViaGmail()`). A future session could cleanly split "Gmail auth for sending" from "Gmail scanning for inbox import" if the scanning code is ever confirmed permanently dead.
 4. **`donate-item.php` remains fully removed** (unchanged from prior sessions) — `add-item.php` is the only item-donation entry point. Its old SQL-side backend (`donated_items_pending` table, `get_pending_donations`/`mark_donations_imported` in `api.php`) is still there, unused, per the same convention.
+5. **`starting-bid-list.php` (new this session) has no password gate**, matching `add-item.php`'s convention — anyone with the URL can view the full donated-items list with member names and starting bids. This was not explicitly discussed as a security tradeoff; flag it if the club raises privacy concerns about member names being publicly listable.
+
+---
+
+## What was accomplished this session (checkpoint v5.0)
+
+Built entirely from a single fresh-start feature request that then went through many small rounds of live, iterative feedback (each a one-line follow-up). Summarized in final end-state order, not literal chat order.
+
+### 1. New feature — `starting-bid-list.php`, a printable Starting Bid List
+The user asked for "a page listing items donated" with Print and Done buttons, showing item number, category, description, and a starting bid (reserve, or Starting Bid % × value if no reserve).
+
+**First attempt (superseded within the session):** built as an in-app JS function `printStartingBidList()` on the Donated Items screen (`index.html`), wired to a new "🖨 Starting Bid List" toolbar button — generated the report into a popup window via `document.write()`, the same pattern `printDonatedItemsList()` already uses.
+
+**Final design (what's actually shipped):** the user then asked to remove that button and said they needed a **URL** for the list instead. Since the popup-window approach has no bookmarkable address, this was rebuilt as a real standalone PHP page — `starting-bid-list.php` — following the exact pattern `add-item.php` already established:
+- No password gate, no login (same explicit convention as `add-item.php`) — public, reachable directly at **https://etccapps.com/apps/sam/starting-bid-list.php**.
+- Reads live data **server-side from the SQL `sam_store` table**, not from localStorage: looks up `sam_current_auction` to pick the right `sam_{auctionId}_items` key (falling back to `sam_items`), decodes that JSON blob, and reads `sam_settings` for `startingBidPct`.
+- The in-app popup version (`printStartingBidList()` JS function and its toolbar button) was fully deleted from `index.html` once the standalone page replaced it — no orphaned code left behind, since it was a same-session addition-then-replacement rather than a persisted feature being retired.
+
+### 2. Iterative refinement of `starting-bid-list.php` (all same-session follow-ups)
+In the order requested:
+- **Column order**: started as Item # / Category / Description / Starting Bid, then Starting Bid was moved to directly after Category (Item # / Category / Starting Bid / Description).
+- **Member Name column added**, sourced from `etcc_member_name` (the same field `add-item.php`'s "ETCC Member Name" dropdown writes), inserted between Starting Bid and Description. Final column order: **Item # / Category / Starting Bid / Member Name / Description**.
+- **Print sizing**: "make print wider, make form narrower" — interpreted as: constrain the on-screen content to a narrower column (`max-width` on the content) while widening the printed page. First implementation switched print to landscape orientation; a later request ("make form modular" — user clarified via `AskUserQuestion` this meant **"not full page"**) reverted print back to **portrait**, keeping the printed table the same narrower width as the screen view rather than stretching it edge-to-edge.
+- **Nowrap columns**: Item #, Category, and Member Name given `white-space:nowrap` so they never wrap onto a second line (Starting Bid and Description still wrap normally).
+- **Header text**: changed to `<h2>Silent Auction - Donated Items</h2>` with an intro line "The following items have been donated by our members." A "Printed: `<date/time>`" line was added and then removed again per a direct follow-up ("remove printed date and time from form").
+- **Done button behavior**: originally `window.close()` with a `setTimeout` fallback to `location.href='index.html'` (matching `add-item.php`'s Done button, for the case where the tab wasn't opened via `window.open()` and can't be closed by script). Simplified to **`window.close()` only** per explicit request ("done should closed form") — this page is always reached directly by URL, so the index.html fallback wasn't wanted.
+- **Floating card layout**: "make form floating page" — clarified via `AskUserQuestion` (user picked **"Card with shadow"**) to mean a centered white card (rounded corners, `box-shadow`, `max-width:700px`) floating over a light-gray page background, matching a common modern-form aesthetic. `@media print` strips the background/shadow/border-radius and expands the card to full width so the printed page doesn't waste ink on decoration that only makes sense on screen.
+
+### Gotcha for future sessions: two `AskUserQuestion` clarifications were needed this session
+Two requests in a row ("make form modular", "make form floating page") were ambiguous enough on their own that guessing wrong would have meant redoing the work — both were disambiguated with `AskUserQuestion` before implementing, rather than guessing. If a short, vague styling request comes in for this page again, it's worth pattern-matching against this history before assuming what it means.
+
+### 3. `test.html` updated to match, confirmed green
+Added one new suite, **`starting-bid-list.php — standalone Starting Bid List page (v4.8 session)`** (9 assertions), covering: the standalone/no-login page itself, the server-side `sam_store` data source, final column order, the Starting Bid formula (reserve-or-percentage, matching the bid-sheet convention), the nowrap columns, the header text change, the floating-card layout, portrait print sizing, and the Done button's close-only behavior. (Suite name says "v4.8" — written before the checkpoint version number was decided; the actual shipped version is v5.0. Harmless, but if a future session is grepping `test.html` by version number, note the mismatch.)
+
+No stale assertions needed fixing — the in-app popup button that was briefly added to `index.html` and then removed left no net trace requiring a test update.
+
+Deployed via `.\deploy.ps1 test.html`, then **confirmed green by the user** at https://etccapps.com/apps/sam/test.html before the v5.0 checkpoint proceeded.
+
+### 4. Checkpoint v5.0 (major version bump)
+The user explicitly asked to bump to **5.0** (not a minor bump) — done via `.\bump-version.ps1 -Major` mid-session, ahead of the formal `/ETCCSAMCheckpoint` invocation. The checkpoint skill correctly detected the version was already bumped and did not double-bump.
+
+### Files touched this session
+| File | Status | Notes |
+|---|---|---|
+| `starting-bid-list.php` | new, committed (`5245137`) | Standalone public "Starting Bid List" page — see above for full column/layout history |
+| `index.html` | committed (`5245137`) | Net change is just the version bump to v5.0 — the `printStartingBidList()` function and its toolbar button were added and then fully removed within this same session, so there's no trace of the popup-window approach left in the file |
+| `test.html` | committed (`5245137`) | One new suite added (9 assertions) for `starting-bid-list.php`; no stale assertions found |
+| `PROJECT_STATUS.md` | this update | continuity doc, not app code |
 
 ---
 
