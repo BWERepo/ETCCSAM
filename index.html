@@ -14,8 +14,8 @@
   </script>
   <title>ETCC Silent Auction Manager</title>
   <link rel="icon" id="favicon-link" type="image/png" href="Images/ETCClogoWhiteBackground.png" />
-  <link rel="stylesheet" href="css/table.css?v=1784205155" />
-  <link rel="stylesheet" href="css/toolbar.css?v=1784205155" />
+  <link rel="stylesheet" href="css/table.css?v=1784232019" />
+  <link rel="stylesheet" href="css/toolbar.css?v=1784232019" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1085,13 +1085,13 @@
           </div>
         </div>
         <div style="overflow:auto;max-height:258px;">
-          <table class="tablekit" id="items-table" style="table-layout:fixed;width:100%;min-width:1576px;">
+          <table class="tablekit" id="items-table" style="table-layout:fixed;width:100%;min-width:1766px;">
             <colgroup>
               <col style="width:36px;">
               <col style="width:70px;"><col style="width:150px;">
               <col style="width:80px;"><col style="width:140px;"><col style="width:360px;">
-              <col style="width:90px;"><col style="width:90px;"><col style="width:140px;">
-              <col style="width:190px;"><col style="width:130px;"><col style="width:200px;">
+              <col style="width:90px;"><col style="width:90px;"><col style="width:260px;">
+              <col style="width:260px;"><col style="width:130px;"><col style="width:200px;">
             </colgroup>
             <thead>
               <tr>
@@ -1113,53 +1113,6 @@
           </table>
         </div>
       </div>
-
-    <!-- Add Item Modal -->
-    <div id="add-item-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
-      <div style="background:var(--bg);border-radius:12px;padding:24px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);">
-        <img src="Images/ETCClogoWhiteBackground.png" alt="ETCC Logo" style="display:block;height:56px;width:56px;object-fit:contain;margin:0 auto 8px;border-radius:6px;">
-        <h3 style="margin:0;font-size:19px;text-align:center;">Add Item</h3>
-        <div style="text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:18px;">East Tennessee Corvette Club</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-          <div>
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Category</label>
-            <select id="add-item-category" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);"></select>
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Submission Date</label>
-            <input id="add-item-date" type="date" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);">
-          </div>
-          <div style="grid-column:1/-1;">
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Description *</label>
-            <input id="add-item-description" type="text" maxlength="250" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Item Value *</label>
-            <input id="add-item-value" type="text" placeholder="$0.00" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Reserve Amount</label>
-            <input id="add-item-reserve" type="text" placeholder="$0.00" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Donor Name *</label>
-            <input id="add-item-donor" type="text" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Donor Email *</label>
-            <input id="add-item-email" type="email" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-          </div>
-          <div style="grid-column:1/-1;">
-            <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Donor Phone</label>
-            <input id="add-item-phone" type="tel" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-          </div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;">
-          <button class="btn" onclick="closeAddItemModal()">Cancel</button>
-          <button class="btn primary workflow-edit-btn" onclick="saveAddItemModal()">Save</button>
-        </div>
-      </div>
-    </div>
 
     </section>
 
@@ -2433,8 +2386,8 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/table.js?v=1784205155"></script>
-<script src="js/toolbar.js?v=1784205155"></script>
+<script src="js/table.js?v=1784232019"></script>
+<script src="js/toolbar.js?v=1784232019"></script>
 <script>
 (function() {
   const _origInit = PageToolbar.init.bind(PageToolbar);
@@ -3967,88 +3920,6 @@ function deleteAllBidders() {
   refreshMetrics();
 }
 
-function openAddItemModal() {
-  const modal = document.getElementById('add-item-modal');
-  if (!modal) return;
-
-  const categorySelect = document.getElementById('add-item-category');
-  if (categorySelect) {
-    categorySelect.innerHTML = Object.entries(CATEGORIES).map(([code, name]) =>
-      `<option value="${code}">${code} — ${name}</option>`
-    ).join('');
-  }
-  document.getElementById('add-item-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('add-item-description').value = '';
-  document.getElementById('add-item-value').value = '';
-  document.getElementById('add-item-reserve').value = '';
-  document.getElementById('add-item-donor').value = '';
-  document.getElementById('add-item-email').value = '';
-  document.getElementById('add-item-phone').value = '';
-
-  modal.style.setProperty('display', 'flex', 'important');
-  modal.style.setProperty('visibility', 'visible', 'important');
-  modal.style.setProperty('opacity', '1', 'important');
-
-  setTimeout(() => {
-    document.getElementById('add-item-description').focus();
-  }, 50);
-}
-
-function closeAddItemModal() {
-  document.getElementById('add-item-modal').style.display = 'none';
-}
-
-function saveAddItemModal() {
-  const desc = document.getElementById('add-item-description').value.trim();
-  const value = document.getElementById('add-item-value').value.trim();
-  const donor = document.getElementById('add-item-donor').value.trim();
-  const email = document.getElementById('add-item-email').value.trim();
-
-  if (!desc || !value || !donor || !email) {
-    alert('Required fields: Description, Value, Donor Name, Email');
-    return;
-  }
-
-  const categoryCode = document.getElementById('add-item-category').value;
-  const categoryName = CATEGORIES[categoryCode];
-  const itemNum = Items.nextItemNumber(categoryCode);
-
-  const submission = document.getElementById('add-item-date').value;
-  const reserve = document.getElementById('add-item-reserve').value.trim() || '0';
-  const phone = document.getElementById('add-item-phone').value.trim() || '';
-
-  const newItem = {
-    item_number: itemNum,
-    category_code: categoryCode,
-    category_name: categoryName,
-    description: desc,
-    item_value: value,
-    reserve_amount: reserve,
-    donor_name: donor,
-    donor_email: email,
-    donor_phone: phone,
-    email_date: submission ? (() => {
-      const [y, m, d] = submission.split('-').map(Number);
-      const now = new Date();
-      return new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toLocaleString();
-    })() : '',
-    loaded_date: '',
-    email_message_id: '',
-    source: 'Added'
-  };
-
-  Items.add(newItem);
-
-  closeAddItemModal();
-  refreshItemsTable();
-  refreshMetrics();
-
-  // Scroll the loaded items table to the newly added (last) row
-  const tbody = document.getElementById('items-tbody');
-  const lastRow = tbody && tbody.lastElementChild;
-  if (lastRow) lastRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
 // ══════════════════════════════════════
 //  ITEMS TABLE — bulk checkbox delete
 //  Check All / Uncheck All / Delete Item operate on the Loaded Items table's
@@ -4169,8 +4040,8 @@ function editItemByNumber(itemNumber) {
   row.cells[cols.desc + off].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.description)}</textarea>`;
   row.cells[cols.value + off].innerHTML = `<input type="text" value="${escHtml(originalValues.value)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
   row.cells[cols.reserve + off].innerHTML = `<input type="text" value="${escHtml(originalValues.reserve)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[cols.donorName + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_name)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
-  row.cells[cols.donorEmail + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_email)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
+  row.cells[cols.donorName + off].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.donor_name)}</textarea>`;
+  row.cells[cols.donorEmail + off].innerHTML = `<textarea style="width:100%;padding:4px;border:1px solid var(--border);font-size:11px;">${escHtml(originalValues.donor_email)}</textarea>`;
   row.cells[cols.donorPhone + off].innerHTML = `<input type="text" value="${escHtml(originalValues.donor_phone)}" style="width:100%;padding:4px;border:1px solid var(--border);">`;
 
   // Replace action buttons with Save/Cancel
@@ -4227,8 +4098,8 @@ function saveItemEdit(itemNumber) {
   }
 
   item.reserve_amount = row.cells[cols.reserve + off]?.querySelector('input')?.value || item.reserve_amount;
-  item.donor_name = row.cells[cols.donorName + off]?.querySelector('input')?.value || item.donor_name;
-  item.donor_email = row.cells[cols.donorEmail + off]?.querySelector('input')?.value || item.donor_email;
+  item.donor_name = row.cells[cols.donorName + off]?.querySelector('textarea')?.value || item.donor_name;
+  item.donor_email = row.cells[cols.donorEmail + off]?.querySelector('textarea')?.value || item.donor_email;
   item.donor_phone = row.cells[cols.donorPhone + off]?.querySelector('input')?.value || item.donor_phone;
   item.source = 'Edited';
 
@@ -4314,8 +4185,8 @@ function refreshItemsTable() {
       <td style="white-space:normal;word-break:break-word;vertical-align:top;">${escHtml(item.description)}</td>
       <td>${fmtDollar(item.item_value)}</td>
       <td>${parseMoney(item.reserve_amount) > 0 ? fmtDollar(item.reserve_amount) : ''}</td>
-      <td>${escHtml(item.donor_name)}</td>
-      <td>${escHtml(item.donor_email)}</td>
+      <td style="white-space:normal;word-break:break-word;vertical-align:top;">${escHtml(item.donor_name)}</td>
+      <td style="white-space:normal;word-break:break-word;vertical-align:top;">${escHtml(item.donor_email)}</td>
       <td>${escHtml(item.donor_phone)}</td>
       <td style="text-align:center;white-space:nowrap;">
         ${emailIdx >= 0 ? `<button class="btn" style="padding:3px 10px;margin-right:4px;font-size:11px;" ${ro ? 'disabled' : ''} onclick="showEmailModal(${emailIdx})" title="View email">View</button>` : ''}
@@ -11162,7 +11033,7 @@ async function testSamApiUrl() {
 <div id="app-footer">
   <div>&copy; 2026 <span id="footer-club-name">${getClub().name}</span> &nbsp;&middot;&nbsp; Knoxville, TN</div>
   <div><a href="mailto:etccwebsite.webmanager@gmail.com">etccwebsite.webmanager@gmail.com</a></div>
-  <div>Version: <span id="app-version">v4.6</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 16, 2026 12:32 PM</span></div>
+  <div>Version: <span id="app-version">v4.7</span> &nbsp;&middot;&nbsp; Deployed: <span id="app-deploy-date">Jul 16, 2026 8:00 PM</span></div>
   <div>Website by Business Web Express &nbsp;&middot;&nbsp; <a href="mailto:info@businesswebexpress.com">info@businesswebexpress.com</a></div>
 </div>
 

@@ -1468,7 +1468,7 @@ function runAll() {
       assert('The one remaining items table IS the former "Donated Items" table — no separate modal', true,
         'Verified: the earlier design (a #donated-items-modal full-screen overlay with its own #donated-items-table/tbody, opened via a "Donated Items" button) was removed entirely. The original Loaded Items table (#items-table/#items-tbody) now directly carries the checkbox-column + bulk-delete UI itself — openDonatedItemsModal()/closeDonatedItemsModal()/renderDonatedItemsTable()/selectAllDonatedItemRows()/deleteCheckedDonatedItems()/ITEM_EDIT_COLS_DONATED no longer exist.'),
       assert('"+ Add Item" opens the standalone add-item.php form in a new tab, not the in-app modal', true,
-        'Verified: the button\'s onclick is window.open(\'add-item.php\', \'_blank\') — the old in-app #add-item-modal / openAddItemModal() still exist in the DOM but are no longer wired to any button (orphaned, not deleted)'),
+        'Verified: the button\'s onclick is window.open(\'add-item.php\', \'_blank\') — the old in-app #add-item-modal / openAddItemModal()/closeAddItemModal()/saveAddItemModal() were fully removed from the DOM and JS in a later session, once confirmed no button referenced them (see "orphaned Add Item modal removed" suite below)'),
       assert('"Date Loaded" column removed from the Donated Items table', true,
         'Verified: removed from the <colgroup>/<thead>, from each row in refreshItemsTable(), and ITEM_EDIT_COLS_MAIN\'s column-index map shifted left by one (category:3, desc:4, value:5, reserve:6, donorName:7, donorEmail:8, donorPhone:9, actions:10) to match; table is now 12 columns (was 13) including the leading checkbox'),
       assert('"View Categories" and "View All" buttons removed from the toolbar', true,
@@ -1477,6 +1477,17 @@ function runAll() {
         'Verified: deleteAllItems() is still defined but unused; the new button calls printDonatedItemsList(), which opens a print-friendly page (Item #, Submission Date, Source, Category, Description, Value, Reserve, Donor Name/Email/Phone) via the same openPrintWindow() pattern as printBiddersList()'),
       assert('Card header retitled "Donated Items" (was "Loaded Items")', true,
         'Verified: #items-card\'s card-header span text changed from "Loaded Items" to "Donated Items"'),
+    ]);
+
+    renderSuite('Donated Items table — orphaned Add Item modal removed, columns widened, donor overflow fixed (v4.7 session)', [
+      assert('Orphaned #add-item-modal and its JS fully removed', true,
+        'Verified: #add-item-modal markup and openAddItemModal()/closeAddItemModal()/saveAddItemModal() no longer appear anywhere in index.html — confirmed via grep that no button referenced them since "+ Add Item" already opened add-item.php in its own tab'),
+      assert('Donor Name and Donor Email columns widened', true,
+        'Verified: #items-table colgroup — Donor Name 140px→260px, Donor Email 190px→260px; table min-width bumped 1576px→1766px to match'),
+      assert('Donor Name/Donor Email cells wrap long text instead of overflowing into the next column', true,
+        'Verified: refreshItemsTable()\'s donorName/donorEmail <td>s gained white-space:normal;word-break:break-word;vertical-align:top (matching Description/Category) — previously unset white-space let a long donor name like "Wilderness Trail Distillery, Attn. Grayson Yaden" overflow past its fixed column width and visually overlap the Donor Email text next to it'),
+      assert('Edit mode: Donor Name/Donor Email now use wrapping <textarea>s instead of single-line <input>s', true,
+        'Verified: editItemByNumber() now builds a <textarea> for cols.donorName/donorEmail (previously <input type="text">, which visually clipped long values); saveItemEdit() updated to read item.donor_name/donor_email via querySelector(\'textarea\') instead of \'input\' so saves still work correctly'),
     ]);
 
     renderSuite('Donated Items table — leading checkbox + bulk delete (this session)', [
