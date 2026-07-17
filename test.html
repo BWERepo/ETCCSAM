@@ -1490,6 +1490,27 @@ function runAll() {
         'Verified: editItemByNumber() now builds a <textarea> for cols.donorName/donorEmail (previously <input type="text">, which visually clipped long values); saveItemEdit() updated to read item.donor_name/donor_email via querySelector(\'textarea\') instead of \'input\' so saves still work correctly'),
     ]);
 
+    renderSuite('starting-bid-list.php — standalone Starting Bid List page (v4.8 session)', [
+      assert('Standalone bookmarkable page, no in-app button, no login gate', true,
+        'Verified: originally added as a "🖨 Starting Bid List" toolbar button on the Donated Items screen (index.html) calling a printStartingBidList() function that built a popup window; both were removed once the user asked for a real bookmarkable URL instead — replaced with starting-bid-list.php, following the same public/no-auth pattern as add-item.php, reachable directly at /apps/sam/starting-bid-list.php'),
+      assert('Reads live item data server-side from the SQL sam_store table, not localStorage', true,
+        'Verified: reads sam_current_auction to pick sam_{auctionId}_items (or sam_items if no current auction), decodes the JSON blob, and reads sam_settings for startingBidPct — same source-of-truth pattern as add-item.php'),
+      assert('Column order: Item #, Category, Starting Bid, Member Name, Description', true,
+        'Verified: <thead> and each row\'s <td>s render in that order; Starting Bid was moved to directly follow Category per a follow-up request, and Member Name (etcc_member_name) was added between Starting Bid and Description'),
+      assert('Starting Bid = Reserve Amount if set and non-zero, else Item Value × Settings Starting Bid %', true,
+        'Verified: $reserve = numeric reserve_amount (currency chars stripped), $startingBid = $reserve > 0 ? $reserve : ($value * $startingBidPct / 100) — same reserve-overrides-value convention as the app\'s bid sheets (CLAUDE.md), using the live Settings startingBidPct (default 30) rather than a hardcoded percentage'),
+      assert('Item #, Category, and Member Name columns never wrap onto a second line', true,
+        'Verified: those three columns\' <th>/<td> elements have white-space:nowrap; Starting Bid and Description are left to wrap normally'),
+      assert('Page header reads "Silent Auction - Donated Items" with an intro line, no printed date/time', true,
+        'Verified: <h2>Silent Auction - Donated Items</h2> followed by "The following items have been donated by our members." — an earlier "Printed: <date>" line was removed per a follow-up request'),
+      assert('Content presented as a centered floating card over a gray page background on screen; flattens for print', true,
+        'Verified: body has a light gray background with a white .card (rounded corners, box-shadow, max-width 700px) wrapping the header/table; @media print removes the background/shadow/radius and expands .card to full width so the printed page isn\'t wasting ink on decoration'),
+      assert('Print output uses portrait orientation, matching the card\'s narrower width rather than stretching full-page', true,
+        'Verified: @media print sets @page { size: portrait; margin: 0.4in; } — an earlier landscape/full-width attempt was reverted once the user clarified they wanted the printed table to stay in the same narrower "modular" block as the on-screen view, not stretch edge-to-edge'),
+      assert('Print and Done buttons; Done just closes the tab with no fallback navigation', true,
+        'Verified: 🖨 Print calls window.print(); Done calls window.close() only — an earlier version that also fell back to location.href=\'index.html\' after 150ms (matching add-item.php\'s Done button, for pages that might not have been opened via window.open()) was simplified to close-only per explicit request, since this page is always reached directly by URL'),
+    ]);
+
     renderSuite('Donated Items table — leading checkbox + bulk delete (this session)', [
       assert('Leading checkbox column added to #items-table, one per row plus a header check-all', true,
         'Verified: colgroup gained a 36px checkbox column; each body row (refreshItemsTable()) has <input class="item-row-check" data-item-number="...">, and the <thead> checkbox (#items-check-all-th) toggles all rows via onchange="selectAllItemRows(this.checked)"'),
