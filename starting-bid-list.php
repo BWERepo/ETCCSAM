@@ -99,7 +99,7 @@ usort($items, fn($a, $b) => strnatcasecmp((string)($a['item_number'] ?? ''), (st
     </div>
   </div>
   <table>
-    <thead><tr><th style="white-space:nowrap;">Item #</th><th style="white-space:nowrap;">Category</th><th>Starting Bid</th><th style="white-space:nowrap;">Member Name</th><th>Description</th></tr></thead>
+    <thead><tr><th style="white-space:nowrap;">Item #</th><th style="white-space:nowrap;">Category</th><th>Starting Bid</th><th style="white-space:nowrap;">Donor Name</th><th>Description</th></tr></thead>
     <tbody>
 <?php foreach ($items as $item):
     $reserve = (float)preg_replace('/[^0-9.]/', '', (string)($item['reserve_amount'] ?? '0'));
@@ -112,7 +112,7 @@ usort($items, fn($a, $b) => strnatcasecmp((string)($a['item_number'] ?? ''), (st
       <td style="white-space:nowrap;"><?= htmlspecialchars((string)($item['item_number'] ?? '')) ?></td>
       <td style="white-space:nowrap;"><?= htmlspecialchars($catCode) ?> — <?= htmlspecialchars((string)$catName) ?></td>
       <td><?= sbl_money($startingBid) ?></td>
-      <td style="white-space:nowrap;"><?= htmlspecialchars((string)($item['etcc_member_name'] ?? '')) ?></td>
+      <td style="white-space:nowrap;"><?= htmlspecialchars((string)($item['donor_name'] ?? '')) ?></td>
       <td><?= htmlspecialchars((string)($item['description'] ?? '')) ?></td>
     </tr>
 <?php endforeach; ?>
