@@ -1,6 +1,6 @@
 # SAM Project Status
 
-**Last updated:** 2026-07-17 — **checkpoint v5.0**: added a brand-new standalone page, `starting-bid-list.php`, listing every donated item's starting bid — built and refined through several rounds of live feedback, `test.html` updated with a new suite, confirmed green by the user, and checkpointed (major version bump, committed, pushed).
+**Last updated:** 2026-07-20 — **checkpoint v5.1**: replaced the Starting Bid List's Member Name column with Donor Name, and ran a same-session experiment (added, then fully reverted at the user's request) building a separate public item-donation form with no ETCC Member fields. `test.html` updated, confirmed green by the user, checkpointed (minor version bump, committed, pushed).
 
 This file exists so a brand-new Claude Code session can resume this work with zero prior conversation context. Read this alongside `CLAUDE.md` (architecture/rules) before touching code.
 
@@ -8,18 +8,60 @@ This file exists so a brand-new Claude Code session can resume this work with ze
 
 ## Current state (as of this doc)
 
-- **Deployed version:** **v5.0** (`index.html` footer `#app-version`) — deployed code matches the latest checkpoint commit, no drift.
-- **Git:** `main` branch, last commit `5245137` ("Checkpoint v5.0: new Starting Bid List standalone page"), pushed to `origin` (https://github.com/BWERepo/ETCCSAM.git). Working tree is clean.
-- **Regression suite (`test.html`) was updated this session and confirmed green by the user** before the v5.0 checkpoint.
+- **Deployed version:** **v5.1** (`index.html` footer `#app-version`) — deployed code matches the latest checkpoint commit, no drift.
+- **Git:** `main` branch, last commit `214ef54` ("Checkpoint v5.1: Starting Bid List Donor Name column, brief public form experiment"), pushed to `origin` (https://github.com/BWERepo/ETCCSAM.git). Working tree is clean.
+- **Regression suite (`test.html`) was updated this session and confirmed green by the user** before the v5.1 checkpoint.
 - **No uncommitted app-code work** as of this doc.
 
 ### ⚠️ Open items carried into the next session
 
 1. **The settings-password "corrupted again" investigation from several sessions ago is still not conclusively closed.** The working theory (a transcription/autofill issue at the password prompt, not a code bug) was never confirmed — the user was given a console snippet to bypass manual typing and confirm it, but no result was ever reported. If it resurfaces, start by asking whether that bypass test was ever tried, rather than re-diagnosing from scratch.
-2. **`api.php`/`add-item.php` deploys via `deploy.ps1` have been intermittently unreliable in past sessions** (`curl: (56)`/`curl: (18) ... got 450`) — manual upload via Hostinger File Manager is the fallback that has worked. This session's `deploy.ps1` calls (including the new `starting-bid-list.php`) all reported success with no retries needed, but keep verifying with a diff/marker check if a deploy ever looks suspicious.
+2. **`api.php`/`add-item.php` deploys via `deploy.ps1` have been intermittently unreliable in past sessions** (`curl: (56)`/`curl: (18) ... got 450`) — manual upload via Hostinger File Manager is the fallback that has worked. This session's `deploy.ps1` calls all reported success with no retries needed, but keep verifying with a diff/marker check if a deploy ever looks suspicious.
 3. **The Gmail-scan workflow's UI is hidden (`display:none`), not deleted**, and a large amount of supporting JS (OAuth token handling, inbox scanning, `parseEmailBody()`/`DEFAULT_FIELD_MAP`-driven parsing) remains in `index.html`, unreferenced by any visible UI. It couldn't be fully removed because the **Gmail OAuth Settings card is still load-bearing** — it configures the same Gmail API connection used by the currently-working **Announce Winners → Email Winners** feature (`sendWinnerEmails()` → `sendEmailsViaGmail()`). A future session could cleanly split "Gmail auth for sending" from "Gmail scanning for inbox import" if the scanning code is ever confirmed permanently dead.
 4. **`donate-item.php` remains fully removed** (unchanged from prior sessions) — `add-item.php` is the only item-donation entry point. Its old SQL-side backend (`donated_items_pending` table, `get_pending_donations`/`mark_donations_imported` in `api.php`) is still there, unused, per the same convention.
-5. **`starting-bid-list.php` (new this session) has no password gate**, matching `add-item.php`'s convention — anyone with the URL can view the full donated-items list with member names and starting bids. This was not explicitly discussed as a security tradeoff; flag it if the club raises privacy concerns about member names being publicly listable.
+5. **`starting-bid-list.php` has no password gate**, matching `add-item.php`'s convention — anyone with the URL can view the full donated-items list with donor names and starting bids. This was not explicitly discussed as a security tradeoff; flag it if the club raises privacy concerns about donor names being publicly listable.
+6. **A near-duplicate of `add-item.php` was created and fully removed this session** (`silent-auction-form.php` — see this session's write-up below). If a future request sounds like "make a public version of the item donation form without the member picker," check this history first rather than rebuilding from scratch, since the exact diff needed (remove `etccMemberName`/`memberEmail` from validation, DB write, confirmation email, and the HTML form/JS) is already documented below.
+
+---
+
+## What was accomplished this session (checkpoint v5.1)
+
+Short session, two independent threads of work against `starting-bid-list.php` and a new (ultimately removed) form.
+
+### 1. `starting-bid-list.php` — Member Name column replaced with Donor Name
+A quick follow-up correction: the Starting Bid List's "Member Name" column (sourced from `etcc_member_name`, the ETCC member who submitted the item) was replaced with a **Donor Name** column (`donor_name`, the actual item donor) — the list is meant to credit donors, not track which club member did the data entry. Column order is now **Item # / Category / Starting Bid / Donor Name / Description**, same `white-space:nowrap` treatment as before, just on the renamed/re-sourced column. `test.html`'s `starting-bid-list.php` suite (originally written "v4.8 session," predating the actual v5.0 ship) had two assertions referencing "Member Name" — both corrected to describe the current Donor Name column, with a note that this was a deliberate correction, not a bug.
+
+### 2. Built, then fully reverted — `silent-auction-form.php`, a public item-donation form with no member picker
+The user asked for "a public silent auction form very similar to the item donation form." After a clarifying `AskUserQuestion` (they picked **"Duplicate/rename of `add-item.php`"**), this was first built as an exact file copy of `add-item.php` → `silent-auction-form.php`, deployed and working identically.
+
+The user then asked to change its title to "Public Item Donation" and remove the ETCC Member Name/Email fields. A second `AskUserQuestion` (should this apply to `add-item.php` too, or just the new file?) confirmed **only `silent-auction-form.php`** — `add-item.php` stays as the internal, member-picker version; the new file was meant to be the fully public one. The following changes were made to `silent-auction-form.php` only:
+- Subtitle changed to "Public Item Donation" (title tag and on-page `<div class="sub">`).
+- Removed the `$members` SQL lookup/sort block entirely (no longer needed).
+- Removed `etccMemberName`/`memberEmail` from `$values`, the POST-field read loop, the "required" validation, the `$newItem` write (`etcc_member_name` key dropped from the item record), the confirmation-email row list, and the email-To override logic (previously the selected member's email took priority as the confirmation recipient — with the field gone, `emailTo` now always uses the Settings-configured `donationEmailTo` address).
+- Removed the ETCC Member Name `<select>`, its "— choose —" member-list `<option>`s, the read-only Member Email `<input>`, and the `samFillMemberEmail()` JS that synced them.
+- Updated the file's top comment block to describe it as a public-audience duplicate of `add-item.php` with the member fields stripped out, rather than reusing `add-item.php`'s original comment verbatim.
+
+**Then immediately reverted**: the user said "remove the new form." Verified via grep that nothing else in the codebase referenced `silent-auction-form.php` (it was never wired into `index.html` or any other page — always a standalone bookmarkable URL, same as `add-item.php`), then:
+- Deleted it from the live server directly via an FTP `DELE` command (same approach used historically to remove `donate-item.php` — `deploy.ps1` has no built-in remote-delete helper, so this was a manual `curl ... -Q "DELE silent-auction-form.php"` against `ftp.etccapps.com`), confirmed with a follow-up `curl` HEAD-equivalent request that `https://etccapps.com/apps/sam/silent-auction-form.php` now 404s.
+- Deleted the local file.
+- Since the file was created and removed within the same session **before ever being committed**, `git status` shows no trace of it — nothing to revert or clean up in git history.
+
+**Net effect on `add-item.php` and `test.html`**: none — `add-item.php` was never touched, and `silent-auction-form.php` never had regression-suite coverage added (it existed only briefly, mid-session), so no test assertions needed removing either.
+
+### 3. `test.html` updated, confirmed green
+Only the two stale "Member Name" assertions in the `starting-bid-list.php` suite needed correcting (see #1 above) — no new suite was needed since the `silent-auction-form.php` detour left no lasting code to cover. Deployed via `.\deploy.ps1 test.html`, then **confirmed green by the user** at https://etccapps.com/apps/sam/test.html before the v5.1 checkpoint.
+
+### 4. Checkpoint v5.1 (minor version bump)
+Straightforward minor bump via `.\bump-version.ps1` (no `-Major` flag requested this time, unlike the prior v5.0 session).
+
+### Files touched this session
+| File | Status | Notes |
+|---|---|---|
+| `starting-bid-list.php` | committed (`214ef54`) | Member Name column → Donor Name column |
+| `test.html` | committed (`214ef54`) | Two stale "Member Name" assertions corrected to Donor Name |
+| `index.html` | committed (`214ef54`) | Version bump to v5.1 only |
+| `silent-auction-form.php` | created, then deleted (local + live server) — never committed | Public item-donation form with no member picker; built, refined, then removed same-session at explicit request. See write-up above if a similar request comes in again. |
+| `PROJECT_STATUS.md` | this update | continuity doc, not app code |
 
 ---
 
